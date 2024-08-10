@@ -4,72 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CCG Game</title>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            background-color: #f0f0f0;
-            overflow: hidden;
-        }
-
-        h1 {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .row {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 20px;
-        }
-
-        .card {
-            border: 2px solid #000;
-            border-radius: 10px;
-            width: 80px;
-            height: 120px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 10px;
-            background-color: #fff;
-            position: absolute;
-            touch-action: none;
-        }
-
-        @media (min-width: 768px) {
-            .card {
-                width: 100px;
-                height: 150px;
-            }
-        }
-
-        @media (min-width: 1024px) {
-            .card {
-                width: 120px;
-                height: 180px;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <h1>Welcome to the CCG Game</h1>
-    <div class="row">
-        <div id="card1" class="card">Tubik (3)</div>
-        <div id="card2" class="card">Vaper (3)</div>
-        <div id="card3" class="card">Sheikh (6)</div>
-    </div>
-    <div class="row">
-        <div id="card4" class="card">ITishnik (6)</div>
-        <div id="card5" class="card">Skuf (4)</div>
-        <div id="card6" class="card">TikToker (4)</div>
-    </div>
+    
+    <!-- Добавляем четыре ряда для отображения карт -->
+    <div class="row"></div>
+    <div class="row"></div>
+    <div class="row"></div>
+    <div class="row"></div>
+
     <script src="game.js"></script>
 </body>
 </html>
