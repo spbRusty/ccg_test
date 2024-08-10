@@ -1,0 +1,44 @@
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f4f4f4;
+  text-align: center;
+  margin: 0;
+  padding: 0;
+}
+
+#game-board {
+  display: grid;
+  grid-template-rows: repeat(4, 1fr); /* 4 ряда */
+  gap: 20px; /* расстояние между рядами */
+  justify-items: center; /* выравнивание рядов по центру */
+  margin-top: 20px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: repeat(3, 120px); /* 3 колонки */
+  gap: 20px; /* расстояние между картами в ряду */
+}
+
+.card {
+  width: 120px;
+  height: 180px;
+  background-color: #fff;
+  border: 2px solid #000;
+  box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  border-radius: 10px;
+  transition: transform 0.2s ease;
+}
+
+.card:hover {
+  transform: scale(1.05);
+}
+
+h1 {
+  margin-top: 20px;
+  font-size: 24px;
+}
