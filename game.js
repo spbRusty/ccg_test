@@ -30,21 +30,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Рендеринг карт в руках игроков
-    player1.hand.forEach(card => {
+    player1.hand.forEach((card, index) => {
         const cardElement = card.render();
         cardElement.draggable = true;
+        cardElement.id = `player1-card-${index}`;
         addDragAndDropListeners(cardElement);
         playerHand.appendChild(cardElement);
     });
 
-    player2.hand.forEach(card => {
+    player2.hand.forEach((card, index) => {
         const cardElement = card.render();
         cardElement.draggable = true;
+        cardElement.id = `player2-card-${index}`;
         addDragAndDropListeners(cardElement);
         opponentHand.appendChild(cardElement);
     });
 
-    // Добавление слушателей событий для перетаскивания
     function addDragAndDropListeners(cardElement) {
         cardElement.addEventListener('dragstart', (event) => {
             cardElement.classList.add('dragging');
