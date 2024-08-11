@@ -1,38 +1,65 @@
+/* Общие стили для всего приложения */
 body {
     font-family: Arial, sans-serif;
-    text-align: center;
     background-color: #f0f0f0;
     margin: 0;
     padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100vh; /* Высота экрана 100% от доступной высоты окна */
+    overflow: hidden; /* Убираем прокрутку */
 }
 
-h1 {
-    margin-bottom: 20px;
-}
-
+/* Стили для рядов */
 .row {
     display: flex;
     justify-content: center; /* Центрирование карт в ряду */
-    margin-bottom: 20px; /* Отступ между рядами */
+    margin-bottom: 10px; /* Меньший отступ между рядами */
 }
 
 .card {
-    width: 100px;
-    height: 150px;
+    width: 80px; /* Уменьшена ширина карт для лучшей адаптации на мобильных устройствах */
+    height: 120px; /* Уменьшена высота карт */
     background-color: white;
     border: 2px solid black;
     border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
-    margin: 0 10px; /* Отступ между картами */
+    font-size: 14px;
+    margin: 0 5px; /* Уменьшены отступы между картами */
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     cursor: pointer;
 }
 
 .card:hover {
-    transform: translateY(-5px);
+    transform: translateY(-3px);
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
     transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+/* Стили для полоски между картами оппонента и игрока */
+.divider {
+    width: 100%;
+    border-top: 2px solid black;
+    margin: 10px 0; /* Отступ сверху и снизу от полоски */
+    padding: 5px 0;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 12px;
+}
+
+/* Адаптация для мобильных устройств */
+@media (max-width: 480px) {
+    .card {
+        width: 70px; /* Ещё больше уменьшаем карты для маленьких экранов */
+        height: 100px;
+        font-size: 12px;
+    }
+
+    .divider {
+        font-size: 10px;
+    }
 }
