@@ -1,5 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const rows = document.querySelectorAll('.row'); // Получаем все ряды
+    const opponentHand = document.querySelector('.opponent-hand');
+    const playerHand = document.querySelector('.player-hand');
+    const rows = document.querySelectorAll('.row');
 
     // Создаем игроков
     const player1 = new Player('Player 1');
@@ -7,96 +9,65 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Создаем колоду и добавляем карты
     const deck = new Deck();
-    const cardsData = [
-        { name: 'Masik', value: 5 },
-        { name: 'Tubik', value: 3 },
-        { name: 'Skuf', value: 4 },
-        { name: 'Altushka', value: 7 },
-        { name: 'Sheikh', value: 6 },
-        { name: 'Alkash', value: 4 },
-        { name: 'ITishnik', value: 6 },
-        { name: 'Fifa', value: 5 },
-        { name: 'Vaper', value: 3 },
-        { name: 'TikToker', value: 4 },
-        { name: 'Khalif', value: 6 },
-        { name: 'GameDev', value: 8 },
-    ];
-
-    cardsData.forEach(card => deck.addCard(new Card(card.name, card.value)));
+    deck.addCard(new Card('Masik', 5));
+    deck.addCard(new Card('Tubik', 3));
+    deck.addCard(new Card('Skuf', 4));
+    deck.addCard(new Card('Altushka', 7));
+    deck.addCard(new Card('Sheikh', 6));
+    deck.addCard(new Card('Alkash', 4));
+    deck.addCard(new Card('ITishnik', 6));
+    deck.addCard(new Card('Fifa', 5));
+    deck.addCard(new Card('Vaper', 3));
+    deck.addCard(new Card('TikToker', 4));
+    deck.addCard(new Card('Khalif', 6));
+    deck.addCard(new Card('GameDev', 8));
     deck.shuffle();
 
-    // Игроки берут по 6 карт
-    for (let i = 0; i < 6; i++) {
+    // Игроки берут по 5 карт
+    for (let i = 0; i < 5; i++) {
         player1.drawCard(deck);
         player2.drawCard(deck);
     }
 
-    // Рендеринг карт
-    const totalCards = 6;
-    for (let rowIndex = 0; rowIndex < 4; rowIndex++) {
-        const row = rows[rowIndex];
-        for (let i = 0; i < 3; i++) {
-            let card;
-            if (rowIndex < 2) { 
-                card = player2.hand[rowIndex * 3 + i];
-            } else {
-                card = player1.hand[(rowIndex - 2) * 3 + i];
-            }
-            if (card) {
-                row.appendChild(card.render());
-            }
-        }
+    // Рендеринг карт в руках игроков
+    player1.hand.forEach(card => {
+        const cardElement = card.render();
+        cardElement.draggable = true;
+        addDragAndDropListeners(cardElement);
+        playerHand.appendChild(cardElement);
+    });
+
+    player2.hand.forEach(card => {
+        const cardElement = card.render();
+        cardElement.draggable = true;
+        addDragAndDropListeners(cardElement);
+        opponentHand.appendChild(cardElement);
+    });
+
+    // Добавление слушателей событий для перетаскивания
+    function addDragAndDropListeners(cardElement) {
+        cardElement.addEventListener('dragstart', (event) => {
+            cardElement.classList.add('dragging');
+            event.dataTransfer.setData('text/plain', event.target.id);
+        });
+
+        cardElement.addEventListener('dragend', () => {
+            cardElement.classList.remove('dragging');
+        });
     }
+
+    rows.forEach(row => {
+        row.addEventListener('dragover', (event) => {
+            event.preventDefault();
+        });
+
+        row.addEventListener('drop', (event) => {
+            event.preventDefault();
+            const cardId = event.dataTransfer.getData('text/plain');
+            const cardElement = document.getElementById(cardId);
+            if (cardElement) {
+                row.appendChild(cardElement);
+            }
+        });
+    });
 });
-
-// Определение класса Card
-class Card {
-    constructor(name, value) {
-        this.name = name;
-        this.value = value;
-    }
-
-    render() {
-        const cardElement = document.createElement('div');
-        cardElement.classList.add('card');
-        cardElement.textContent = `${this.name} (${this.value})`;
-        return cardElement;
-    }
-}
-
-// Определение класса Deck
-class Deck {
-    constructor() {
-        this.cards = [];
-    }
-
-    addCard(card) {
-        this.cards.push(card);
-    }
-
-    shuffle() {
-        for (let i = this.cards.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [this.cards[i], this.cards[j]] = [this.cards[j], this.cards[i]];
-        }
-    }
-
-    drawCard() {
-        return this.cards.pop();
-    }
-}
-
-// Определение класса Player
-class Player {
-    constructor(name) {
-        this.name = name;
-        this.hand = [];
-    }
-
-    drawCard(deck) {
-        const card = deck.drawCard();
-        if (card) {
-            this.hand.push(card);
-        }
-    }
-}
