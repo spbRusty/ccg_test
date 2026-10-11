@@ -615,7 +615,7 @@
       setMessage("Твой ход. Разыграй одну карту или пропусти ход.");
     } else {
       setMessage("Противник выбирает карту…");
-      aiTimer = setTimeout(runAI, 20 + Math.floor(Math.random() * 81));
+      aiTimer = setTimeout(runAI, 1400 + Math.floor(Math.random() * 1001));
     }
   }
 
