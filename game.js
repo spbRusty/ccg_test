@@ -71,6 +71,8 @@
   let lastEffect = null;
   let sequence = 0;
   let aiTimer = null;
+  let animatedCardId = null;
+  let audioContext = null;
   let gameFinished = false;
   let logs = [];
 
@@ -147,10 +149,7 @@
     cost.className = "card-cost";
     cost.textContent = card.cost + "с";
     cost.title = "Базовая стоимость";
-    const symbol = document.createElement("span");
-    symbol.className = "card-symbol";
-    symbol.textContent = card.symbol;
-    top.append(cost, symbol);
+    top.appendChild(cost);
 
     const body = document.createElement("div");
     const name = document.createElement("div");
@@ -165,11 +164,7 @@
       body.appendChild(desc);
     }
 
-    const category = document.createElement("div");
-    category.className = "card-type";
-    category.textContent = card.category;
-
-    face.append(top, body, category);
+    face.append(top, body);
     return face;
   }
 
@@ -205,9 +200,11 @@
       const index = Number(slot.dataset.slot);
       const card = players[owner].board[index];
       slot.replaceChildren();
+      slot.classList.remove("card-entering");
       slot.classList.toggle("filled", Boolean(card));
       if (card) {
         slot.appendChild(makeCardFace(card, true));
+        if (card.id === animatedCardId) slot.classList.add("card-entering");
         slot.title = card.name + " · стоимость " + card.cost + " сек. · " + card.description;
       } else {
         const placeholder = document.createElement("span");
@@ -217,6 +214,7 @@
         slot.title = owner === "player" ? "Перетащи сюда карту" : "Пустой слот";
       }
     });
+    animatedCardId = null;
   }
 
   function renderHand() {
@@ -400,6 +398,31 @@
     }
   }
 
+  function playSound(kind) {
+    try {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) return;
+      if (!audioContext) audioContext = new AudioContextClass();
+      if (audioContext.state === "suspended") audioContext.resume();
+
+      const now = audioContext.currentTime;
+      const oscillator = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+      oscillator.type = kind === "card" ? "triangle" : "sine";
+      oscillator.frequency.setValueAtTime(kind === "card" ? 520 : 330, now);
+      oscillator.frequency.exponentialRampToValueAtTime(kind === "card" ? 240 : 440, now + 0.09);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.075, now + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
+      oscillator.connect(gain);
+      gain.connect(audioContext.destination);
+      oscillator.start(now);
+      oscillator.stop(now + 0.13);
+    } catch (_) {
+      // Sound is optional; never interrupt gameplay.
+    }
+  }
+
   function checkGameOver() {
     const playerOut = players.player.time <= 0;
     const opponentOut = players.opponent.time <= 0;
@@ -446,7 +469,7 @@
       setMessage("Твой ход. Разыграй одну карту или пропусти ход.");
     } else {
       setMessage("Противник выбирает карту…");
-      aiTimer = setTimeout(runAI, 650);
+      aiTimer = setTimeout(runAI, 20 + Math.floor(Math.random() * 81));
     }
   }
 
@@ -491,7 +514,8 @@
 
     if (checkGameOver()) return true;
     drawCard(actorKey);
-    render();
+    animatedCardId = card.id;
+    playSound("card");
     startTurn(enemyOf(actorKey));
     return true;
   }
@@ -500,6 +524,7 @@
     if (turn !== "player" || gameFinished) return;
     drawCard("player");
     addLog("Ты пропускаешь ход.");
+    playSound("pass");
     render();
     startTurn("opponent");
   }
@@ -592,6 +617,7 @@
           players.player.board[slotIndex] = null;
           players.player.time = Math.max(0, players.player.time - 1);
           addLog("Ты освобождаешь слот, сбрасывая «" + removed.name + "» за 1 сек.");
+          playSound("pass");
           checkGameOver();
           render();
           if (!gameFinished) setMessage("Слот освобождён. Теперь можно разыграть карту.");
