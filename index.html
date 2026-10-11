@@ -64,6 +64,21 @@
       <p id="game-message" role="status" aria-live="polite">Выбери карту и разыграй её. Стоимость вычитается из твоего времени.</p>
       <div id="event-log" class="event-log" aria-label="История ходов"></div>
     </aside>
+    <aside class="collection-panel" aria-label="Колоды и описание карты">
+      <section class="collection-top">
+        <div class="collection-tabs" role="tablist" aria-label="Выбор колоды">
+          <button id="tab-player-deck" class="collection-tab active" type="button" role="tab" aria-selected="true">Моя колода</button>
+          <button id="tab-opponent-deck" class="collection-tab" type="button" role="tab" aria-selected="false">Колода противника</button>
+        </div>
+        <div id="collection-list" class="collection-list" role="tabpanel" aria-live="polite"></div>
+      </section>
+      <section class="card-details" aria-label="Описание карты">
+        <div class="details-heading">КАРТА</div>
+        <div id="card-details-content" class="card-details-content">
+          <p class="details-empty">Наведи курсор на карту, чтобы увидеть подробности.</p>
+        </div>
+      </section>
+    </aside>
   </main>
   <script src="game.js"></script>
 </body>
