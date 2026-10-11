@@ -49,6 +49,18 @@
     percentage: {
       name: "Доля секунды", cost: 4, type: "percent", amount: 10, symbol: "%",
       description: "Забери 10% оставшегося времени врага.", color: "#68d9c1", category: "Процент"
+    },
+    scavenger: {
+      name: "Полевой сборщик", cost: 3, type: "fieldGain", amount: 1, symbol: "⌂",
+      description: "Получи 1 секунду за каждую свою карту на поле, включая эту.", color: "#a8d879", category: "Синергия поля"
+    },
+    disrupt: {
+      name: "Полевой саботаж", cost: 4, type: "fieldDrain", amount: 3, symbol: "⌁",
+      description: "Уничтожь самую дорогую карту врага и забери 3 секунды.", color: "#ff727e", category: "Саботаж поля"
+    },
+    pressure: {
+      name: "Давление разлома", cost: 3, type: "fieldTax", amount: 1, symbol: "⚡",
+      description: "Враг теряет 1 секунду за каждую свою карту на поле.", color: "#e6a0ff", category: "Атака поля"
     }
   };
 
@@ -195,8 +207,8 @@
       slot.replaceChildren();
       slot.classList.toggle("filled", Boolean(card));
       if (card) {
-        slot.appendChild(makeCardFace(card, false));
-        slot.title = card.name + " · стоимость " + card.cost + " сек.";
+        slot.appendChild(makeCardFace(card, true));
+        slot.title = card.name + " · стоимость " + card.cost + " сек. · " + card.description;
       } else {
         const placeholder = document.createElement("span");
         placeholder.className = "slot-placeholder";
@@ -293,7 +305,34 @@
     return false;
   }
 
-  function removeMostExpensiveEnemyCard(actorKey) {\n    const enemyKey = enemyOf(actorKey);\n    const board = players[enemyKey].board;\n    let targetIndex = -1;\n    board.forEach((card, index) => {\n      if (card && (targetIndex < 0 || card.cost > board[targetIndex].cost)) targetIndex = index;\n    });\n    if (targetIndex < 0) return false;\n    const removed = board[targetIndex];\n    board[targetIndex] = null;\n    addLog(labelOf(actorKey) + " уничтожает карту «" + removed.name + "» на поле противника.");\n    return true;\n  }\n\n  function applyEffect(effect, actorKey, isCopy) {
+  function removeMostExpensiveEnemyCard(actorKey) {
+    const enemyKey = enemyOf(actorKey);
+    const board = players[enemyKey].board;
+    let targetIndex = -1;
+    board.forEach((card, index) => {
+      if (card && (targetIndex < 0 || card.cost > board[targetIndex].cost)) targetIndex = index;
+    });
+    if (targetIndex < 0) return false;
+    const removed = board[targetIndex];
+    board[targetIndex] = null;
+    addLog(labelOf(actorKey) + " уничтожает карту «" + removed.name + "» на поле противника.");
+    return true;
+  }
+
+  function removeMostExpensiveEnemyCard(actorKey) {
+    const board = players[enemyOf(actorKey)].board;
+    let targetIndex = -1;
+    board.forEach((card, index) => {
+      if (card && (targetIndex < 0 || card.cost > board[targetIndex].cost)) targetIndex = index;
+    });
+    if (targetIndex < 0) return false;
+    const removed = board[targetIndex];
+    board[targetIndex] = null;
+    addLog(labelOf(actorKey) + " уничтожает карту «" + removed.name + "» на поле противника.");
+    return true;
+  }
+
+  function applyEffect(effect, actorKey, isCopy) {
     const targetKey = enemyOf(actorKey);
     const actor = players[actorKey];
     const target = players[targetKey];
@@ -341,6 +380,26 @@
         const amount = Math.ceil(target.time * effect.amount / 100);
         const moved = transferTime(actorKey, amount);
         addLog(prefix + "Перенесено " + moved + " сек. (" + effect.amount + "% времени противника).");
+        break;
+      }
+      case "fieldGain": {
+        const count = actor.board.filter(Boolean).length;
+        const before = actor.time;
+        actor.time = Math.min(MAX_TIME, actor.time + count * effect.amount);
+        addLog(prefix + "Полевой сборщик: " + count + " карт на поле, получено " + (actor.time - before) + " сек.");
+        break;
+      }
+      case "fieldDrain": {
+        const removed = removeMostExpensiveEnemyCard(actorKey);
+        const moved = transferTime(actorKey, effect.amount);
+        addLog(prefix + (removed ? "Саботаж." : "Поле врага пусто.") + " Перенесено " + moved + " сек.");
+        break;
+      }
+      case "fieldTax": {
+        const count = target.board.filter(Boolean).length;
+        const drained = Math.min(count * effect.amount, target.time);
+        target.time -= drained;
+        addLog(prefix + "Давление разлома: противник теряет " + drained + " сек. за " + count + " карт на поле.");
         break;
       }
       case "cancel": {
@@ -474,7 +533,13 @@
       case "cancel": score += target.board.some(Boolean) ? 2.5 : 0.5; break;
       case "delayed": score += target.time > 5 ? 3.1 : 0.5; break;
       case "conditional": score += target.time < 20 ? 7 : 2.8; break;
-      case "percent": score += target.time * 0.045; break;\n      case "fieldGain": score += actor.board.filter(Boolean).length * 0.8; break;\n      case "fieldDrain": score += target.board.filter(Boolean).length * 1.4; break;\n      case "fieldTax": score += target.board.filter(Boolean).length * 1.1; break;
+      case "percent": score += target.time * 0.045; break;
+      case "fieldGain": score += actor.board.filter(Boolean).length * 0.8; break;
+      case "fieldDrain": score += target.board.filter(Boolean).length * 1.4; break;
+      case "fieldTax": score += target.board.filter(Boolean).length * 1.1; break;
+      case "fieldGain": score += actor.board.filter(Boolean).length * 0.8; break;
+      case "fieldDrain": score += target.board.filter(Boolean).length * 1.4; break;
+      case "fieldTax": score += target.board.filter(Boolean).length * 1.1; break;
       default: break;
     }
     return score;
