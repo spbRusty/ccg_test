@@ -2,7 +2,7 @@ import { CARD_TYPES, CARD_POOL } from "./cards/card-data";
 import { makeCardFace } from "./ui/card-face";
 import { createPlayer } from "./game/player";
 import { scoreCard } from "./ai/scoring";
-import type { PlayerKey, PlayerState } from "./cards/types";
+import type { CardInstance, PlayerKey, PlayerState } from "./cards/types";
 
 (() => {
   "use strict";
@@ -11,18 +11,19 @@ import type { PlayerKey, PlayerState } from "./cards/types";
   const HAND_SIZE = 5;
   const MAX_HAND = 7;
   const MAX_TIME = 60;
-  const selectedCardIds = new Set();
-  const selectedBoardSlots = new Set();
+  const selectedCardIds = new Set<string>();
+  const selectedBoardSlots = new Set<number>();
   let players: Record<PlayerKey, PlayerState>;
-  let turn;
-  let selectedCardId = null;
+  let turn: PlayerKey | null = null;
+  let selectedCardId: string | null = null;
   let lastEffect = null;
   let sequence = 0;
-  let aiTimer = null;
+  let aiTimer: ReturnType<typeof setTimeout> | null = null;
   let animatedCardId = null;
-  let audioContext = null;
+  let audioContext: AudioContext | null = null;
   let gameFinished = false;
-  let logs = [];
+  let logs: string[] = [];
+  let boardMoveSlot: number | null = null;
 
   const $ = (id) => document.getElementById(id);
   const enemyOf = (key) => key === "player" ? "opponent" : "player";
@@ -84,7 +85,7 @@ import type { PlayerKey, PlayerState } from "./cards/types";
   }
 
   function renderBoard() {
-    document.querySelectorAll(".slot").forEach((slot) => {
+    document.querySelectorAll<HTMLElement>(".slot").forEach((slot) => {
       const owner = slot.dataset.owner;
       const index = Number(slot.dataset.slot);
       const card = players[owner].board[index];
@@ -177,16 +178,16 @@ import type { PlayerKey, PlayerState } from "./cards/types";
     if (mobilePlayerFill) mobilePlayerFill.style.width = Math.max(0, players.player.time / START_TIME * 100) + "%";
     $("player-status").textContent = gameFinished ? "Игра завершена" : turn === "player" ? "Твой ход" : "Ход противника";
     $("opponent-status").textContent = gameFinished ? "Игра завершена" : turn === "opponent" ? "Ходит…" : "Ожидает ход";
-    $("pass-turn").disabled=turn!=="player"||gameFinished;
-    ["move-selected","return-selected","remove-selected","sacrifice-selected"].forEach(id=>{const b=$(id);if(b)b.disabled=turn!=="player"||gameFinished||!selectedBoardSlots.size;});
-    const clearButton=$("clear-board-selection");if(clearButton)clearButton.disabled=!selectedBoardSlots.size;
-    $("new-game").disabled = false;
+    ($("pass-turn") as HTMLButtonElement).disabled=turn!=="player"||gameFinished;
+    ["move-selected","return-selected","remove-selected","sacrifice-selected"].forEach(id=>{const b=$(id) as HTMLButtonElement | null;if(b)b.disabled=turn!=="player"||gameFinished||!selectedBoardSlots.size;});
+    const clearButton=$("clear-board-selection") as HTMLButtonElement | null;if(clearButton)clearButton.disabled=!selectedBoardSlots.size;
+    ($("new-game") as HTMLButtonElement).disabled = false;
   }
 
   let collectionMode = "player";
 
-  function groupedCards(cards) {
-    const groups = new Map();
+  function groupedCards(cards: CardInstance[]) {
+    const groups = new Map<string, { card: CardInstance; count: number }>();
     cards.forEach((card) => {
       if (!groups.has(card.key)) groups.set(card.key, { card, count: 0 });
       groups.get(card.key).count += 1;
@@ -208,7 +209,7 @@ import type { PlayerKey, PlayerState } from "./cards/types";
     $("player-collection-count").textContent=playerCards.length;
     $("opponent-collection-count").textContent=players.opponent.played.length;
     const allCards=collectionMode==="player"?playerCards:players.opponent.played;
-    const query=($("card-search")?.value||"").trim().toLocaleLowerCase("ru");
+    const query=(($("card-search") as HTMLInputElement | null)?.value||"").trim().toLocaleLowerCase("ru");
     const cards=query?allCards.filter(c=>(c.name+" "+c.description+" "+c.type).toLocaleLowerCase("ru").includes(query)):allCards;
     const groups = groupedCards(cards);
     if (!groups.length) {
@@ -597,7 +598,7 @@ import type { PlayerKey, PlayerState } from "./cards/types";
     $("tab-player-deck").addEventListener("click", () => { collectionMode = "player"; renderCollection(); });
     $("tab-opponent-deck").addEventListener("click", () => { collectionMode = "opponent"; renderCollection(); });
     document.addEventListener("mouseover", (event) => {
-      const face = event.target.closest(".card-face[data-card-key]");
+      const face = (event.target as Element | null)?.closest(".card-face[data-card-key]");
       if (face) showCardDetails(face.dataset.cardKey);
     });
     document.addEventListener("focusin", (event) => {
@@ -638,7 +639,7 @@ import type { PlayerKey, PlayerState } from "./cards/types";
     $("card-search").addEventListener("input",renderCollection);
 
     $("battlefield").addEventListener("click", (event) => {
-      const slot = event.target.closest(".slot");
+      const slot = (event.target as Element | null)?.closest(".slot");
       if (!slot || slot.dataset.owner !== "player" || turn !== "player" || gameFinished) return;
       const slotIndex = Number(slot.dataset.slot);
       const boardCard=players.player.board[slotIndex];
@@ -649,7 +650,7 @@ import type { PlayerKey, PlayerState } from "./cards/types";
     });
 
     $("battlefield").addEventListener("dragover", (event) => {
-      const slot = event.target.closest(".slot.player-slot");
+      const slot = (event.target as Element | null)?.closest(".slot.player-slot");
       if (!slot || turn !== "player" || gameFinished) return;
       event.preventDefault();
       event.dataTransfer.dropEffect = "move";
@@ -658,7 +659,7 @@ import type { PlayerKey, PlayerState } from "./cards/types";
 
     $("battlefield").addEventListener("dragleave", (event) => {
       const slot = event.target.closest(".slot");
-      if (slot && !slot.contains(event.relatedTarget)) slot.classList.remove("drop-target");
+      if (slot && !slot.contains(event.relatedTarget as Node | null)) slot.classList.remove("drop-target");
     });
 
     $("battlefield").addEventListener("drop", (event) => {
