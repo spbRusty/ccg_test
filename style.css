@@ -175,7 +175,8 @@ h2 { margin: 0; font-size: 15px; }
 .button:disabled { opacity: .4; cursor: not-allowed; }
 .button-quiet { color: var(--muted); background: #202633; }
 .button-primary { background: #c7f5f7; color: #102128; border-color: #c7f5f7; }
-.game-footer { grid-column: 1; grid-row: 1 / 6; min-height: 0; overflow: hidden; border: 1px solid #2b3342; border-radius: 12px; padding: 12px 10px; background: rgba(16,19,26,.92); display: flex; flex-direction: column; gap: 8px; }\n.log-heading { color: var(--gold); font-size: 10px; font-weight: 800; letter-spacing: .14em; }
+.game-footer { grid-column: 1; grid-row: 1 / 6; min-height: 0; overflow: hidden; border: 1px solid #2b3342; border-radius: 12px; padding: 12px 10px; background: rgba(16,19,26,.92); display: flex; flex-direction: column; gap: 8px; }
+.log-heading { color: var(--gold); font-size: 10px; font-weight: 800; letter-spacing: .14em; }
 #game-message { margin: 0; color: #d7deea; font-size: 11px; }
 .event-log { display: flex; flex-direction: column-reverse; gap: 7px; min-height: 0; flex: 1; overflow: auto; color: var(--muted); font-size: 10px; }
 .event-log p { margin: 0; }
@@ -191,8 +192,32 @@ h2 { margin: 0; font-size: 15px; }
   .card-description { font-size: 10px; }
   .slot .card-description { display: block; font-size: 9px; }
 }
+@media (max-width: 600px) {
+  .game-shell { gap: 5px; padding: 5px; grid-template-columns: 102px minmax(0, 1fr); }
+  h1 { font-size: 17px; }
+  .eyebrow { font-size: 8px; }
+  .game-footer { padding: 6px; gap: 6px; }
+  .log-heading { font-size: 8px; }
+  .event-log { font-size: 8px; gap: 5px; }
+  .player-heading > div:first-child { gap: 4px; }
+  .subtle { font-size: 9px; }
+  .clock { font-size: 18px; }
+  .player-hand { gap: 3px; }
+  .hand-card .card-face { min-height: 72px; padding: 5px 4px; }
+  .card-name { font-size: 8px; }
+  .card-type { font-size: 7px; }
+  .card-description { font-size: 7px; }
+  .hand-heading { gap: 4px; }
+  .button { padding: 6px; font-size: 9px; }
+}
 @media (max-width: 430px) {
-  .game-shell { gap: 6px 8px; padding: 7px; grid-template-columns: 128px minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr) auto auto; }
+  .game-shell { grid-template-columns: 88px minmax(0, 1fr); }
+  .player-panel { padding: 6px; }
+  .battlefield { padding: 5px 4px; gap: 4px; }
+  .card-face { padding: 4px 3px; }
+  .slot .card-description { font-size: 7px; }
+  .hand-card .card-face { min-height: 64px; }
+}
   .player-panel { padding: 8px 10px; }
   .battlefield { padding: 8px 6px 9px; gap: 5px; }
   .slot, .slot .card-face { min-height: 0; }
@@ -204,14 +229,24 @@ h2 { margin: 0; font-size: 15px; }
   .hand-card .card-description { font-size: 8px; }
   .card-symbol { font-size: 15px; }
   .hand-heading { align-items: center; }
-  .hand-heading .subtle { font-size: 9px; }\n  .game-footer { padding: 8px 7px; gap: 6px; }\n  .event-log { font-size: 9px; gap: 5px; }\n  #game-message { font-size: 10px; }\n  .card-description { font-size: 8px; }
+  .hand-heading .subtle { font-size: 9px; }
+  .game-footer { padding: 8px 7px; gap: 6px; }
+  .event-log { font-size: 9px; gap: 5px; }
+  #game-message { font-size: 10px; }
+  .card-description { font-size: 8px; }
   .button { padding: 7px 8px; font-size: 10px; }
   .clock { font-size: 22px; }
 }
-@media (max-height: 760px) and (min-width: 500px) {
-  .game-shell { gap: 7px; padding-top: 9px; }
-  .slot, .card-face { min-height: 76px; }
-  .slot .card-face { min-height: 74px; }
-  .hand-card .card-face { min-height: 94px; }
-  .battlefield { gap: 5px; padding-top: 8px; padding-bottom: 8px; }
+@media (max-height: 760px) {
+  .game-shell { padding-top: 6px; padding-bottom: 6px; gap: 5px; }
+  .battlefield { gap: 4px; padding-top: 5px; padding-bottom: 5px; }
+  .player-panel { padding-top: 6px; padding-bottom: 6px; }
+  .hand-card .card-face { min-height: 70px; }
+  .card-description { font-size: 8px; }
+}
+@media (max-height: 560px) {
+  .topbar h1 { font-size: 18px; }
+  .battlefield { gap: 3px; }
+  .card-description { font-size: 7px !important; }
+  .hand-card .card-face { min-height: 58px; }
 }
