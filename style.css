@@ -571,3 +571,154 @@ h2 { margin: 0; font-size: 15px; }
     min-height: 28px;
   }
 }
+
+
+/* Карта — изображение без внешней рамки; подписи лежат поверх иллюстрации */
+.opponent-panel, .own-panel { display: none !important; }
+.duel-timebar {
+  grid-column: 2;
+  grid-row: 2;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 34px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 9px 14px;
+  border: 1px solid #30394a;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #1c222f, #141923);
+}
+.duel-time-side { min-width: 0; }
+.duel-time-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 5px;
+  color: #dce4ef;
+  font-size: 11px;
+}
+.duel-time-label strong { font-size: 18px; line-height: 1; font-variant-numeric: tabular-nums; }
+.enemy-time-side .duel-time-label { color: #f29aa4; }
+.own-time-side .duel-time-label { color: #86e5ed; }
+.duel-track { height: 9px; overflow: hidden; border-radius: 8px; background: #0c1017; border: 1px solid #3a4353; }
+.duel-fill { height: 100%; width: 100%; border-radius: inherit; transition: width .25s ease; }
+.enemy-duel-track { display: flex; justify-content: flex-end; }
+.enemy-duel-fill { background: linear-gradient(90deg, #9e3449, #ff727e); }
+.own-duel-fill { background: linear-gradient(90deg, #62d9e8, #238fa7); }
+.duel-time-center { text-align: center; font-size: 9px; font-weight: 900; color: #f0c875; letter-spacing: .04em; }
+
+.card-face {
+  padding: 0 !important;
+  border-radius: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  isolation: isolate;
+}
+.card-face::before { display: none; }
+.card-face .card-art {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  flex: none;
+  object-fit: cover;
+  object-position: center;
+  border: 0;
+  border-radius: 0;
+  background: #111722;
+}
+.card-face::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(5,8,14,.74) 0%, transparent 25%, transparent 42%, rgba(5,8,14,.1) 55%, rgba(5,8,14,.93) 100%);
+}
+.card-face > .card-top {
+  position: absolute;
+  z-index: 2;
+  top: 5px;
+  left: 5px;
+  right: 5px;
+  align-items: flex-start;
+}
+.card-face .card-cost {
+  background: rgba(8,12,19,.9);
+  border: 1px solid #ffffff50;
+  color: #ffe29a;
+  font-size: 11px;
+  padding: 2px 5px;
+  text-shadow: 0 1px 3px #000;
+}
+.card-face > .card-body {
+  position: absolute;
+  z-index: 2;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 18px 6px 6px;
+  background: linear-gradient(180deg, transparent, rgba(5,8,14,.92) 27%);
+}
+.card-face .card-name {
+  color: #fff;
+  font-size: clamp(9px, 1.25vw, 13px);
+  line-height: 1.1;
+  text-shadow: 0 1px 3px #000, 0 1px 7px #000;
+}
+.card-face .card-description {
+  margin-top: 3px;
+  color: #f0f2f7;
+  font-size: clamp(7px, .85vw, 10px);
+  line-height: 1.15;
+  text-shadow: 0 1px 3px #000, 0 1px 6px #000;
+}
+.hand-card, .slot.filled, .collection-card {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  overflow: hidden;
+}
+.hand-card .card-face, .slot .card-face {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border-radius: 0 !important;
+}
+.slot.filled { overflow: hidden; }
+.details-card-preview {
+  width: min(100%, 230px);
+  aspect-ratio: 2 / 3;
+  min-height: 210px;
+  height: auto;
+  margin: 0 auto 12px;
+  overflow: hidden;
+  position: relative;
+}
+.card-details-content { display: flex; flex-direction: column; align-items: stretch; gap: 9px; }
+.details-card-preview .card-name { font-size: 17px; }
+.details-card-preview .card-description { font-size: 12px; line-height: 1.25; }
+.details-category { margin: 0; }
+.details-stats { margin: 0; }
+.collection-card .card-face { min-height: 55px; }
+.collection-card .card-face .card-art { display: none; }
+
+@media (max-width: 700px) {
+  .duel-timebar {
+    grid-column: 1;
+    grid-row: 2;
+    grid-template-columns: minmax(0, 1fr) 26px minmax(0, 1fr);
+    gap: 7px;
+    padding: 10px 11px;
+  }
+  .duel-time-label strong { font-size: 19px; }
+  .duel-track { height: 11px; }
+  .battlefield { grid-row: 3; }
+  .hand-area { grid-row: 4; }
+  .details-card-preview { min-height: 180px; width: min(100%, 200px); }
+  .card-face .card-description { font-size: clamp(7px, 2vw, 10px); }
+  .slot .card-face .card-name { font-size: clamp(9px, 2.8vw, 12px); }
+}
