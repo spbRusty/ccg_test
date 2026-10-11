@@ -357,3 +357,15 @@ h2 { margin: 0; font-size: 15px; }
 @media (max-height: 560px) {
   .slot .card-description { display: none; }
 }
+
+
+/* Counts in deck tabs; six battlefield slots per player on desktop */
+.collection-tab { display: flex; align-items: center; justify-content: center; gap: 5px; }
+.tab-count { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; padding: 2px 5px; border-radius: 5px; background: #101620; border: 1px solid #465166; color: var(--gold); font-size: 10px; font-weight: 850; font-variant-numeric: tabular-nums; }
+@media (min-width: 701px) {
+  .card-row { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .card-row:has(.slot):empty { display: none; }
+}
+@media (max-width: 700px) {
+  .card-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
