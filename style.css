@@ -1268,3 +1268,7 @@ h2 { margin: 0; font-size: 15px; }
     grid-template-rows: auto auto auto !important;
   }
 }
+
+
+/* Multi-card turns and the 500-card library */
+.hand-actions,.board-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.board-actions{padding:0 0 12px}.board-actions .button,.hand-actions .button{font-size:12px;padding:8px 10px}.card-row .slot.board-selected{outline:2px solid #ffc46b;outline-offset:2px;box-shadow:0 0 18px #ffc46b55}.card-charge,.card-evolution{position:absolute;z-index:5;right:5px;bottom:5px;padding:3px 5px;border-radius:8px;background:#10131aeb;color:#ffc46b;font-size:10px;font-weight:800;border:1px solid #ffc46b88;pointer-events:none}.card-evolution{right:auto;left:5px;color:#a9a0ff;border-color:#a9a0ff88}.collection-card{cursor:pointer}.collection-card .card-face{pointer-events:none}.card-search{width:100%;box-sizing:border-box;margin:8px 0;padding:9px 11px;border-radius:9px;border:1px solid #394354;background:#121722;color:inherit;font:inherit}@media(max-width:700px){.hand-actions{width:100%}.hand-actions .button{flex:1}.board-actions .button{flex:1}.board-actions{gap:5px}}
