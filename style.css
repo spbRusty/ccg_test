@@ -1201,3 +1201,70 @@ h2 { margin: 0; font-size: 15px; }
     max-height: var(--play-card-height) !important;
   }
 }
+
+
+/* Поле на всю ширину; пропорции каждой карты строго 2:3 */
+.battlefield {
+  grid-template-rows: auto auto auto !important;
+}
+#opponent-row-1, #player-row-1 {
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  justify-content: stretch !important;
+  width: 100%;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  gap: clamp(5px, .8vw, 10px);
+}
+.slot {
+  width: 100%;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  aspect-ratio: 2 / 3 !important;
+}
+.slot .card-face {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  aspect-ratio: 2 / 3 !important;
+}
+.player-hand {
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  justify-content: stretch !important;
+  width: 100%;
+  min-height: 0 !important;
+}
+.hand-card {
+  width: 100%;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  aspect-ratio: 2 / 3 !important;
+}
+.hand-card .card-face {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  aspect-ratio: 2 / 3 !important;
+}
+.slot.card-entering {
+  animation-duration: .9s !important;
+}
+.slot.card-entering .card-face,
+.slot.card-entering .card-face .card-art {
+  animation-duration: .9s !important;
+}
+.slot.card-entering::after {
+  animation-duration: .8s !important;
+}
+@media (max-width: 700px) {
+  #opponent-row-1, #player-row-1 {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+  .battlefield {
+    grid-template-rows: auto auto auto !important;
+  }
+}
