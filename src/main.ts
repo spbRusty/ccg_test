@@ -1,5 +1,8 @@
 import { CARD_TYPES, CARD_POOL } from "./cards/card-data";
 import { makeCardFace } from "./ui/card-face";
+import { createPlayer } from "./game/player";
+import { scoreCard } from "./ai/scoring";
+import type { PlayerKey, PlayerState } from "./cards/types";
 
 (() => {
   "use strict";
@@ -10,7 +13,7 @@ import { makeCardFace } from "./ui/card-face";
   const MAX_TIME = 60;
   const selectedCardIds = new Set();
   const selectedBoardSlots = new Set();
-  let players;
+  let players: Record<PlayerKey, PlayerState>;
   let turn;
   let selectedCardId = null;
   let lastEffect = null;
@@ -25,35 +28,6 @@ import { makeCardFace } from "./ui/card-face";
   const enemyOf = (key) => key === "player" ? "opponent" : "player";
   const labelOf = (key) => key === "player" ? "Ты" : "Противник";
 
-  function shuffle(items) {
-    for (let i = items.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [items[i], items[j]] = [items[j], items[i]];
-    }
-    return items;
-  }
-
-  function makeDeck() {
-    return shuffle(CARD_POOL.slice()).slice(0,30).map(key=>({...CARD_TYPES[key],key,id:"card-"+(++sequence),charges:0,shield:0,evolution:0}));
-  }
-
-  function makePlayer(name) {
-    return {
-      name,
-      time: START_TIME,
-      hand: [],
-      deck: makeDeck(),
-      board: Array(6).fill(null),
-      played: [],
-      discard: [],
-      discount: 0,
-      penalty: 0,
-      delayed: [],
-      turnPlays: 0,
-      hiddenTrap: 0,
-      ruleBonus: 0
-    };
-  }
 
   function drawCard(key) {
     const player = players[key];
@@ -573,39 +547,6 @@ import { makeCardFace } from "./ui/card-face";
     startTurn("opponent");
   }
 
-  function scoreCard(card, key) {
-    const actor = players[key];
-    const target = players[enemyOf(key)];
-    const cost = cardCost(key, card);
-    let score = Math.random() * 0.8 - cost * 0.16;
-    switch (card.type) {
-      case "gain": score += (START_TIME - actor.time) * 0.09 + card.amount * 0.8; break;
-      case "steal": score += Math.min(card.amount, target.time) * 1.1; break;
-      case "swap": score += (target.time - actor.time) * 0.12; break;
-      case "discount": score += actor.time < 20 ? 0.5 : 2.5; break;
-      case "slow": score += target.time > 10 ? 2.5 : 0.5; break;
-      case "copy": score += lastEffect ? 3.2 : -100; break;
-      case "cancel": score += target.board.some(Boolean) ? 2.5 : 0.5; break;
-      case "delayed": score += target.time > 5 ? 3.1 : 0.5; break;
-      case "conditional": score += target.time < 20 ? 7 : 2.8; break;
-      case "percent": score += target.time * 0.045; break;
-      case "fieldGain": score += actor.board.filter(Boolean).length * 0.8; break;
-      case "fieldDrain": score += target.board.filter(Boolean).length * 1.4; break;
-      case "fieldTax": score += target.board.filter(Boolean).length * 1.1; break;
-      case "mill": score += Math.min(card.amount, target.deck.length) * 1.4; break;
-      case "hijack": score += target.hand.length > 0 && actor.hand.length < MAX_HAND ? 3.6 : -1; break;
-      case "accumulate": score+=3;break;case "discharge":score+=(card.charges||0)*card.amount;break;
-      case "transferCharge":score+=actor.board.some(c=>c&&(c.charges||0)>0)?2:0;break;
-      case "massDestroy":score+=target.board.filter(Boolean).length*1.2;break;case "return":score+=actor.board.filter(Boolean).length*.7;break;
-      case "move":score+=1;break;case "evolve":score+=actor.board.filter(Boolean).length*.8;break;
-      case "combo":score+=actor.board.filter(Boolean).length*card.amount*.4;break;case "shield":score+=2;break;
-      case "overheat":score+=actor.board.filter(Boolean).length*.8;break;
-      case "massPlay":score+=actor.hand.length<5?3:1;break;case "trap":score+=2.4;break;case "ruleChange":score+=2;break;case "random":score+=1.8;break;case "duplicate":score+=actor.board.filter(Boolean).length?2.5:-1;break;case "sacrifice":score+=actor.board.filter(Boolean).length?2:0;break;
-      default: break;
-    }
-    return score;
-  }
-
   function runAI() {
     aiTimer = null;
     if (turn !== "opponent" || gameFinished) return;
@@ -639,8 +580,8 @@ import { makeCardFace } from "./ui/card-face";
     lastEffect = null;
     gameFinished = false;
     players = {
-      player: makePlayer("Ты"),
-      opponent: makePlayer("Противник")
+      player: createPlayer("Ты", START_TIME, () => "card-" + (++sequence)),
+      opponent: createPlayer("Противник", START_TIME, () => "card-" + (++sequence))
     };
     for (let i = 0; i < HAND_SIZE; i++) {
       drawCard("player");
