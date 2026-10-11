@@ -185,7 +185,11 @@
     art.loading = "lazy";
     art.decoding = "async";
 
-    face.append(art, top, body);
+    const shine = document.createElement("span");
+    shine.className = "card-shine";
+    shine.setAttribute("aria-hidden", "true");
+
+    face.append(art, shine, top, body);
     return face;
   }
 
@@ -252,6 +256,20 @@
       button.setAttribute("aria-label", card.name + ", стоимость " + card.cost + " секунд. " + card.description);
       button.title = card.description + " Стоимость: " + cardCost("player", card) + " сек.";
       button.appendChild(makeCardFace(card, true));
+      button.addEventListener("pointermove", (event) => {
+        if (event.pointerType === "touch" || button.classList.contains("dragging")) return;
+        const rect = button.getBoundingClientRect();
+        const x = (event.clientX - rect.left) / rect.width;
+        const y = (event.clientY - rect.top) / rect.height;
+        button.style.setProperty("--tilt-x", ((0.5 - y) * 12).toFixed(2) + "deg");
+        button.style.setProperty("--tilt-y", ((x - 0.5) * 12).toFixed(2) + "deg");
+        button.style.setProperty("--shine-x", (x * 100).toFixed(1) + "%");
+        button.style.setProperty("--shine-y", (y * 100).toFixed(1) + "%");
+      });
+      button.addEventListener("pointerleave", () => {
+        button.style.setProperty("--tilt-x", "0deg");
+        button.style.setProperty("--tilt-y", "0deg");
+      });
       button.addEventListener("click", () => {
         if (turn !== "player" || gameFinished) return;
         selectedCardId = selectedCardId === card.id ? null : card.id;
@@ -267,9 +285,10 @@
         selectedCardId = card.id;
         event.dataTransfer.setData("text/plain", card.id);
         event.dataTransfer.effectAllowed = "move";
-        button.classList.add("selected");
+        button.classList.add("selected", "dragging");
       });
       button.addEventListener("dragend", () => {
+        button.classList.remove("dragging");
         document.querySelectorAll(".slot.drop-target").forEach((slot) => slot.classList.remove("drop-target"));
       });
       hand.appendChild(button);
