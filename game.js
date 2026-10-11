@@ -282,8 +282,10 @@
     $("tab-opponent-deck").setAttribute("aria-selected", String(collectionMode === "opponent"));
     list.replaceChildren();
     // Счётчики соответствуют количеству карт, отображаемых во вкладках.
-    const playerCards=CARD_POOL.map(key=>({...CARD_TYPES[key],key}));
-    $("player-collection-count").textContent=playerCards.length;$("opponent-collection-count").textContent=players.opponent.played.length;
+    // Показываем только карты, которые ещё остались в колоде.
+    const playerCards=players.player.deck;
+    $("player-collection-count").textContent=playerCards.length;
+    $("opponent-collection-count").textContent=players.opponent.played.length;
     const allCards=collectionMode==="player"?playerCards:players.opponent.played;
     const query=($("card-search")?.value||"").trim().toLocaleLowerCase("ru");
     const cards=query?allCards.filter(c=>(c.name+" "+c.description+" "+c.type).toLocaleLowerCase("ru").includes(query)):allCards;
@@ -291,7 +293,7 @@
     if (!groups.length) {
       const empty = document.createElement("p");
       empty.className = "collection-empty";
-      empty.textContent=collectionMode==="player"?"В библиотеке пока нет карт.":"Противник ещё не разыграл ни одной карты.";
+      empty.textContent=collectionMode==="player"?"В колоде больше не осталось карт.":"Противник ещё не разыграл ни одной карты.";
       list.appendChild(empty);
       return;
     }
