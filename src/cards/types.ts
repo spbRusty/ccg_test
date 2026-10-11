@@ -24,3 +24,28 @@ export interface CardViewData extends CardDefinition {
   shield?: number;
   evolution?: number;
 }
+
+export type PlayerKey = "player" | "opponent";
+
+export interface CardInstance extends CardDefinition {
+  id: string;
+  charges: number;
+  shield: number;
+  evolution: number;
+}
+
+export interface PlayerState {
+  name: string;
+  time: number;
+  hand: CardInstance[];
+  deck: CardInstance[];
+  board: Array<CardInstance | null>;
+  played: CardInstance[];
+  discard: CardInstance[];
+  discount: number;
+  penalty: number;
+  delayed: unknown[];
+  turnPlays: number;
+  hiddenTrap: number;
+  ruleBonus: number;
+}
