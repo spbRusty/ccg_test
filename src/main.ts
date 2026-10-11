@@ -598,7 +598,7 @@ import type { CardInstance, PlayerKey, PlayerState } from "./cards/types";
     $("tab-player-deck").addEventListener("click", () => { collectionMode = "player"; renderCollection(); });
     $("tab-opponent-deck").addEventListener("click", () => { collectionMode = "opponent"; renderCollection(); });
     document.addEventListener("mouseover", (event) => {
-      const face = (event.target as Element | null)?.closest(".card-face[data-card-key]");
+      const face = (event.target as Element | null)?.closest<HTMLElement>(".card-face[data-card-key]");
       if (face) showCardDetails(face.dataset.cardKey);
     });
     document.addEventListener("focusin", (event) => {
@@ -639,7 +639,7 @@ import type { CardInstance, PlayerKey, PlayerState } from "./cards/types";
     $("card-search").addEventListener("input",renderCollection);
 
     $("battlefield").addEventListener("click", (event) => {
-      const slot = (event.target as Element | null)?.closest(".slot");
+      const slot = (event.target as Element | null)?.closest<HTMLElement>(".slot");
       if (!slot || slot.dataset.owner !== "player" || turn !== "player" || gameFinished) return;
       const slotIndex = Number(slot.dataset.slot);
       const boardCard=players.player.board[slotIndex];
