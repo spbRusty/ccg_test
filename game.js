@@ -185,7 +185,7 @@
     art.loading = "lazy";
     art.decoding = "async";
 
-    face.append(top, art, body);
+    face.append(art, top, body);
     return face;
   }
 
@@ -352,26 +352,23 @@
     const content = $("card-details-content");
     if (!card || !content) return;
     content.replaceChildren();
-    const title = document.createElement("h3");
-    title.className = "details-card-name";
-    title.textContent = card.name;
-    title.style.color = card.color;
+
+    const preview = makeCardFace(card, true);
+    preview.classList.add("details-card-preview");
+    preview.setAttribute("aria-label", card.name + ". " + card.description + " Стоимость: " + card.cost + " секунд.");
+
     const category = document.createElement("p");
     category.className = "details-category";
     category.textContent = card.category;
-    const stats = document.createElement("div");
-    stats.className = "details-stats";
-    const cost = document.createElement("span");
-    cost.className = "details-stat";
-    cost.textContent = "Стоимость: " + card.cost + " сек.";
-    const effect = document.createElement("span");
-    effect.className = "details-stat";
-    effect.textContent = "Сила эффекта: " + card.amount;
-    stats.append(cost, effect);
-    const description = document.createElement("p");
-    description.className = "details-description";
-    description.textContent = card.description;
-    content.append(title, category, stats, description);
+
+    const effect = document.createElement("div");
+    effect.className = "details-stats";
+    const stat = document.createElement("span");
+    stat.className = "details-stat";
+    stat.textContent = "Сила эффекта: " + card.amount;
+    effect.appendChild(stat);
+
+    content.append(preview, category, effect);
   }
 
   function render() {
