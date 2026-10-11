@@ -48,7 +48,7 @@
         <div class="clock"><span id="player-time">60</span><small>сек.</small></div>
       </div>
       <div class="time-track"><div id="player-time-bar" class="time-fill own-fill"></div></div>
-      <div class="panel-meta"><span>Колода: <b id="player-deck-count">35</b></span><span id="player-status">Твой ход</span></div>
+      <div class="panel-meta"><span id="player-status">Твой ход</span></div>
     </section>
 
     <section class="hand-area">
@@ -67,8 +67,8 @@
     <aside class="collection-panel" aria-label="Колоды и описание карты">
       <section class="collection-top">
         <div class="collection-tabs" role="tablist" aria-label="Выбор колоды">
-          <button id="tab-player-deck" class="collection-tab active" type="button" role="tab" aria-selected="true">Моя колода</button>
-          <button id="tab-opponent-deck" class="collection-tab" type="button" role="tab" aria-selected="false">Колода противника</button>
+          <button id="tab-player-deck" class="collection-tab active" type="button" role="tab" aria-selected="true">Моя колода <span id="player-collection-count" class="tab-count">48</span></button>
+          <button id="tab-opponent-deck" class="collection-tab" type="button" role="tab" aria-selected="false">Колода противника <span id="opponent-collection-count" class="tab-count">48</span></button>
         </div>
         <div id="collection-list" class="collection-list" role="tabpanel" aria-live="polite"></div>
       </section>
