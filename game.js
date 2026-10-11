@@ -119,13 +119,14 @@
   }
 
   function addLog(message) {
-    logs.push(message);
+    logs.unshift(message);
     $("event-log").replaceChildren();
     logs.forEach((line) => {
       const p = document.createElement("p");
       p.textContent = line;
       $("event-log").appendChild(p);
     });
+    $("event-log").scrollTop = 0;
   }
 
   function setMessage(message) {
