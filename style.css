@@ -984,3 +984,146 @@ h2 { margin: 0; font-size: 15px; }
 @media (max-width: 430px) {
   :root { --card-height: 64px; }
 }
+
+
+/* Исправленная раскладка: единая высота карт и индикатор времени между полями */
+:root { --play-card-height: 132px; }
+.game-shell {
+  grid-template-rows: auto minmax(0, 1fr) auto !important;
+}
+.topbar { grid-column: 2; grid-row: 1; }
+.battlefield {
+  grid-column: 2 !important;
+  grid-row: 2 !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: var(--play-card-height) auto var(--play-card-height);
+  align-content: center;
+  align-items: stretch;
+  gap: 10px;
+  min-height: 0;
+  height: auto;
+  overflow: visible;
+  padding: 10px;
+}
+#opponent-row-1, #player-row-1 {
+  display: grid !important;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  height: var(--play-card-height);
+  min-height: var(--play-card-height);
+  max-height: var(--play-card-height);
+  gap: clamp(5px, .8vw, 10px);
+}
+#opponent-row-2, #player-row-2 { display: none !important; }
+.slot {
+  height: var(--play-card-height);
+  min-height: var(--play-card-height);
+  max-height: var(--play-card-height);
+  min-width: 0;
+  overflow: hidden;
+  padding: 0;
+}
+.slot .card-face {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
+  flex: 1 1 auto !important;
+  align-self: stretch !important;
+  position: relative;
+  overflow: hidden;
+}
+.duel-timebar {
+  display: grid !important;
+  grid-column: 1;
+  grid-row: 2;
+  align-self: center;
+  width: 100%;
+  margin: 0;
+}
+.hand-area {
+  grid-column: 2 !important;
+  grid-row: 3 !important;
+  min-height: var(--play-card-height);
+  align-self: start;
+}
+.player-hand {
+  min-height: var(--play-card-height) !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: stretch;
+}
+.hand-card {
+  height: var(--play-card-height) !important;
+  min-height: var(--play-card-height) !important;
+  max-height: var(--play-card-height) !important;
+}
+.hand-card .card-face {
+  display: block;
+  width: 100% !important;
+  height: var(--play-card-height) !important;
+  min-height: var(--play-card-height) !important;
+  max-height: var(--play-card-height) !important;
+  aspect-ratio: auto !important;
+  position: relative;
+  overflow: hidden;
+}
+@media (max-width: 1050px) and (min-width: 701px) {
+  #opponent-row-1, #player-row-1 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+}
+@media (max-width: 700px) {
+  .game-shell {
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: auto auto auto !important;
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+    align-content: start;
+  }
+  .topbar { grid-column: 1 !important; grid-row: 1 !important; }
+  .battlefield {
+    grid-column: 1 !important;
+    grid-row: 2 !important;
+    grid-template-rows: var(--play-card-height) auto var(--play-card-height);
+    min-height: 0 !important;
+    height: auto;
+    padding: 8px 6px;
+    gap: 8px;
+  }
+  #opponent-row-1, #player-row-1 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    height: var(--play-card-height);
+    min-height: var(--play-card-height);
+    max-height: var(--play-card-height);
+    gap: 5px;
+  }
+  .slot {
+    height: var(--play-card-height);
+    min-height: var(--play-card-height);
+    max-height: var(--play-card-height);
+  }
+  .duel-timebar {
+    grid-column: 1 !important;
+    grid-row: 2 !important;
+    grid-template-columns: minmax(0, 1fr) 26px minmax(0, 1fr);
+    padding: 8px 9px;
+    gap: 7px;
+  }
+  .duel-time-label strong { font-size: 18px; }
+  .duel-track { height: 9px; }
+  .hand-area {
+    grid-column: 1 !important;
+    grid-row: 3 !important;
+    min-height: var(--play-card-height);
+  }
+  .player-hand { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+  .hand-card, .hand-card .card-face {
+    height: var(--play-card-height) !important;
+    min-height: var(--play-card-height) !important;
+    max-height: var(--play-card-height) !important;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .slot.card-entering .card-face { animation: none !important; }
+}
