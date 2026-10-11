@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { CARD_POOL, CARD_TYPES } from "./card-data";
 import type { CardEffectType } from "./types";
+import { createDeck, createPlayer } from "../game/player";
 
 const supportedEffects: CardEffectType[] = [
   "gain", "steal", "swap", "discount", "slow", "copy", "cancel",
@@ -29,5 +30,27 @@ describe("card library", () => {
       expect(supportedEffects).toContain(card.type);
       expect(card.description.trim().length).toBeGreaterThan(0);
     }
+  });
+});
+
+
+describe("player factory", () => {
+  it("creates a 30-card deck with unique instance IDs", () => {
+    let sequence = 0;
+    const deck = createDeck(() => `test-card-${++sequence}`);
+    expect(deck).toHaveLength(30);
+    expect(new Set(deck.map((card) => card.id)).size).toBe(30);
+    expect(deck.every((card) => CARD_TYPES[card.key])).toBe(true);
+    expect(deck.every((card) => card.charges === 0 && card.shield === 0 && card.evolution === 0)).toBe(true);
+  });
+
+  it("creates a player with six empty board slots and a full deck", () => {
+    let sequence = 0;
+    const player = createPlayer("Тест", 60, () => `test-card-${++sequence}`);
+    expect(player.name).toBe("Тест");
+    expect(player.time).toBe(60);
+    expect(player.deck).toHaveLength(30);
+    expect(player.board).toHaveLength(6);
+    expect(player.board.every((card) => card === null)).toBe(true);
   });
 });
