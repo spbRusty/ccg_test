@@ -5,74 +5,38 @@
   const HAND_SIZE = 5;
   const MAX_HAND = 7;
   const MAX_TIME = 60;
-  const CARD_TYPES = {
-    impulse: {
-      name: "Импульс", cost: 1, type: "gain", amount: 2, symbol: "↗",
-      description: "Верни себе 2 секунды.", color: "#8ce0a0", category: "Подзарядка"
-    },
-    reserve: {
-      name: "Резерв времени", cost: 3, type: "gain", amount: 5, symbol: "+",
-      description: "Получи 5 секунд.", color: "#62d9e8", category: "Подзарядка"
-    },
-    thief: {
-      name: "Вор времени", cost: 5, type: "steal", amount: 4, symbol: "⇢",
-      description: "Перенеси 4 секунды от врага себе.", color: "#ff8c78", category: "Перенос"
-    },
-    exchange: {
-      name: "Перестановка", cost: 6, type: "swap", amount: 0, symbol: "⇄",
-      description: "Поменяйся запасами времени.", color: "#f0c875", category: "Аномалия"
-    },
-    accelerator: {
-      name: "Ускоритель", cost: 2, type: "discount", amount: 3, symbol: "»",
-      description: "Следующая твоя карта дешевле на 3.", color: "#a9a0ff", category: "Ускорение"
-    },
-    slow: {
-      name: "Замедлитель", cost: 4, type: "slow", amount: 3, symbol: "…",
-      description: "Следующая карта врага дороже на 3.", color: "#d59aff", category: "Замедление"
-    },
-    echo: {
-      name: "Эхо", cost: 4, type: "copy", amount: 0, symbol: "⟲",
-      description: "Повтори эффект предыдущей карты.", color: "#80b7ff", category: "Копирование"
-    },
-    disruptor: {
-      name: "Срыв", cost: 3, type: "cancel", amount: 3, symbol: "×",
-      description: "Убери последнюю карту врага с поля и получи 3 секунды.", color: "#ff727e", category: "Отмена"
-    },
-    delayed: {
-      name: "Отложенный импульс", cost: 3, type: "delayed", amount: 5, symbol: "◷",
-      description: "В начале следующего хода враг потеряет 5 секунд, ты их получишь.", color: "#f0c875", category: "Задержка"
-    },
-    critical: {
-      name: "Критический момент", cost: 3, type: "conditional", amount: 0, symbol: "!",
-      description: "Забери 7 секунд, если у врага меньше 20; иначе 3.", color: "#ff9d6e", category: "Условие"
-    },
-    percentage: {
-      name: "Доля секунды", cost: 4, type: "percent", amount: 10, symbol: "%",
-      description: "Забери 10% оставшегося времени врага.", color: "#68d9c1", category: "Процент"
-    },
-    scavenger: {
-      name: "Полевой сборщик", cost: 3, type: "fieldGain", amount: 1, symbol: "⌂",
-      description: "Получи 1 секунду за каждую свою карту на поле, включая эту.", color: "#a8d879", category: "Синергия поля"
-    },
-    disrupt: {
-      name: "Полевой саботаж", cost: 4, type: "fieldDrain", amount: 3, symbol: "⌁",
-      description: "Уничтожь самую дорогую карту врага и забери 3 секунды.", color: "#ff727e", category: "Саботаж поля"
-    },
-    pressure: {
-      name: "Давление разлома", cost: 3, type: "fieldTax", amount: 1, symbol: "⚡",
-      description: "Враг теряет 1 секунду за каждую свою карту на поле.", color: "#e6a0ff", category: "Атака поля"
-    },
-    mill: {
-      name: "Мельница", cost: 3, type: "mill", amount: 2, symbol: "⌫",
-      description: "Сожги 2 верхние карты колоды противника.", color: "#f078a8", category: "Саботаж колоды"
-    },
-    hijack: {
-      name: "Перехват", cost: 4, type: "hijack", amount: 1, symbol: "⇥",
-      description: "Укради случайную карту из руки противника. Она останется у тебя.", color: "#ffc46b", category: "Кража карты"
+  const CARD_TYPES = (() => {
+    const definitions = {};
+    const effects = ["gain","steal","swap","discount","slow","copy","cancel","delayed","conditional","percent","fieldGain","fieldDrain","fieldTax","mill","hijack","accumulate","discharge","transferCharge","massDestroy","return","move","evolve","combo","shield","overheat"];
+    const prefixes = ["Аварийный","Квантовый","Паразитный","Реверсивный","Хрональный","Нестабильный","Зеркальный","Гравитационный","Пульсирующий","Забытый","Призрачный","Каскадный","Резонансный","Синтетический","Сломанный","Петлевой","Теневой","Искровой","Пограничный","Нулевой","Распадающийся","Сверхпроводящий","Искажённый","Последний","Невозможный"];
+    const nouns = ["Импульс","Контур","Реактор","Протокол","Модуль","Сдвиг","Узел","Фантом","Каскад","Сигнал","Парадокс","Резонатор","Разлом","Триггер","Механизм","Осколок","Преобразователь","Архив","Маятник","Сингулярность"];
+    const colors = ["#8ce0a0","#62d9e8","#ff8c78","#f0c875","#a9a0ff","#d59aff","#80b7ff","#ff727e","#68d9c1","#e6a0ff"];
+    const symbols = ["↗","⇢","⇄","»","…","⟲","×","◷","!","%","⌂","⌁","⚡","⌫","⇥","◉","↯","⤳","✣","⤺","⌘","⟳","⌁","◇","☄"];
+    function describe(type,a) {
+      const d={
+        gain:"Восстанови "+a+" секунд времени.",steal:"Перенеси к себе "+a+" секунд от противника.",swap:"Поменяйся запасами времени с противником.",
+        discount:"Следующая твоя карта дешевле на "+a+" секунд.",slow:"Следующая карта противника дороже на "+a+" секунд.",copy:"Повтори эффект последней разыгранной карты.",
+        cancel:"Удали последнюю карту противника с поля и получи "+a+" секунд.",delayed:"В начале следующего хода противник потеряет "+a+" секунд, ты получишь их.",
+        conditional:"Забери "+a+" секунд; если у врага меньше 20 секунд, эффект удвоится.",percent:"Забери "+a+"% оставшегося времени противника.",
+        fieldGain:"Получи "+a+" секунду за каждую свою карту на поле, включая эту.",fieldDrain:"Уничтожь самую дорогую карту врага и получи "+a+" секунд.",
+        fieldTax:"Противник теряет "+a+" секунд за каждую свою карту на поле.",mill:"Сожги "+a+" верхние карты колоды противника.",hijack:"Укради случайную карту из руки противника.",
+        accumulate:"Каждый твой ход получает "+a+" заряда. При 3+ зарядах даёт бонус.",discharge:"Потрать накопленные заряды: каждый даёт "+a+" секунд.",
+        transferCharge:"Передай "+a+" заряда другой своей карте.",massDestroy:"Уничтожь до "+a+" случайных карт противника.",return:"Верни до "+a+" своих карт с поля в руку.",
+        move:"Перемести свою карту в другой слот и получи "+a+" секунд.",evolve:"Усиль выбранную свою карту: каждый уровень даёт дополнительный заряд.",
+        combo:"Получи "+a+" секунд за каждую другую свою карту на поле.",shield:"Дай выбранной карте щит от одного уничтожения.",
+        overheat:"Сними до "+a+" своих карт; за каждую получи заряд."
+      };return d[type]||"Измени течение времени.";
     }
-  };
-
+    effects.forEach((type,ei)=>{for(let v=0;v<20;v++){
+      const key="card_"+String(ei*20+v+1).padStart(3,"0");
+      const amount=1+((ei*7+v*3)%(type==="percent"?24:["mill","massDestroy","return","overheat"].includes(type)?4:9));
+      const cost=1+((ei*3+v*5)%8);
+      definitions[key]={key,name:prefixes[ei]+" "+nouns[v],cost,type,amount,symbol:symbols[ei],description:describe(type,amount),color:colors[(ei+v)%colors.length],variant:v+1};
+    }});return definitions;
+  })();
   const CARD_POOL = Object.keys(CARD_TYPES);
+  const selectedCardIds = new Set();
+  const selectedBoardSlots = new Set();
   let players;
   let turn;
   let selectedCardId = null;
@@ -97,16 +61,7 @@
   }
 
   function makeDeck() {
-    const cards = [];
-    CARD_POOL.forEach((key) => {
-      // 30 карт в колоде: по две копии базовых карт и по одной новых.
-      const copies = key === "mill" || key === "hijack" ? 1 : 2;
-      for (let i = 0; i < copies; i++) {
-        const definition = CARD_TYPES[key];
-        cards.push({ ...definition, key, id: "card-" + (++sequence) });
-      }
-    });
-    return shuffle(cards);
+    return shuffle(CARD_POOL.slice()).slice(0,30).map(key=>({...CARD_TYPES[key],key,id:"card-"+(++sequence),charges:0,shield:0,evolution:0}));
   }
 
   function makePlayer(name) {
@@ -120,7 +75,8 @@
       discard: [],
       discount: 0,
       penalty: 0,
-      delayed: []
+      delayed: [],
+      turnPlays: 0
     };
   }
 
@@ -190,6 +146,8 @@
     shine.setAttribute("aria-hidden", "true");
 
     face.append(art, shine, top, body);
+    if(card.charges>0){const c=document.createElement("span");c.className="card-charge";c.textContent="⚡ "+card.charges;face.appendChild(c);}
+    if(card.evolution>0){const c=document.createElement("span");c.className="card-evolution";c.textContent="✦"+card.evolution;face.appendChild(c);}
     return face;
   }
 
@@ -229,10 +187,11 @@
       slot.replaceChildren();
       slot.classList.remove("card-entering");
       slot.classList.toggle("filled", Boolean(card));
+      slot.classList.toggle("board-selected",owner==="player"&&selectedBoardSlots.has(index));
       if (card) {
         slot.appendChild(makeCardFace(card, true));
         if (card.id === animatedCardId) slot.classList.add("card-entering");
-        slot.title = card.name + " · стоимость " + card.cost + " сек. · " + card.description;
+        slot.title=card.name+" · стоимость "+card.cost+" сек. · зарядов: "+(card.charges||0)+" · "+card.description;
       } else {
         const placeholder = document.createElement("span");
         placeholder.className = "slot-placeholder";
@@ -250,7 +209,7 @@
     players.player.hand.forEach((card) => {
       const button = document.createElement("button");
       button.type = "button";
-      button.className = "hand-card" + (selectedCardId === card.id ? " selected" : "");
+      button.className = "hand-card" + (selectedCardIds.has(card.id) ? " selected" : "");
       button.draggable = turn === "player" && !gameFinished;
       button.dataset.cardId = card.id;
       button.setAttribute("aria-label", card.name + ", стоимость " + card.cost + " секунд. " + card.description);
@@ -272,10 +231,10 @@
       });
       button.addEventListener("click", () => {
         if (turn !== "player" || gameFinished) return;
-        selectedCardId = selectedCardId === card.id ? null : card.id;
-        renderHand();
-        const cost = cardCost("player", card);
-        setMessage(selectedCardId ? card.name + " выбрана. Стоимость сейчас: " + cost + " сек. Перетащи её на слот или нажми на слот." : "Карта не выбрана.");
+        if(selectedCardIds.has(card.id))selectedCardIds.delete(card.id);else selectedCardIds.add(card.id);
+        selectedCardId=selectedCardIds.size?Array.from(selectedCardIds).at(-1):null;renderHand();
+        const total=players.player.hand.filter(c=>selectedCardIds.has(c.id)).reduce((sum,c)=>sum+cardCost("player",c),0);
+        setMessage("Выбрано карт: "+selectedCardIds.size+". Общая стоимость: "+total+" сек.");
       });
       button.addEventListener("dragstart", (event) => {
         if (turn !== "player" || gameFinished) {
@@ -294,6 +253,8 @@
       hand.appendChild(button);
     });
     $("opponent-hand-count").textContent = players.opponent.hand.length;
+    const countLabel=$("selected-cards-count");if(countLabel)countLabel.textContent=selectedCardIds.size?"Выбрано: "+selectedCardIds.size:"";
+    const playButton=$("play-selected");if(playButton)playButton.disabled=turn!=="player"||gameFinished||!selectedCardIds.size;
 
   }
 
@@ -312,7 +273,9 @@
     if (mobilePlayerFill) mobilePlayerFill.style.width = Math.max(0, players.player.time / START_TIME * 100) + "%";
     $("player-status").textContent = gameFinished ? "Игра завершена" : turn === "player" ? "Твой ход" : "Ход противника";
     $("opponent-status").textContent = gameFinished ? "Игра завершена" : turn === "opponent" ? "Ходит…" : "Ожидает ход";
-    $("pass-turn").disabled = turn !== "player" || gameFinished;
+    $("pass-turn").disabled=turn!=="player"||gameFinished;
+    ["move-selected","return-selected","remove-selected","sacrifice-selected"].forEach(id=>{const b=$(id);if(b)b.disabled=turn!=="player"||gameFinished||!selectedBoardSlots.size;});
+    const clearButton=$("clear-board-selection");if(clearButton)clearButton.disabled=!selectedBoardSlots.size;
     $("new-game").disabled = false;
   }
 
@@ -336,16 +299,16 @@
     $("tab-opponent-deck").setAttribute("aria-selected", String(collectionMode === "opponent"));
     list.replaceChildren();
     // Счётчики соответствуют количеству карт, отображаемых во вкладках.
-    const playerCards = players.player.deck.concat(players.player.hand);
-    $("player-collection-count").textContent = playerCards.length;
-    $("opponent-collection-count").textContent = players.opponent.played.length;
-    // Все карты игрока, которые ещё не разыграны: остаток колоды и рука.
-    const cards = collectionMode === "player" ? playerCards : players.opponent.played;
+    const playerCards=CARD_POOL.map(key=>({...CARD_TYPES[key],key}));
+    $("player-collection-count").textContent=playerCards.length;$("opponent-collection-count").textContent=players.opponent.played.length;
+    const allCards=collectionMode==="player"?playerCards:players.opponent.played;
+    const query=($("card-search")?.value||"").trim().toLocaleLowerCase("ru");
+    const cards=query?allCards.filter(c=>(c.name+" "+c.description+" "+c.type).toLocaleLowerCase("ru").includes(query)):allCards;
     const groups = groupedCards(cards);
     if (!groups.length) {
       const empty = document.createElement("p");
       empty.className = "collection-empty";
-      empty.textContent = collectionMode === "player" ? "Все карты уже разыграны." : "Противник ещё не разыграл ни одной карты.";
+      empty.textContent=collectionMode==="player"?"В библиотеке пока нет карт.":"Противник ещё не разыграл ни одной карты.";
       list.appendChild(empty);
       return;
     }
@@ -378,7 +341,7 @@
 
     const category = document.createElement("p");
     category.className = "details-category";
-    category.textContent = card.category;
+    category.textContent="Тип "+card.variant+" · "+card.type;
 
     const effect = document.createElement("div");
     effect.className = "details-stats";
@@ -532,15 +495,18 @@
         addLog(prefix + labelOf(actorKey) + " крадёт у противника карту «" + stolen.name + "».");
         break;
       }
-      case "cancel": {
-        const removed = removeLatestEnemyCard(actorKey);
-        const before = actor.time;
-        actor.time = Math.min(MAX_TIME, actor.time + effect.amount);
-        addLog(prefix + (removed ? "Срыв: " : "Нечего убирать: ") + "получено " + (actor.time - before) + " сек.");
-        break;
-      }
-      default:
-        break;
+      case "cancel": {const removed=removeLatestEnemyCard(actorKey),before=actor.time;actor.time=Math.min(MAX_TIME,actor.time+effect.amount);addLog(prefix+(removed?"Срыв: ":"Нечего убирать: ")+"получено "+(actor.time-before)+" сек.");break;}
+      case "accumulate":{const c=actor.board.find(x=>x&&x.id===effect.id);if(c)c.charges=(c.charges||0)+effect.amount;addLog(prefix+"Накопление: +"+effect.amount+" заряда.");break;}
+      case "discharge":{const c=actor.board.find(x=>x&&x.id===effect.id),n=c?(c.charges||0):0;if(c)c.charges=0;const before=actor.time;actor.time=Math.min(MAX_TIME,actor.time+n*effect.amount);addLog(prefix+"Разряд: "+n+" зарядов, +"+(actor.time-before)+" сек.");break;}
+      case "transferCharge":{const c=actor.board.find(x=>x&&x.id===effect.id),o=actor.board.find(x=>x&&x.id!==effect.id&&(x.charges||0)>0);if(c&&o){const n=Math.min(effect.amount,o.charges);o.charges-=n;c.charges=(c.charges||0)+n;addLog(prefix+"Передано "+n+" зарядов.");}else addLog(prefix+"Нет заряженной карты для передачи.");break;}
+      case "massDestroy":{const list=target.board.map((c,i)=>({c,i})).filter(x=>x.c&&x.c.shield<=0).sort(()=>Math.random()-.5).slice(0,effect.amount);list.forEach(({c,i})=>{target.board[i]=null;target.discard.push(c);});addLog(prefix+"Уничтожено карт противника: "+list.length+".");break;}
+      case "return":{let n=0;actor.board.forEach((c,i)=>{if(c&&n<effect.amount&&actor.hand.length<MAX_HAND){actor.board[i]=null;actor.hand.push(c);n++;}});addLog(prefix+"Возвращено в руку карт: "+n+".");break;}
+      case "move":{const f=actor.board.findIndex(c=>c&&c.id!==effect.id),t=actor.board.findIndex(c=>!c);if(f>=0&&t>=0){actor.board[t]=actor.board[f];actor.board[f]=null;}const before=actor.time;actor.time=Math.min(MAX_TIME,actor.time+effect.amount);addLog(prefix+"Сдвиг: "+(f>=0&&t>=0?"карта перемещена":"перемещение невозможно")+"; +"+(actor.time-before)+" сек.");break;}
+      case "evolve":{const c=actor.board.find(x=>x&&x.id!==effect.id);if(c){c.evolution=(c.evolution||0)+1;c.charges=(c.charges||0)+effect.amount;}addLog(prefix+(c?"Эволюция «"+c.name+"».":"Нет карты для эволюции."));break;}
+      case "combo":{const n=Math.max(0,actor.board.filter(c=>c&&c.id!==effect.id).length),before=actor.time;actor.time=Math.min(MAX_TIME,actor.time+n*effect.amount);addLog(prefix+"Цепная реакция: "+n+" карт, +"+(actor.time-before)+" сек.");break;}
+      case "shield":{const c=actor.board.find(x=>x&&x.id!==effect.id);if(c)c.shield=(c.shield||0)+1;addLog(prefix+(c?"Щит установлен на «"+c.name+"».":"Нет карты для защиты."));break;}
+      case "overheat":{let n=0;actor.board.forEach((c,i)=>{if(c&&c.id!==effect.id&&n<effect.amount){actor.board[i]=null;actor.discard.push(c);n++;}});const c=actor.board.find(x=>x&&x.id===effect.id);if(c)c.charges=(c.charges||0)+n;addLog(prefix+"Перегрузка: снято карт "+n+", зарядов +"+n+".");break;}
+      default:break;
     }
   }
 
@@ -607,12 +573,13 @@
   function startTurn(key) {
     if (gameFinished) return;
     turn = key;
-    selectedCardId = null;
+    selectedCardId=null;selectedCardIds.clear();selectedBoardSlots.clear();players[key].turnPlays=0;
+    players[key].board.forEach(card=>{if(card&&card.type==="accumulate"){card.charges=(card.charges||0)+card.amount;if(card.charges>=3){const bonus=Math.min(card.charges,5);players[key].time=Math.min(MAX_TIME,players[key].time+bonus);addLog("«"+card.name+"» накапливает заряды и возвращает "+bonus+" сек.");}}});
     resolveDelayed(key);
     if (checkGameOver()) return;
     render();
     if (key === "player") {
-      setMessage("Твой ход. Разыграй одну карту или пропусти ход.");
+      setMessage("Твой ход. Разыгрывай несколько карт, взаимодействуй с полем или заверши ход.");
     } else {
       setMessage("Противник выбирает карту…");
       aiTimer = setTimeout(runAI, 1400 + Math.floor(Math.random() * 1001));
@@ -643,7 +610,7 @@
     actor.time -= cost;
     actor.discount = 0;
     actor.penalty = 0;
-    actor.hand.splice(handIndex, 1);
+    actor.hand.splice(handIndex,1);selectedCardIds.delete(card.id);
     actor.played.push(card);
 
     card.playedAt = ++sequence;
@@ -651,26 +618,16 @@
 
     addLog(labelOf(actorKey) + " разыгрывает «" + card.name + "» за " + cost + " сек.");
 
-    if (card.type === "copy") {
-      if (lastEffect) applyEffect(lastEffect, actorKey, true);
-      else addLog("Эхо не нашло предыдущего эффекта.");
-    } else {
-      applyEffect(card, actorKey, false);
-      if (card.type !== "cancel") lastEffect = { type: card.type, amount: card.amount };
-    }
-
-    if (checkGameOver()) return true;
-    drawCard(actorKey);
-    animatedCardId = card.id;
-    playSound("card");
-    startTurn(enemyOf(actorKey));
-    return true;
+    if(card.type==="copy"){if(lastEffect)applyEffect(lastEffect,actorKey,true);else addLog("Эхо не нашло предыдущего эффекта.");}
+    else{applyEffect(card,actorKey,false);if(card.type!=="cancel")lastEffect={type:card.type,amount:card.amount};}
+    actor.turnPlays++;if(checkGameOver())return true;drawCard(actorKey);animatedCardId=card.id;playSound("card");render();
+    if(actorKey==="player")setMessage("Карта разыграна. Можешь разыграть ещё или завершить ход.");return true;
   }
 
   function passTurn() {
     if (turn !== "player" || gameFinished) return;
-    drawCard("player");
-    addLog("Ты пропускаешь ход.");
+    selectedCardIds.clear();drawCard("player");
+    addLog("Ты завершаешь ход.");
     playSound("pass");
     render();
     startTurn("opponent");
@@ -697,6 +654,12 @@
       case "fieldTax": score += target.board.filter(Boolean).length * 1.1; break;
       case "mill": score += Math.min(card.amount, target.deck.length) * 1.4; break;
       case "hijack": score += target.hand.length > 0 && actor.hand.length < MAX_HAND ? 3.6 : -1; break;
+      case "accumulate": score+=3;break;case "discharge":score+=(card.charges||0)*card.amount;break;
+      case "transferCharge":score+=actor.board.some(c=>c&&(c.charges||0)>0)?2:0;break;
+      case "massDestroy":score+=target.board.filter(Boolean).length*1.2;break;case "return":score+=actor.board.filter(Boolean).length*.7;break;
+      case "move":score+=1;break;case "evolve":score+=actor.board.filter(Boolean).length*.8;break;
+      case "combo":score+=actor.board.filter(Boolean).length*card.amount*.4;break;case "shield":score+=2;break;
+      case "overheat":score+=actor.board.filter(Boolean).length*.8;break;
       default: break;
     }
     return score;
@@ -716,18 +679,14 @@
     }
 
     affordable.sort((a, b) => scoreCard(b, "opponent") - scoreCard(a, "opponent"));
-    const chosen = affordable[0];
-    let slotIndex = actor.board.findIndex((item) => !item);
-    if (slotIndex < 0) {
-      slotIndex = actor.board.reduce((oldest, item, index, board) =>
-        !item || (board[oldest] && item.playedAt < board[oldest].playedAt) ? index : oldest, 0);
-      const removed = actor.board[slotIndex];
-      actor.board[slotIndex] = null;
-      actor.time = Math.max(0, actor.time - 1);
-      addLog("Противник освобождает слот, сбрасывая «" + removed.name + "» за 1 сек.");
-      if (checkGameOver()) return;
+    let plays=0;
+    while(plays<3&&turn==="opponent"&&!gameFinished){
+      const choices=actor.hand.filter(c=>cardCost("opponent",c)<=actor.time).sort((a,b)=>scoreCard(b,"opponent")-scoreCard(a,"opponent"));if(!choices.length)break;
+      let slotIndex=actor.board.findIndex(c=>!c);
+      if(slotIndex<0){const r=actor.board.findIndex(c=>c&&c.shield<=0);if(r<0)break;const removed=actor.board[r];actor.board[r]=null;actor.discard.push(removed);actor.time=Math.max(0,actor.time-1);addLog("Противник сбрасывает «"+removed.name+"» за 1 сек.");if(checkGameOver())return;slotIndex=r;}
+      if(!playCard(choices[0].id,slotIndex,"opponent"))break;plays++;
     }
-    playCard(chosen.id, slotIndex, "opponent");
+    render();startTurn("player");
   }
 
   function resetGame() {
@@ -735,7 +694,7 @@
     aiTimer = null;
     sequence = 0;
     logs = [];
-    selectedCardId = null;
+    selectedCardId=null;selectedCardIds.clear();selectedBoardSlots.clear();
     lastEffect = null;
     gameFinished = false;
     players = {
@@ -787,26 +746,24 @@
       });
       document.addEventListener("fullscreenchange", updateFullscreenLabel);
     }
-    $("pass-turn").addEventListener("click", passTurn);
+    $("pass-turn").addEventListener("click",passTurn);
+    $("play-selected").addEventListener("click",()=>{if(turn!=="player"||gameFinished||!selectedCardIds.size)return;let n=0;for(const id of Array.from(selectedCardIds)){const free=players.player.board.findIndex(c=>!c);if(free<0){setMessage("Поле заполнено. Сними карты.");break;}if(!playCard(id,free,"player"))break;selectedCardIds.delete(id);n++;}selectedCardId=null;render();setMessage("Разыграно карт: "+n+". Ход продолжается.");});
+    $("remove-selected").addEventListener("click",()=>{if(turn!=="player"||gameFinished||!selectedBoardSlots.size)return;let n=0;Array.from(selectedBoardSlots).forEach(i=>{const c=players.player.board[i];if(c){players.player.board[i]=null;players.player.discard.push(c);players.player.time=Math.max(0,players.player.time-1);n++;}});selectedBoardSlots.clear();addLog("Ты снимаешь "+n+" карт с поля (по 1 секунде за карту).");checkGameOver();render();});
+    $("sacrifice-selected").addEventListener("click",()=>{if(turn!=="player"||gameFinished||!selectedBoardSlots.size)return;let n=0,gain=0;Array.from(selectedBoardSlots).forEach(i=>{const c=players.player.board[i];if(c){gain+=(c.charges||0)+1;players.player.board[i]=null;players.player.discard.push(c);n++;}});players.player.time=Math.min(MAX_TIME,players.player.time+gain);selectedBoardSlots.clear();addLog("Ты жертвуешь "+n+" картами и получаешь "+gain+" сек.");render();});
+    $("clear-board-selection").addEventListener("click",()=>{selectedBoardSlots.clear();render();});
+    $("move-selected").addEventListener("click",()=>{if(turn!=="player"||gameFinished||selectedBoardSlots.size!==1){setMessage("Для перемещения выбери ровно одну карту.");return;}boardMoveSlot=Array.from(selectedBoardSlots)[0];setMessage("Нажми на пустой слот, куда переместить карту.");});
+    $("return-selected").addEventListener("click",()=>{if(turn!=="player"||gameFinished||!selectedBoardSlots.size)return;let n=0;Array.from(selectedBoardSlots).sort((a,b)=>a-b).forEach(i=>{const c=players.player.board[i];if(c&&players.player.hand.length<MAX_HAND){players.player.board[i]=null;players.player.hand.push(c);n++;}});selectedBoardSlots.clear();addLog("Ты возвращаешь в руку "+n+" карт.");render();setMessage("Возвращено в руку: "+n+".");});
+    $("card-search").addEventListener("input",renderCollection);
 
     $("battlefield").addEventListener("click", (event) => {
       const slot = event.target.closest(".slot");
       if (!slot || slot.dataset.owner !== "player" || turn !== "player" || gameFinished) return;
       const slotIndex = Number(slot.dataset.slot);
-      if (!selectedCardId) {
-        if (players.player.board[slotIndex]) {
-          const removed = players.player.board[slotIndex];
-          players.player.board[slotIndex] = null;
-          players.player.time = Math.max(0, players.player.time - 1);
-          addLog("Ты освобождаешь слот, сбрасывая «" + removed.name + "» за 1 сек.");
-          playSound("pass");
-          checkGameOver();
-          render();
-          if (!gameFinished) setMessage("Слот освобождён. Теперь можно разыграть карту.");
-        } else setMessage("Выбери карту в руке, затем нажми на пустой слот.");
-        return;
-      }
-      playCard(selectedCardId, slotIndex, "player");
+      const boardCard=players.player.board[slotIndex];
+      if(selectedCardIds.size){if(boardCard){setMessage("Слот занят. Выбери пустой слот.");return;}let placed=0;for(const id of Array.from(selectedCardIds)){const free=players.player.board.findIndex(c=>!c);if(free<0||!playCard(id,free,"player"))break;selectedCardIds.delete(id);placed++;}selectedCardId=null;render();setMessage("Разыграно карт: "+placed+". Ход продолжается.");return;}
+      if(boardCard){if(selectedBoardSlots.has(slotIndex))selectedBoardSlots.delete(slotIndex);else selectedBoardSlots.add(slotIndex);render();setMessage("Выбрано карт на поле: "+selectedBoardSlots.size+".");return;}
+      if(boardMoveSlot!==null){const moving=players.player.board[boardMoveSlot];if(moving){players.player.board[slotIndex]=moving;players.player.board[boardMoveSlot]=null;selectedBoardSlots.clear();boardMoveSlot=null;render();setMessage("Карта перемещена.");return;}boardMoveSlot=null;}
+      if(selectedCardId)playCard(selectedCardId,slotIndex,"player");else setMessage("Выбери карты в руке или выдели карты на поле.");
     });
 
     $("battlefield").addEventListener("dragover", (event) => {
