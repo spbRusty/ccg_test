@@ -99,7 +99,9 @@
   function makeDeck() {
     const cards = [];
     CARD_POOL.forEach((key) => {
-      for (let i = 0; i < 2; i++) {
+      // 30 карт в колоде: по две копии базовых карт и по одной новых.
+      const copies = key === "mill" || key === "hijack" ? 1 : 2;
+      for (let i = 0; i < copies; i++) {
         const definition = CARD_TYPES[key];
         cards.push({ ...definition, key, id: "card-" + (++sequence) });
       }
