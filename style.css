@@ -812,3 +812,158 @@ h2 { margin: 0; font-size: 15px; }
     aspect-ratio: auto;
   }
 }
+
+
+/* Card presentation: 3D tilt, holographic sheen, drag glow and dramatic play */
+.card-face { transform-style: preserve-3d; }
+.card-face .card-shine {
+  position: absolute;
+  inset: -45%;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(115deg,
+    transparent 34%,
+    rgba(255,255,255,.04) 42%,
+    rgba(255,255,255,.45) 49%,
+    rgba(112,239,255,.22) 53%,
+    rgba(255,255,255,.03) 60%,
+    transparent 68%);
+  transform: translateX(-65%) rotate(12deg);
+  mix-blend-mode: screen;
+  transition: opacity .18s ease;
+}
+.hand-card {
+  perspective: 900px;
+  transform: translateY(0) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
+  transform-origin: center bottom;
+  will-change: transform;
+  transition: transform .16s ease, filter .16s ease;
+}
+.hand-card:hover {
+  z-index: 4;
+  transform: translateY(-7px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg)) scale(1.035);
+  filter: drop-shadow(0 9px 12px #0009);
+}
+.hand-card:hover .card-shine,
+.hand-card.selected .card-shine {
+  opacity: 1;
+  animation: card-holo-sweep 1.15s ease-in-out infinite;
+}
+.hand-card.selected {
+  z-index: 3;
+  filter: drop-shadow(0 0 9px #f0c87588);
+}
+.hand-card.dragging {
+  z-index: 8;
+  cursor: grabbing;
+  transform: scale(1.06) rotate(-2deg);
+  filter: drop-shadow(0 0 14px #62d9e8cc);
+}
+.hand-card.dragging .card-face {
+  outline: 2px solid #8af6ff;
+  outline-offset: -2px;
+}
+.slot.drop-target {
+  z-index: 5;
+  box-shadow: 0 0 0 2px #62d9e8, 0 0 25px #62d9e899, inset 0 0 22px #62d9e822;
+}
+.slot.card-entering {
+  z-index: 6;
+  overflow: visible !important;
+  border-color: transparent !important;
+  background: transparent !important;
+  animation: slot-impact .48s ease-out both;
+}
+.slot.card-entering .card-face {
+  z-index: 6;
+  overflow: visible !important;
+  animation: card-break-frame .72s cubic-bezier(.15,.78,.22,1) both !important;
+  filter: drop-shadow(0 0 10px var(--card-glow, #62d9e8));
+}
+.slot.card-entering .card-face .card-art {
+  border-radius: 4px;
+  animation: art-burst .72s cubic-bezier(.15,.78,.22,1) both;
+}
+.slot.card-entering .card-face .card-shine {
+  opacity: 1;
+  inset: -25%;
+  animation: card-holo-sweep .72s ease-out both;
+}
+.slot.card-entering::after {
+  content: "";
+  position: absolute;
+  z-index: 8;
+  pointer-events: none;
+  inset: -2%;
+  border: 2px solid var(--cyan);
+  border-radius: 10px;
+  box-shadow: 0 0 16px var(--card-glow, #62d9e8), inset 0 0 18px var(--card-glow, #62d9e8);
+  animation: card-shockwave .62s ease-out both;
+}
+@keyframes card-holo-sweep {
+  0% { opacity: .12; transform: translateX(-70%) rotate(12deg); }
+  45% { opacity: .9; }
+  100% { opacity: .15; transform: translateX(70%) rotate(12deg); }
+}
+@keyframes card-break-frame {
+  0% { transform: translateY(-22px) scale(.72) rotate(-5deg); filter: brightness(1.8) drop-shadow(0 0 22px var(--card-glow, #62d9e8)); }
+  42% { transform: translateY(-7px) scale(1.2) rotate(2deg); filter: brightness(1.45) drop-shadow(0 0 16px var(--card-glow, #62d9e8)); }
+  68% { transform: translateY(2px) scale(.96) rotate(-.5deg); filter: brightness(1.2) drop-shadow(0 0 8px var(--card-glow, #62d9e8)); }
+  100% { transform: translateY(0) scale(1) rotate(0); filter: none; }
+}
+@keyframes art-burst {
+  0% { transform: scale(.9); }
+  38% { transform: scale(1.22); }
+  68% { transform: scale(1.07); }
+  100% { transform: scale(1); }
+}
+@keyframes card-shockwave {
+  0% { opacity: .95; transform: scale(.55); }
+  100% { opacity: 0; transform: scale(1.65); }
+}
+@keyframes slot-impact {
+  0% { filter: brightness(1.8); }
+  55% { filter: brightness(1.35); }
+  100% { filter: none; }
+}
+
+/* More vertical room for the battlefield; compact hand cards and align pass button */
+@media (min-width: 701px) {
+  .game-shell { grid-template-rows: auto auto minmax(300px, 1fr) 0 minmax(112px, auto) !important; }
+  .battlefield { min-height: 300px; }
+  .hand-area { min-height: 112px; }
+  .hand-heading { align-items: center; margin-bottom: 5px; }
+  .hand-heading .subtle { margin-top: 1px; }
+  .player-hand { min-height: 88px; }
+  .hand-card, .hand-card .card-face { min-height: 88px !important; }
+  .hand-card .card-face { aspect-ratio: auto; }
+}
+@media (max-width: 700px) {
+  .game-shell { grid-template-rows: auto auto minmax(455px, 66dvh) auto !important; }
+  .battlefield { min-height: 455px; }
+  .hand-heading { display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 5px; }
+  .hand-heading > div { flex: 1 1 auto; }
+  .hand-heading h2 { font-size: 14px; }
+  .hand-heading .subtle { margin-top: 1px; font-size: 9px; }
+  .hand-area { min-height: 0; padding-bottom: 2px; }
+  .player-hand { min-height: 82px; gap: 4px; }
+  .hand-card, .hand-card .card-face { min-height: 82px !important; }
+  .hand-card .card-face { aspect-ratio: auto; }
+  .pass-turn-button { flex: 0 0 auto; padding: 7px 9px; }
+}
+@media (max-width: 390px) {
+  .hand-heading .subtle { display: none; }
+  .hand-heading h2 { font-size: 13px; }
+  .pass-turn-button { padding: 6px 7px; font-size: 9px; }
+  .player-hand { min-height: 76px; }
+  .hand-card, .hand-card .card-face { min-height: 76px !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hand-card, .card-face .card-shine, .slot.card-entering,
+  .slot.card-entering .card-face, .slot.card-entering .card-face .card-art,
+  .slot.card-entering::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
