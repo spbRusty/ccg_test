@@ -295,3 +295,65 @@ h2 { margin: 0; font-size: 15px; }
 @media (max-width: 700px) {
   .game-footer, .collection-panel { display: none; }
 }
+
+
+/* CCG layout: portrait cards on the battlefield, 2:3 ratio */
+.battlefield {
+  gap: 5px;
+  padding: 10px clamp(6px, 1vw, 12px);
+}
+.card-row {
+  flex: 1 1 0;
+  min-height: 0;
+  align-items: stretch;
+  justify-items: stretch;
+  gap: clamp(5px, .8vw, 10px);
+}
+.slot {
+  align-items: center;
+  justify-content: center;
+  padding: 3px;
+  overflow: hidden;
+}
+.slot .card-face {
+  width: auto;
+  height: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 0;
+  aspect-ratio: 2 / 3;
+  flex: 0 1 auto;
+  align-self: center;
+  padding: 7px 6px;
+  border: 1px solid #526178;
+  border-radius: 8px;
+  background: linear-gradient(160deg, #35445a 0%, #1b2433 48%, #121821 100%);
+  box-shadow: 0 4px 12px #0005, inset 0 0 0 1px #ffffff08;
+}
+.slot.filled {
+  background: rgba(255,255,255,.018);
+}
+.slot .card-face::before {
+  width: 80%;
+  height: 45%;
+  right: -18%;
+  top: 24%;
+  opacity: .18;
+}
+.slot .card-top { gap: 2px; }
+.slot .card-cost { font-size: 10px; padding: 1px 4px; }
+.slot .card-name { font-size: clamp(9px, .85vw, 12px); line-height: 1.12; }
+.slot .card-description {
+  display: block;
+  font-size: clamp(7px, .65vw, 9px);
+  line-height: 1.2;
+  margin-top: 4px;
+}
+@media (max-height: 760px) {
+  .battlefield { padding-top: 5px; padding-bottom: 5px; gap: 3px; }
+  .slot .card-face { padding: 5px 4px; }
+  .slot .card-description { font-size: 7px; }
+}
+@media (max-height: 560px) {
+  .slot .card-description { display: none; }
+}
