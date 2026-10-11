@@ -722,3 +722,93 @@ h2 { margin: 0; font-size: 15px; }
   .card-face .card-description { font-size: clamp(7px, 2vw, 10px); }
   .slot .card-face .card-name { font-size: clamp(9px, 2.8vw, 12px); }
 }
+
+
+/* Fix: карты в руке всегда видимы, изображения занимают всю карту */
+.game-shell {
+  grid-template-rows: auto auto minmax(220px, 1fr) 0 minmax(135px, auto);
+}
+.hand-area {
+  grid-column: 2;
+  grid-row: 5;
+  display: block !important;
+  min-width: 0;
+  min-height: 135px;
+  align-self: end;
+  overflow: visible;
+  position: relative;
+  z-index: 2;
+}
+.player-hand {
+  min-height: 112px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: stretch;
+}
+.hand-card {
+  display: block;
+  min-height: 112px;
+  height: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+.hand-card .card-face {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 112px !important;
+  aspect-ratio: 2 / 3;
+  position: relative;
+  overflow: hidden;
+}
+.slot .card-face {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-width: none !important;
+  aspect-ratio: auto !important;
+  flex: 1 1 auto !important;
+  align-self: stretch !important;
+  position: relative;
+  overflow: hidden;
+}
+.card-face .card-art {
+  position: absolute !important;
+  inset: 0 !important;
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: cover !important;
+  object-position: center !important;
+  z-index: 0 !important;
+}
+.card-face > .card-top,
+.card-face > .card-body {
+  z-index: 2;
+}
+@media (min-width: 701px) {
+  .duel-timebar { display: grid !important; grid-column: 2; grid-row: 2; }
+  .hand-area { grid-column: 2; grid-row: 5; }
+}
+@media (max-width: 700px) {
+  .game-shell {
+    grid-template-rows: auto auto minmax(390px, auto) auto !important;
+  }
+  .hand-area {
+    grid-column: 1;
+    grid-row: 4;
+    min-height: 0;
+    align-self: auto;
+  }
+  .player-hand {
+    min-height: 105px;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+  .hand-card { min-height: 105px; }
+  .hand-card .card-face {
+    min-height: 105px !important;
+    aspect-ratio: auto;
+  }
+}
