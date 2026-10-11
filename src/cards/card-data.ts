@@ -10,4 +10,4 @@ export const CARD_TYPES: Record<string, CardDefinition> = (() => {
     effects.forEach((type,ei)=>{for(let v=0;v<(ei<4?17:16);v++){const index=Object.keys(definitions).length,key="card_"+String(index+1).padStart(3,"0"),nameIndex=(index*37)%527,amount=1+((ei*7+v*3)%(type==="percent"?24:["mill","massDestroy","return","overheat","massPlay"].includes(type)?4:9)),cost=1+((ei*3+v*5)%8);definitions[key]={key,name:prefixes[Math.floor(nameIndex/17)]+" "+nouns[nameIndex%17],cost,type,amount,symbol:symbols[ei],description:describe(type,amount),color:colors[(ei+v)%colors.length],variant:v+1};}});
     return definitions;
   })();
-  const CARD_POOL = Object.keys(CARD_TYPES);
+export const CARD_POOL = Object.keys(CARD_TYPES);
