@@ -619,10 +619,10 @@ import { makeCardFace } from "./ui/card-face";
       return;
     }
 
-    affordable.sort((a, b) => scoreCard(b, "opponent") - scoreCard(a, "opponent"));
+    affordable.sort((a, b) => scoreCard(b, "opponent", players, cardCost, lastEffect, START_TIME, MAX_HAND) - scoreCard(a, "opponent", players, cardCost, lastEffect, START_TIME, MAX_HAND));
     let plays=0;
     while(plays<3&&turn==="opponent"&&!gameFinished){
-      const choices=actor.hand.filter(c=>cardCost("opponent",c)<=actor.time).sort((a,b)=>scoreCard(b,"opponent")-scoreCard(a,"opponent"));if(!choices.length)break;
+      const choices=actor.hand.filter(c=>cardCost("opponent",c)<=actor.time).sort((a,b)=>scoreCard(b, "opponent", players, cardCost, lastEffect, START_TIME, MAX_HAND)-scoreCard(a, "opponent", players, cardCost, lastEffect, START_TIME, MAX_HAND));if(!choices.length)break;
       let slotIndex=actor.board.findIndex(c=>!c);
       if(slotIndex<0){const r=actor.board.findIndex(c=>c&&c.shield<=0);if(r<0)break;const removed=actor.board[r];actor.board[r]=null;actor.discard.push(removed);actor.time=Math.max(0,actor.time-1);addLog("Противник сбрасывает «"+removed.name+"» за 1 сек.");if(checkGameOver())return;slotIndex=r;}
       if(!playCard(choices[0].id,slotIndex,"opponent"))break;plays++;
