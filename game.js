@@ -306,20 +306,6 @@
   }
 
   function removeMostExpensiveEnemyCard(actorKey) {
-    const enemyKey = enemyOf(actorKey);
-    const board = players[enemyKey].board;
-    let targetIndex = -1;
-    board.forEach((card, index) => {
-      if (card && (targetIndex < 0 || card.cost > board[targetIndex].cost)) targetIndex = index;
-    });
-    if (targetIndex < 0) return false;
-    const removed = board[targetIndex];
-    board[targetIndex] = null;
-    addLog(labelOf(actorKey) + " уничтожает карту «" + removed.name + "» на поле противника.");
-    return true;
-  }
-
-  function removeMostExpensiveEnemyCard(actorKey) {
     const board = players[enemyOf(actorKey)].board;
     let targetIndex = -1;
     board.forEach((card, index) => {
@@ -534,9 +520,6 @@
       case "delayed": score += target.time > 5 ? 3.1 : 0.5; break;
       case "conditional": score += target.time < 20 ? 7 : 2.8; break;
       case "percent": score += target.time * 0.045; break;
-      case "fieldGain": score += actor.board.filter(Boolean).length * 0.8; break;
-      case "fieldDrain": score += target.board.filter(Boolean).length * 1.4; break;
-      case "fieldTax": score += target.board.filter(Boolean).length * 1.1; break;
       case "fieldGain": score += actor.board.filter(Boolean).length * 0.8; break;
       case "fieldDrain": score += target.board.filter(Boolean).length * 1.4; break;
       case "fieldTax": score += target.board.filter(Boolean).length * 1.1; break;
