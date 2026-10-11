@@ -61,6 +61,14 @@
     pressure: {
       name: "Давление разлома", cost: 3, type: "fieldTax", amount: 1, symbol: "⚡",
       description: "Враг теряет 1 секунду за каждую свою карту на поле.", color: "#e6a0ff", category: "Атака поля"
+    },
+    mill: {
+      name: "Мельница", cost: 3, type: "mill", amount: 2, symbol: "⌫",
+      description: "Сожги 2 верхние карты колоды противника.", color: "#f078a8", category: "Саботаж колоды"
+    },
+    hijack: {
+      name: "Перехват", cost: 4, type: "hijack", amount: 1, symbol: "⇥",
+      description: "Укради случайную карту из руки противника. Она останется у тебя.", color: "#ffc46b", category: "Кража карты"
     }
   };
 
@@ -91,7 +99,7 @@
   function makeDeck() {
     const cards = [];
     CARD_POOL.forEach((key) => {
-      for (let i = 0; i < 4; i++) {
+      for (let i = 0; i < 2; i++) {
         const definition = CARD_TYPES[key];
         cards.push({ ...definition, key, id: "card-" + (++sequence) });
       }
@@ -107,6 +115,7 @@
       deck: makeDeck(),
       board: Array(6).fill(null),
       played: [],
+      discard: [],
       discount: 0,
       penalty: 0,
       delayed: []
@@ -469,6 +478,27 @@
         addLog(prefix + "Давление разлома: противник теряет " + drained + " сек. за " + count + " карт на поле.");
         break;
       }
+      case "mill": {
+        const count = Math.min(effect.amount, target.deck.length);
+        for (let i = 0; i < count; i++) target.discard.push(target.deck.pop());
+        addLog(prefix + labelOf(actorKey) + " сжигает " + count + " карт из колоды противника.");
+        break;
+      }
+      case "hijack": {
+        if (target.hand.length === 0) {
+          addLog(prefix + "Перехват: у противника нет карт в руке.");
+          break;
+        }
+        if (actor.hand.length >= MAX_HAND) {
+          addLog(prefix + "Перехват не удался: твоя рука заполнена.");
+          break;
+        }
+        const index = Math.floor(Math.random() * target.hand.length);
+        const stolen = target.hand.splice(index, 1)[0];
+        actor.hand.push(stolen);
+        addLog(prefix + labelOf(actorKey) + " крадёт у противника карту «" + stolen.name + "».");
+        break;
+      }
       case "cancel": {
         const removed = removeLatestEnemyCard(actorKey);
         const before = actor.time;
@@ -632,6 +662,8 @@
       case "fieldGain": score += actor.board.filter(Boolean).length * 0.8; break;
       case "fieldDrain": score += target.board.filter(Boolean).length * 1.4; break;
       case "fieldTax": score += target.board.filter(Boolean).length * 1.1; break;
+      case "mill": score += Math.min(card.amount, target.deck.length) * 1.4; break;
+      case "hijack": score += target.hand.length > 0 && actor.hand.length < MAX_HAND ? 3.6 : -1; break;
       default: break;
     }
     return score;
