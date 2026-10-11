@@ -120,9 +120,8 @@
 
   function addLog(message) {
     logs.push(message);
-    logs = logs.slice(-50);
     $("event-log").replaceChildren();
-    logs.slice().reverse().forEach((line) => {
+    logs.forEach((line) => {
       const p = document.createElement("p");
       p.textContent = line;
       $("event-log").appendChild(p);
