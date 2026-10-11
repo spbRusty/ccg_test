@@ -11,7 +11,7 @@
   --gold: #f0c875;
 }
 * { box-sizing: border-box; }
-html, body { min-height: 100%; }
+html, body { width: 100%; height: 100%; overflow: hidden; }
 body {
   margin: 0;
   background: radial-gradient(ellipse at 50% 35%, #20283a 0%, var(--bg) 68%);
@@ -20,13 +20,15 @@ body {
 }
 button { font: inherit; }
 .game-shell {
-  width: min(100%, 980px);
-  min-height: 100dvh;
-  margin: 0 auto;
-  padding: 14px clamp(10px, 2.5vw, 24px) calc(16px + env(safe-area-inset-bottom));
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  width: 100%;
+  height: 100dvh;
+  margin: 0;
+  padding: 10px clamp(10px, 2vw, 22px);
+  display: grid;
+  grid-template-columns: minmax(190px, 220px) minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+  gap: 8px 14px;
+  overflow: hidden;
 }
 .topbar, .player-heading, .panel-meta, .hand-heading {
   display: flex;
@@ -34,7 +36,7 @@ button { font: inherit; }
   justify-content: space-between;
   gap: 12px;
 }
-.topbar { margin-bottom: 2px; }
+.topbar { grid-column: 2; grid-row: 1; margin-bottom: 0; min-width: 0; }
 .eyebrow, .side-label, .rift-title {
   color: var(--muted);
   font-size: 10px;
@@ -51,8 +53,8 @@ h2 { margin: 0; font-size: 15px; }
   border-radius: 12px;
   padding: 10px 13px;
 }
-.opponent-panel { border-top: 2px solid rgba(255,114,126,.7); }
-.own-panel { border-bottom: 2px solid rgba(98,217,232,.7); }
+.opponent-panel { grid-column: 2; grid-row: 2; border-top: 2px solid rgba(255,114,126,.7); }
+.own-panel { grid-column: 2; grid-row: 4; border-bottom: 2px solid rgba(98,217,232,.7); }
 .player-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
 .enemy-dot { background: var(--red); box-shadow: 0 0 10px #ff727e66; }
 .own-dot { background: var(--cyan); box-shadow: 0 0 10px #62d9e866; }
@@ -68,7 +70,8 @@ h2 { margin: 0; font-size: 15px; }
   background: linear-gradient(160deg, rgba(18,23,32,.9), rgba(14,17,24,.85));
   border: 1px solid #2c3443;
   border-radius: 14px;
-  padding: 10px clamp(7px, 2vw, 16px) 12px;
+  grid-column: 2; grid-row: 3; min-height: 0; overflow: hidden;
+  padding: 8px clamp(7px, 2vw, 16px);
   display: flex;
   flex-direction: column;
   gap: 7px;
@@ -140,9 +143,9 @@ h2 { margin: 0; font-size: 15px; }
 .card-description { color: #bdc6d5; font-size: 9px; line-height: 1.2; margin-top: 3px; }
 .card-type { margin-top: 5px; font-size: 8px; letter-spacing: .1em; color: var(--card-glow, var(--cyan)); text-transform: uppercase; font-weight: 800; }
 .slot .card-face { min-height: 80px; }
-.slot .card-description { display: none; }
+.slot .card-description { display: block; font-size: 9px; line-height: 1.18; }
 .slot .card-type { margin-top: auto; }
-.hand-area { padding-top: 2px; }
+.hand-area { grid-column: 2; grid-row: 5; padding-top: 0; min-width: 0; }
 .hand-heading { align-items: flex-end; margin-bottom: 8px; }
 .hand-heading > div { min-width: 0; }
 .hand-heading .subtle { display: block; margin-top: 3px; max-width: 590px; }
@@ -172,14 +175,15 @@ h2 { margin: 0; font-size: 15px; }
 .button:disabled { opacity: .4; cursor: not-allowed; }
 .button-quiet { color: var(--muted); background: #202633; }
 .button-primary { background: #c7f5f7; color: #102128; border-color: #c7f5f7; }
-.game-footer { border-top: 1px solid #2b3342; padding-top: 7px; }
-#game-message { margin: 0 0 5px; color: #d7deea; font-size: 11px; min-height: 16px; }
-.event-log { display: flex; flex-direction: column-reverse; gap: 3px; max-height: 58px; overflow: auto; color: var(--muted); font-size: 10px; }
+.game-footer { grid-column: 1; grid-row: 1 / 6; min-height: 0; overflow: hidden; border: 1px solid #2b3342; border-radius: 12px; padding: 12px 10px; background: rgba(16,19,26,.92); display: flex; flex-direction: column; gap: 8px; }
+.log-heading { color: var(--gold); font-size: 10px; font-weight: 800; letter-spacing: .14em; }
+#game-message { margin: 0; color: #d7deea; font-size: 11px; }
+.event-log { display: flex; flex-direction: column-reverse; gap: 7px; min-height: 0; flex: 1; overflow: auto; color: var(--muted); font-size: 10px; }
 .event-log p { margin: 0; }
 .event-log p:first-child { color: #dce5f1; }
 .game-over { border-color: var(--gold); box-shadow: 0 0 0 1px #f0c8752b; }
 @media (min-width: 700px) {
-  .game-shell { gap: 12px; }
+  .game-shell { gap: 8px 14px; }
   .battlefield { gap: 9px; padding-top: 12px; }
   .slot, .card-face { min-height: 96px; }
   .slot .card-face { min-height: 94px; }
@@ -188,27 +192,42 @@ h2 { margin: 0; font-size: 15px; }
   .card-description { font-size: 10px; }
   .slot .card-description { display: block; font-size: 9px; }
 }
-@media (max-width: 430px) {
-  .game-shell { gap: 7px; padding-left: 8px; padding-right: 8px; }
-  .player-panel { padding: 8px 10px; }
-  .battlefield { padding: 8px 6px 9px; gap: 5px; }
-  .slot, .slot .card-face { min-height: 73px; }
-  .card-face { padding: 5px 5px 4px; }
-  .card-name { font-size: 9px; }
-  .slot .card-type { font-size: 7px; }
-  .player-hand { gap: 4px; }
-  .hand-card .card-face { min-height: 108px; padding: 5px 4px; }
-  .hand-card .card-description { font-size: 8px; }
-  .card-symbol { font-size: 15px; }
-  .hand-heading { align-items: center; }
-  .hand-heading .subtle { font-size: 10px; }
-  .button { padding: 7px 8px; font-size: 10px; }
-  .clock { font-size: 22px; }
+@media (max-width: 600px) {
+  .game-shell { gap: 5px; padding: 5px; grid-template-columns: 102px minmax(0, 1fr); }
+  h1 { font-size: 17px; }
+  .eyebrow { font-size: 8px; }
+  .game-footer { padding: 6px; gap: 6px; }
+  .log-heading { font-size: 8px; }
+  .event-log { font-size: 8px; gap: 5px; }
+  .player-heading > div:first-child { gap: 4px; }
+  .subtle { font-size: 9px; }
+  .clock { font-size: 18px; }
+  .player-hand { gap: 3px; }
+  .hand-card .card-face { min-height: 72px; padding: 5px 4px; }
+  .card-name { font-size: 8px; }
+  .card-type { font-size: 7px; }
+  .card-description { font-size: 7px; }
+  .hand-heading { gap: 4px; }
+  .button { padding: 6px; font-size: 9px; }
 }
-@media (max-height: 760px) and (min-width: 500px) {
-  .game-shell { gap: 7px; padding-top: 9px; }
-  .slot, .card-face { min-height: 76px; }
-  .slot .card-face { min-height: 74px; }
-  .hand-card .card-face { min-height: 94px; }
-  .battlefield { gap: 5px; padding-top: 8px; padding-bottom: 8px; }
+@media (max-width: 430px) {
+  .game-shell { grid-template-columns: 88px minmax(0, 1fr); }
+  .player-panel { padding: 6px; }
+  .battlefield { padding: 5px 4px; gap: 4px; }
+  .card-face { padding: 4px 3px; }
+  .slot .card-description { font-size: 7px; }
+  .hand-card .card-face { min-height: 64px; }
+}
+@media (max-height: 760px) {
+  .game-shell { padding-top: 6px; padding-bottom: 6px; gap: 5px; }
+  .battlefield { gap: 4px; padding-top: 5px; padding-bottom: 5px; }
+  .player-panel { padding-top: 6px; padding-bottom: 6px; }
+  .hand-card .card-face { min-height: 70px; }
+  .card-description { font-size: 8px; }
+}
+@media (max-height: 560px) {
+  .topbar h1 { font-size: 18px; }
+  .battlefield { gap: 3px; }
+  .card-description { font-size: 7px !important; }
+  .hand-card .card-face { min-height: 58px; }
 }
