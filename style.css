@@ -1,82 +1,214 @@
-/* Общие стили для всего приложения */
+:root {
+  color-scheme: dark;
+  --bg: #10131a;
+  --panel: #181d27;
+  --panel-2: #202736;
+  --line: #30394a;
+  --text: #f2f4fa;
+  --muted: #9ca7b8;
+  --cyan: #62d9e8;
+  --red: #ff727e;
+  --gold: #f0c875;
+}
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
 body {
-  font-family: Arial, sans-serif;
-  background-color: #f0f0f0;
   margin: 0;
-  padding: 0;
+  background: radial-gradient(ellipse at 50% 35%, #20283a 0%, var(--bg) 68%);
+  color: var(--text);
+  font: 14px/1.35 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+button { font: inherit; }
+.game-shell {
+  width: min(100%, 980px);
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: 14px clamp(10px, 2.5vw, 24px) calc(16px + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
+  gap: 10px;
+}
+.topbar, .player-heading, .panel-meta, .hand-heading {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: center;
-  height: 100vh; /* Высота экрана 100% от доступной высоты окна */
-  overflow: hidden; /* Убираем прокрутку */
+  gap: 12px;
 }
-
-/* Стили для руки */
-.hand {
+.topbar { margin-bottom: 2px; }
+.eyebrow, .side-label, .rift-title {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .16em;
+}
+h1 { margin: 2px 0 0; font-size: clamp(20px, 4vw, 28px); line-height: 1.1; letter-spacing: -.03em; }
+h2 { margin: 0; font-size: 15px; }
+.subtle { color: var(--muted); font-size: 11px; }
+.player-heading > div:first-child { display: flex; align-items: center; gap: 8px; }
+.player-panel {
+  background: linear-gradient(135deg, rgba(31,38,52,.96), rgba(22,27,37,.96));
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 13px;
+}
+.opponent-panel { border-top: 2px solid rgba(255,114,126,.7); }
+.own-panel { border-bottom: 2px solid rgba(98,217,232,.7); }
+.player-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
+.enemy-dot { background: var(--red); box-shadow: 0 0 10px #ff727e66; }
+.own-dot { background: var(--cyan); box-shadow: 0 0 10px #62d9e866; }
+.clock { display: flex; align-items: baseline; gap: 5px; font-size: 25px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.clock small { color: var(--muted); font-size: 10px; font-weight: 600; }
+.time-track { height: 5px; overflow: hidden; background: #0d1016; border-radius: 10px; margin: 7px 0 5px; }
+.time-fill { width: 100%; height: 100%; border-radius: inherit; transition: width .3s ease; }
+.enemy-fill { background: linear-gradient(90deg, #b9475c, var(--red)); }
+.own-fill { background: linear-gradient(90deg, #238fa7, var(--cyan)); }
+.panel-meta { color: var(--muted); font-size: 10px; }
+.panel-meta b { color: var(--text); }
+.battlefield {
+  background: linear-gradient(160deg, rgba(18,23,32,.9), rgba(14,17,24,.85));
+  border: 1px solid #2c3443;
+  border-radius: 14px;
+  padding: 10px clamp(7px, 2vw, 16px) 12px;
   display: flex;
-  justify-content: center;
-  margin: 10px 0;
+  flex-direction: column;
+  gap: 7px;
 }
-
-.opponent-hand {
-  /* Рука оппонента в верхней части экрана */
-  align-self: flex-start;
+.side-label { padding: 1px 2px 0; }
+.enemy-label { color: #e28b95; }
+.player-label { color: #7dd9e4; }
+.card-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(6px, 1.5vw, 12px);
 }
-
-.player-hand {
-  /* Рука игрока в нижней части экрана */
-  align-self: flex-end;
-}
-
-.card {
-  width: 80px;
-  height: 120px;
-  background-color: white;
-  border: 2px solid black;
-  border-radius: 10px;
+.slot {
+  min-width: 0;
+  min-height: 82px;
+  border: 1px dashed #384254;
+  border-radius: 9px;
+  background: rgba(255,255,255,.018);
   display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  margin: 0 5px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  cursor: pointer;
+  align-items: stretch;
+  justify-content: stretch;
+  padding: 0;
+  color: var(--muted);
+  position: relative;
+  transition: border-color .15s, background .15s, transform .15s;
 }
-
-.card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-}
-
-/* Стили для рядов */
-.row {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 10px;
-}
-
-/* Стили для полоски между картами оппонента и игрока */
-.divider {
+.slot:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+.slot.drop-target { border-color: var(--cyan); background: #62d9e81a; transform: translateY(-2px); }
+.slot.filled { border-style: solid; border-color: #465166; background: #202633; }
+.slot.enemy-slot.filled { border-color: #78434d; }
+.slot.player-slot.filled { border-color: #32606c; }
+.slot-placeholder { width: 100%; display: grid; place-items: center; font-size: 19px; opacity: .38; }
+.rift-divider { display: flex; align-items: center; gap: 10px; padding: 3px 0; }
+.rift-line { height: 1px; flex: 1; background: linear-gradient(90deg, transparent, #47536a, transparent); }
+.rift-title { color: var(--gold); white-space: nowrap; font-size: 9px; }
+.card-face {
   width: 100%;
-  border-top: 2px solid black;
-  margin: 10px 0;
-  padding: 5px 0;
-  font-weight: bold;
-  text-transform: uppercase;
-  font-size: 12px;
+  min-width: 0;
+  min-height: 82px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: space-between;
+  padding: 7px 7px 6px;
+  border-radius: 8px;
+  text-align: left;
+  overflow: hidden;
+  position: relative;
+  background: linear-gradient(145deg, #29384a, #171d29 72%);
+  color: var(--text);
 }
-
-/* Адаптация для мобильных устройств */
-@media (max-width: 480px) {
-  .card {
-      width: 70px;
-      height: 100px;
-      font-size: 12px;
-  }
-
-  .divider {
-      font-size: 10px;
-  }
+.card-face::before {
+  content: "";
+  position: absolute;
+  width: 65px;
+  height: 65px;
+  border-radius: 50%;
+  right: -22px;
+  top: 12px;
+  background: var(--card-glow, #62d9e8);
+  opacity: .12;
+  filter: blur(2px);
+}
+.card-face > * { position: relative; z-index: 1; }
+.card-top { display: flex; justify-content: space-between; align-items: center; gap: 4px; }
+.card-cost { background: #111722; border: 1px solid #465368; border-radius: 5px; padding: 1px 5px; color: var(--gold); font-weight: 900; font-size: 11px; }
+.card-symbol { font-size: 17px; color: var(--card-glow, var(--cyan)); font-weight: 800; }
+.card-name { font-size: clamp(10px, 1.6vw, 12px); font-weight: 800; line-height: 1.12; overflow-wrap: anywhere; }
+.card-description { color: #bdc6d5; font-size: 9px; line-height: 1.2; margin-top: 3px; }
+.card-type { margin-top: 5px; font-size: 8px; letter-spacing: .1em; color: var(--card-glow, var(--cyan)); text-transform: uppercase; font-weight: 800; }
+.slot .card-face { min-height: 80px; }
+.slot .card-description { display: none; }
+.slot .card-type { margin-top: auto; }
+.hand-area { padding-top: 2px; }
+.hand-heading { align-items: flex-end; margin-bottom: 8px; }
+.hand-heading > div { min-width: 0; }
+.hand-heading .subtle { display: block; margin-top: 3px; max-width: 590px; }
+.player-hand {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 7px;
+  align-items: stretch;
+}
+.hand-card {
+  min-width: 0;
+  border: 1px solid #465166;
+  border-radius: 9px;
+  padding: 0;
+  cursor: grab;
+  text-align: left;
+  overflow: hidden;
+  background: transparent;
+  transition: transform .16s, border-color .16s, box-shadow .16s;
+}
+.hand-card:hover { transform: translateY(-3px); border-color: #8190a8; }
+.hand-card.selected { transform: translateY(-5px); border-color: var(--gold); box-shadow: 0 0 0 2px #f0c87533, 0 8px 22px #0006; }
+.hand-card:active { cursor: grabbing; }
+.hand-card .card-face { min-height: 105px; height: 100%; padding: 7px 6px; }
+.hand-card .card-description { font-size: 9px; }
+.button { border: 1px solid #465166; border-radius: 8px; padding: 8px 12px; cursor: pointer; font-weight: 750; font-size: 11px; white-space: nowrap; }
+.button:disabled { opacity: .4; cursor: not-allowed; }
+.button-quiet { color: var(--muted); background: #202633; }
+.button-primary { background: #c7f5f7; color: #102128; border-color: #c7f5f7; }
+.game-footer { border-top: 1px solid #2b3342; padding-top: 7px; }
+#game-message { margin: 0 0 5px; color: #d7deea; font-size: 11px; min-height: 16px; }
+.event-log { display: flex; flex-direction: column-reverse; gap: 3px; max-height: 58px; overflow: auto; color: var(--muted); font-size: 10px; }
+.event-log p { margin: 0; }
+.event-log p:first-child { color: #dce5f1; }
+.game-over { border-color: var(--gold); box-shadow: 0 0 0 1px #f0c8752b; }
+@media (min-width: 700px) {
+  .game-shell { gap: 12px; }
+  .battlefield { gap: 9px; padding-top: 12px; }
+  .slot, .card-face { min-height: 96px; }
+  .slot .card-face { min-height: 94px; }
+  .hand-card .card-face { min-height: 125px; padding: 9px; }
+  .card-symbol { font-size: 21px; }
+  .card-description { font-size: 10px; }
+  .slot .card-description { display: block; font-size: 9px; }
+}
+@media (max-width: 430px) {
+  .game-shell { gap: 7px; padding-left: 8px; padding-right: 8px; }
+  .player-panel { padding: 8px 10px; }
+  .battlefield { padding: 8px 6px 9px; gap: 5px; }
+  .slot, .slot .card-face { min-height: 73px; }
+  .card-face { padding: 5px 5px 4px; }
+  .card-name { font-size: 9px; }
+  .slot .card-type { font-size: 7px; }
+  .player-hand { gap: 4px; }
+  .hand-card .card-face { min-height: 108px; padding: 5px 4px; }
+  .hand-card .card-description { font-size: 8px; }
+  .card-symbol { font-size: 15px; }
+  .hand-heading { align-items: center; }
+  .hand-heading .subtle { font-size: 10px; }
+  .button { padding: 7px 8px; font-size: 10px; }
+  .clock { font-size: 22px; }
+}
+@media (max-height: 760px) and (min-width: 500px) {
+  .game-shell { gap: 7px; padding-top: 9px; }
+  .slot, .card-face { min-height: 76px; }
+  .slot .card-face { min-height: 74px; }
+  .hand-card .card-face { min-height: 94px; }
+  .battlefield { gap: 5px; padding-top: 8px; padding-bottom: 8px; }
 }
