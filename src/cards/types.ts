@@ -19,7 +19,7 @@ export interface CardDefinition {
 }
 
 export interface CardViewData extends CardDefinition {
-  id: string;
+  id?: string;
   charges?: number;
   shield?: number;
   evolution?: number;
@@ -32,6 +32,7 @@ export interface CardInstance extends CardDefinition {
   charges: number;
   shield: number;
   evolution: number;
+  playedAt?: number;
 }
 
 export interface PlayerState {
