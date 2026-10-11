@@ -106,6 +106,7 @@
       hand: [],
       deck: makeDeck(),
       board: Array(6).fill(null),
+      played: [],
       discount: 0,
       penalty: 0,
       delayed: []
@@ -141,6 +142,7 @@
   function makeCardFace(card, showDescription) {
     const face = document.createElement("div");
     face.className = "card-face";
+    face.dataset.cardKey = card.key;
     face.style.setProperty("--card-glow", card.color);
 
     const top = document.createElement("div");
@@ -152,6 +154,7 @@
     top.appendChild(cost);
 
     const body = document.createElement("div");
+    body.className = "card-body";
     const name = document.createElement("div");
     name.className = "card-name";
     name.textContent = card.name;
@@ -270,6 +273,7 @@
     renderStats();
     renderBoard();
     renderHand();
+    renderCollection();
     $("battlefield").classList.toggle("game-over", gameFinished);
   }
 
@@ -498,6 +502,7 @@
     actor.discount = 0;
     actor.penalty = 0;
     actor.hand.splice(handIndex, 1);
+    actor.played.push(card);
 
     card.playedAt = ++sequence;
     actor.board[slotIndex] = card;
