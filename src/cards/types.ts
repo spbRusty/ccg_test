@@ -17,3 +17,10 @@ export interface CardDefinition {
   color: string;
   variant: number;
 }
+
+export interface CardViewData extends CardDefinition {
+  id: string;
+  charges?: number;
+  shield?: number;
+  evolution?: number;
+}
