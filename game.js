@@ -331,9 +331,10 @@
         addLog(prefix + "Отложенный эффект сработает в начале следующего хода противника.");
         break;
       case "conditional": {
-        const amount = target.time < 20 ? 7 : 3;
+        const conditionMet = target.time < 20;
+        const amount = conditionMet ? 7 : 3;
         const moved = transferTime(actorKey, amount);
-        addLog(prefix + "Условие " + (target.time < 20 ? "выполнено" : "не выполнено") + ": перенесено " + moved + " сек.");
+        addLog(prefix + "Условие " + (conditionMet ? "выполнено" : "не выполнено") + ": перенесено " + moved + " сек.");
         break;
       }
       case "percent": {
