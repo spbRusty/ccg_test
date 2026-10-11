@@ -293,7 +293,7 @@
     return false;
   }
 
-  function applyEffect(effect, actorKey, isCopy) {
+  function removeMostExpensiveEnemyCard(actorKey) {\n    const enemyKey = enemyOf(actorKey);\n    const board = players[enemyKey].board;\n    let targetIndex = -1;\n    board.forEach((card, index) => {\n      if (card && (targetIndex < 0 || card.cost > board[targetIndex].cost)) targetIndex = index;\n    });\n    if (targetIndex < 0) return false;\n    const removed = board[targetIndex];\n    board[targetIndex] = null;\n    addLog(labelOf(actorKey) + " уничтожает карту «" + removed.name + "» на поле противника.");\n    return true;\n  }\n\n  function applyEffect(effect, actorKey, isCopy) {
     const targetKey = enemyOf(actorKey);
     const actor = players[actorKey];
     const target = players[targetKey];
@@ -469,7 +469,7 @@
       case "cancel": score += target.board.some(Boolean) ? 2.5 : 0.5; break;
       case "delayed": score += target.time > 5 ? 3.1 : 0.5; break;
       case "conditional": score += target.time < 20 ? 7 : 2.8; break;
-      case "percent": score += target.time * 0.045; break;
+      case "percent": score += target.time * 0.045; break;\n      case "fieldGain": score += actor.board.filter(Boolean).length * 0.8; break;\n      case "fieldDrain": score += target.board.filter(Boolean).length * 1.4; break;\n      case "fieldTax": score += target.board.filter(Boolean).length * 1.1; break;
       default: break;
     }
     return score;
