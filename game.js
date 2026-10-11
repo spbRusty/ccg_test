@@ -412,6 +412,15 @@
     if (handIndex < 0) return false;
     const card = actor.hand[handIndex];
     const cost = cardCost(actorKey, card);
+    if (slotIndex < 0 || slotIndex > 5) slotIndex = actor.board.findIndex((item) => !item);
+    if (slotIndex < 0) {
+      if (actorKey === "player") setMessage("Твоё поле заполнено. Нажми на свою карту, чтобы снять её за 1 секунду.");
+      return false;
+    }
+    if (actor.board[slotIndex]) {
+      if (actorKey === "player") setMessage("Этот слот занят. Выбери пустой слот: карты не перекрывают друг друга.");
+      return false;
+    }
     if (actor.time < cost) {
       if (actorKey === "player") setMessage("Не хватает времени: нужно " + cost + " сек., у тебя " + actor.time + ".");
       return false;
@@ -421,10 +430,6 @@
     actor.discount = 0;
     actor.penalty = 0;
     actor.hand.splice(handIndex, 1);
-
-    if (slotIndex < 0 || slotIndex > 5) slotIndex = actor.board.findIndex((item) => !item);
-    if (slotIndex < 0) slotIndex = actor.board.reduce((oldest, item, index, board) =>
-      !item || (board[oldest] && item.playedAt < board[oldest].playedAt) ? index : oldest, 0);
 
     card.playedAt = ++sequence;
     actor.board[slotIndex] = card;
@@ -494,6 +499,11 @@
     if (slotIndex < 0) {
       slotIndex = actor.board.reduce((oldest, item, index, board) =>
         !item || (board[oldest] && item.playedAt < board[oldest].playedAt) ? index : oldest, 0);
+      const removed = actor.board[slotIndex];
+      actor.board[slotIndex] = null;
+      actor.time = Math.max(0, actor.time - 1);
+      addLog("Противник освобождает слот, сбрасывая «" + removed.name + "» за 1 сек.");
+      if (checkGameOver()) return;
     }
     playCard(chosen.id, slotIndex, "opponent");
   }
@@ -527,11 +537,20 @@
     $("battlefield").addEventListener("click", (event) => {
       const slot = event.target.closest(".slot");
       if (!slot || slot.dataset.owner !== "player" || turn !== "player" || gameFinished) return;
+      const slotIndex = Number(slot.dataset.slot);
       if (!selectedCardId) {
-        setMessage("Сначала выбери карту в руке.");
+        if (players.player.board[slotIndex]) {
+          const removed = players.player.board[slotIndex];
+          players.player.board[slotIndex] = null;
+          players.player.time = Math.max(0, players.player.time - 1);
+          addLog("Ты освобождаешь слот, сбрасывая «" + removed.name + "» за 1 сек.");
+          checkGameOver();
+          render();
+          if (!gameFinished) setMessage("Слот освобождён. Теперь можно разыграть карту.");
+        } else setMessage("Выбери карту в руке, затем нажми на пустой слот.");
         return;
       }
-      playCard(selectedCardId, Number(slot.dataset.slot), "player");
+      playCard(selectedCardId, slotIndex, "player");
     });
 
     $("battlefield").addEventListener("dragover", (event) => {
