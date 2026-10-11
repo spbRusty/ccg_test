@@ -276,6 +276,14 @@
     $("opponent-time").textContent = players.opponent.time;
     $("player-time-bar").style.width = Math.max(0, players.player.time / START_TIME * 100) + "%";
     $("opponent-time-bar").style.width = Math.max(0, players.opponent.time / START_TIME * 100) + "%";
+    const mobileOpponentTime = $("mobile-opponent-time");
+    const mobilePlayerTime = $("mobile-player-time");
+    const mobileOpponentFill = $("mobile-opponent-fill");
+    const mobilePlayerFill = $("mobile-player-fill");
+    if (mobileOpponentTime) mobileOpponentTime.textContent = players.opponent.time;
+    if (mobilePlayerTime) mobilePlayerTime.textContent = players.player.time;
+    if (mobileOpponentFill) mobileOpponentFill.style.width = Math.max(0, players.opponent.time / START_TIME * 100) + "%";
+    if (mobilePlayerFill) mobilePlayerFill.style.width = Math.max(0, players.player.time / START_TIME * 100) + "%";
     $("player-status").textContent = gameFinished ? "Игра завершена" : turn === "player" ? "Твой ход" : "Ход противника";
     $("opponent-status").textContent = gameFinished ? "Игра завершена" : turn === "opponent" ? "Ходит…" : "Ожидает ход";
     $("pass-turn").disabled = turn !== "player" || gameFinished;
