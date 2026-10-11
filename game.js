@@ -173,21 +173,21 @@
 
   function setupSlots() {
     const rows = [
-      ["opponent-row-1", "opponent", 0],
-      ["opponent-row-2", "opponent", 3],
-      ["player-row-1", "player", 0],
-      ["player-row-2", "player", 3]
+      ["opponent-row-1", "opponent"],
+      ["player-row-1", "player"]
     ];
-    rows.forEach(([rowId, owner, offset]) => {
+    // Все шесть слотов находятся в одном контейнере: на десктопе это один ряд,
+    // на мобильном CSS переносит их в два ряда по три.
+    rows.forEach(([rowId, owner]) => {
       const row = $(rowId);
       row.replaceChildren();
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < 6; i++) {
         const slot = document.createElement("button");
         slot.type = "button";
         slot.className = "slot " + (owner === "player" ? "player-slot" : "enemy-slot");
         slot.dataset.owner = owner;
-        slot.dataset.slot = String(offset + i);
-        slot.setAttribute("aria-label", (owner === "player" ? "Твой слот " : "Слот противника ") + (offset + i + 1));
+        slot.dataset.slot = String(i);
+        slot.setAttribute("aria-label", (owner === "player" ? "Твой слот " : "Слот противника ") + (i + 1));
         const placeholder = document.createElement("span");
         placeholder.className = "slot-placeholder";
         placeholder.textContent = "+";
@@ -195,6 +195,8 @@
         row.appendChild(slot);
       }
     });
+    $("opponent-row-2").replaceChildren();
+    $("player-row-2").replaceChildren();
   }
 
   function renderBoard() {
@@ -255,7 +257,7 @@
       hand.appendChild(button);
     });
     $("opponent-hand-count").textContent = players.opponent.hand.length;
-    $("player-deck-count").textContent = players.player.deck.length;
+
   }
 
   function renderStats() {
@@ -288,8 +290,12 @@
     $("tab-opponent-deck").classList.toggle("active", collectionMode === "opponent");
     $("tab-opponent-deck").setAttribute("aria-selected", String(collectionMode === "opponent"));
     list.replaceChildren();
+    // Счётчики соответствуют количеству карт, отображаемых во вкладках.
+    const playerCards = players.player.deck.concat(players.player.hand);
+    $("player-collection-count").textContent = playerCards.length;
+    $("opponent-collection-count").textContent = players.opponent.played.length;
     // Все карты игрока, которые ещё не разыграны: остаток колоды и рука.
-    const cards = collectionMode === "player" ? players.player.deck.concat(players.player.hand) : players.opponent.played;
+    const cards = collectionMode === "player" ? playerCards : players.opponent.played;
     const groups = groupedCards(cards);
     if (!groups.length) {
       const empty = document.createElement("p");
