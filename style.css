@@ -967,3 +967,20 @@ h2 { margin: 0; font-size: 15px; }
     transition: none !important;
   }
 }
+
+
+/* Одинаковая высота карт на поле и в руке */
+:root { --card-height: 125px; }
+.slot .card-face,
+.hand-card .card-face {
+  height: var(--card-height);
+  min-height: var(--card-height);
+  max-height: var(--card-height);
+  box-sizing: border-box;
+}
+@media (max-width: 700px) {
+  :root { --card-height: 72px; }
+}
+@media (max-width: 430px) {
+  :root { --card-height: 64px; }
+}
