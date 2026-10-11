@@ -733,6 +733,29 @@
       if (face) showCardDetails(face.dataset.cardKey);
     });
     $("new-game").addEventListener("click", resetGame);
+    const fullscreenButton = $("fullscreen-toggle");
+    if (fullscreenButton) {
+      const updateFullscreenLabel = () => {
+        const active = Boolean(document.fullscreenElement);
+        fullscreenButton.textContent = active ? "⛶ Свернуть" : "⛶ На весь экран";
+        fullscreenButton.setAttribute("aria-label", active ? "Выйти из полноэкранного режима" : "Развернуть на весь экран");
+      };
+      fullscreenButton.addEventListener("click", async () => {
+        try {
+          if (document.fullscreenElement) {
+            await document.exitFullscreen();
+          } else if (document.documentElement.requestFullscreen) {
+            await document.documentElement.requestFullscreen();
+          } else {
+            setMessage("Полноэкранный режим не поддерживается этим браузером. На iPhone можно выбрать «На экран Домой» в меню браузера.");
+          }
+        } catch (_) {
+          setMessage("Браузер не разрешил полноэкранный режим. Попробуй открыть страницу в обычной вкладке браузера.");
+        }
+        updateFullscreenLabel();
+      });
+      document.addEventListener("fullscreenchange", updateFullscreenLabel);
+    }
     $("pass-turn").addEventListener("click", passTurn);
 
     $("battlefield").addEventListener("click", (event) => {
