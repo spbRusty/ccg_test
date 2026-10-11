@@ -17,18 +17,6 @@
       <div class="topbar-actions"><button id="fullscreen-toggle" class="button button-quiet fullscreen-toggle" type="button" aria-label="Развернуть на весь экран">⛶ На весь экран</button><button id="new-game" class="button button-quiet" type="button">Новая игра</button></div>
     </header>
 
-    <section class="duel-timebar" aria-label="Запасы времени">
-      <div class="duel-time-side enemy-time-side">
-        <div class="duel-time-label"><span>Противник</span><strong><span id="mobile-opponent-time">60</span> с</strong></div>
-        <div class="duel-track enemy-duel-track"><div id="mobile-opponent-fill" class="duel-fill enemy-duel-fill"></div></div>
-      </div>
-      <div class="duel-time-center" aria-hidden="true">VS</div>
-      <div class="duel-time-side own-time-side">
-        <div class="duel-time-label"><strong><span id="mobile-player-time">60</span> с</strong><span>Ты</span></div>
-        <div class="duel-track own-duel-track"><div id="mobile-player-fill" class="duel-fill own-duel-fill"></div></div>
-      </div>
-    </section>
-
     <section class="player-panel opponent-panel" aria-label="Противник">
       <div class="player-heading">
         <div><span class="player-dot enemy-dot"></span><strong>Противник</strong><span class="subtle">Простой ИИ</span></div>
@@ -39,17 +27,21 @@
     </section>
 
     <section id="battlefield" class="battlefield" aria-label="Игровое поле">
-      <div class="side-label enemy-label">ПОЛЕ ПРОТИВНИКА</div>
       <div id="opponent-row-1" class="card-row" aria-label="Ряд противника 1"></div>
       <div id="opponent-row-2" class="card-row" aria-label="Ряд противника 2"></div>
 
-      <div class="rift-divider">
-        <span class="rift-line"></span>
-        <span class="rift-title">РАЗЛОМ ВРЕМЕНИ</span>
-        <span class="rift-line"></span>
-      </div>
+      <section class="duel-timebar" aria-label="Запасы времени">
+        <div class="duel-time-side enemy-time-side">
+          <div class="duel-time-label"><span>Противник</span><strong><span id="mobile-opponent-time">60</span> с</strong></div>
+          <div class="duel-track enemy-duel-track"><div id="mobile-opponent-fill" class="duel-fill enemy-duel-fill"></div></div>
+        </div>
+        <div class="duel-time-center" aria-hidden="true">VS</div>
+        <div class="duel-time-side own-time-side">
+          <div class="duel-time-label"><strong><span id="mobile-player-time">60</span> с</strong><span>Ты</span></div>
+          <div class="duel-track own-duel-track"><div id="mobile-player-fill" class="duel-fill own-duel-fill"></div></div>
+        </div>
+      </section>
 
-      <div class="side-label player-label">ТВОЁ ПОЛЕ</div>
       <div id="player-row-1" class="card-row" aria-label="Твой ряд 1"></div>
       <div id="player-row-2" class="card-row" aria-label="Твой ряд 2"></div>
     </section>
