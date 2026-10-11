@@ -126,7 +126,6 @@
       p.textContent = line;
       $("event-log").appendChild(p);
     });
-    $("event-log").scrollTop = $("event-log").scrollHeight;
   }
 
   function setMessage(message) {
