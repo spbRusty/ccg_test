@@ -37,6 +37,12 @@ npm run preview
 - `image2.avif` — графический ресурс карт.
 - `vite.config.ts` — конфигурация сборки и путь GitHub Pages.
 
+## Настройка GitHub Pages
+
+Один раз открой в репозитории **Settings → Pages → Build and deployment → Source** и выбери **GitHub Actions**. Это отключит автоматическую публикацию исходников из ветки `main` через Jekyll и оставит публикацию собранной папки `dist/` из workflow.
+
+После этого каждый push в `main` будет запускать проверку типов, тесты и production-сборку, а затем публиковать игру.
+
 ## Публикация
 
 Workflow `.github/workflows/static.yml` устанавливает зависимости, собирает игру и публикует содержимое `dist/`. Для GitHub Pages Vite использует базовый URL `/ccg_test/`.
