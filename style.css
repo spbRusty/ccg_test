@@ -218,25 +218,6 @@ h2 { margin: 0; font-size: 15px; }
   .slot .card-description { font-size: 7px; }
   .hand-card .card-face { min-height: 64px; }
 }
-  .player-panel { padding: 8px 10px; }
-  .battlefield { padding: 8px 6px 9px; gap: 5px; }
-  .slot, .slot .card-face { min-height: 0; }
-  .card-face { padding: 5px 5px 4px; }
-  .card-name { font-size: 9px; }
-  .slot .card-type { font-size: 7px; }
-  .player-hand { gap: 4px; }
-  .hand-card .card-face { min-height: 78px; padding: 5px 4px; }
-  .hand-card .card-description { font-size: 8px; }
-  .card-symbol { font-size: 15px; }
-  .hand-heading { align-items: center; }
-  .hand-heading .subtle { font-size: 9px; }
-  .game-footer { padding: 8px 7px; gap: 6px; }
-  .event-log { font-size: 9px; gap: 5px; }
-  #game-message { font-size: 10px; }
-  .card-description { font-size: 8px; }
-  .button { padding: 7px 8px; font-size: 10px; }
-  .clock { font-size: 22px; }
-}
 @media (max-height: 760px) {
   .game-shell { padding-top: 6px; padding-bottom: 6px; gap: 5px; }
   .battlefield { gap: 4px; padding-top: 5px; padding-bottom: 5px; }
