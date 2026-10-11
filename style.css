@@ -1127,3 +1127,77 @@ h2 { margin: 0; font-size: 15px; }
 @media (prefers-reduced-motion: reduce) {
   .slot.card-entering .card-face { animation: none !important; }
 }
+
+
+/* Карты с портретными пропорциями 2:3 (ширина:высота) */
+:root { --play-card-height: 180px; }
+#opponent-row-1, #player-row-1 {
+  grid-template-columns: repeat(6, minmax(0, 120px)) !important;
+  justify-content: center;
+  height: var(--play-card-height);
+  min-height: var(--play-card-height);
+  max-height: var(--play-card-height);
+}
+.slot {
+  width: 100%;
+  height: var(--play-card-height);
+  min-height: var(--play-card-height);
+  max-height: var(--play-card-height);
+  aspect-ratio: 2 / 3;
+}
+.slot .card-face {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  aspect-ratio: 2 / 3 !important;
+}
+.player-hand {
+  grid-template-columns: repeat(5, minmax(0, 120px)) !important;
+  justify-content: center;
+  min-height: var(--play-card-height) !important;
+}
+.hand-card {
+  width: 100%;
+  height: var(--play-card-height) !important;
+  min-height: var(--play-card-height) !important;
+  max-height: var(--play-card-height) !important;
+  aspect-ratio: 2 / 3;
+}
+.hand-card .card-face {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  aspect-ratio: 2 / 3 !important;
+}
+@media (max-width: 1050px) and (min-width: 701px) {
+  #opponent-row-1, #player-row-1 { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; }
+  .slot, .hand-card { min-width: 0; }
+}
+@media (max-width: 700px) {
+  :root { --play-card-height: clamp(108px, 36vw, 150px); }
+  #opponent-row-1, #player-row-1 {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    justify-content: stretch;
+    height: var(--play-card-height);
+    min-height: var(--play-card-height);
+    max-height: var(--play-card-height);
+  }
+  .slot {
+    width: 100%;
+    height: var(--play-card-height);
+    min-height: var(--play-card-height);
+    max-height: var(--play-card-height);
+  }
+  .player-hand {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+    justify-content: stretch;
+    min-height: var(--play-card-height) !important;
+  }
+  .hand-card, .hand-card .card-face {
+    height: var(--play-card-height) !important;
+    min-height: 0 !important;
+    max-height: var(--play-card-height) !important;
+  }
+}
