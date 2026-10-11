@@ -1,31 +1,69 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CCG Game</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#10131a">
+  <title>Временной разлом — CCG prototype</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Рука оппонента -->
-    <div class="hand opponent-hand"></div>
+  <main class="game-shell">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">ПРОТОТИП ККИ</div>
+        <h1>Временной разлом</h1>
+      </div>
+      <button id="new-game" class="button button-quiet" type="button">Новая игра</button>
+    </header>
 
-    <!-- Ряды карт оппонента -->
-    <div class="row"></div>
-    <div class="row"></div>
+    <section class="player-panel opponent-panel" aria-label="Противник">
+      <div class="player-heading">
+        <div><span class="player-dot enemy-dot"></span><strong>Противник</strong><span class="subtle">Простой ИИ</span></div>
+        <div class="clock"><span id="opponent-time">60</span><small>сек.</small></div>
+      </div>
+      <div class="time-track"><div id="opponent-time-bar" class="time-fill enemy-fill"></div></div>
+      <div class="panel-meta"><span>В руке: <b id="opponent-hand-count">5</b></span><span id="opponent-status">Ожидает ход</span></div>
+    </section>
 
-    <!-- Полоска между картами оппонента и игрока -->
-    <div class="divider">
-        <span>Mana</span> | <span>Anomaly</span>
-    </div>
+    <section id="battlefield" class="battlefield" aria-label="Игровое поле">
+      <div class="side-label enemy-label">ПОЛЕ ПРОТИВНИКА</div>
+      <div id="opponent-row-1" class="card-row" aria-label="Ряд противника 1"></div>
+      <div id="opponent-row-2" class="card-row" aria-label="Ряд противника 2"></div>
 
-    <!-- Ряды карт игрока -->
-    <div class="row"></div>
-    <div class="row"></div>
+      <div class="rift-divider">
+        <span class="rift-line"></span>
+        <span class="rift-title">РАЗЛОМ ВРЕМЕНИ</span>
+        <span class="rift-line"></span>
+      </div>
 
-    <!-- Рука игрока -->
-    <div class="hand player-hand"></div>
+      <div class="side-label player-label">ТВОЁ ПОЛЕ</div>
+      <div id="player-row-1" class="card-row" aria-label="Твой ряд 1"></div>
+      <div id="player-row-2" class="card-row" aria-label="Твой ряд 2"></div>
+    </section>
 
-    <script src="game.js"></script>
+    <section class="player-panel own-panel" aria-label="Твой запас времени">
+      <div class="player-heading">
+        <div><span class="player-dot own-dot"></span><strong>Твоё время</strong></div>
+        <div class="clock"><span id="player-time">60</span><small>сек.</small></div>
+      </div>
+      <div class="time-track"><div id="player-time-bar" class="time-fill own-fill"></div></div>
+      <div class="panel-meta"><span>Колода: <b id="player-deck-count">35</b></span><span id="player-status">Твой ход</span></div>
+    </section>
+
+    <section class="hand-area">
+      <div class="hand-heading">
+        <div><h2>Карты в руке</h2><span class="subtle">Перетащи карту на свободный слот или выбери её и нажми на слот.</span></div>
+        <button id="pass-turn" class="button button-primary" type="button">Пропустить ход</button>
+      </div>
+      <div id="player-hand" class="player-hand" aria-label="Карты в руке игрока"></div>
+    </section>
+
+    <footer class="game-footer">
+      <p id="game-message" role="status" aria-live="polite">Выбери карту и разыграй её. Стоимость вычитается из твоего времени.</p>
+      <div id="event-log" class="event-log" aria-label="История ходов"></div>
+    </footer>
+  </main>
+  <script src="game.js"></script>
 </body>
 </html>
