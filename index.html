@@ -17,6 +17,18 @@
       <div class="topbar-actions"><button id="fullscreen-toggle" class="button button-quiet fullscreen-toggle" type="button" aria-label="Развернуть на весь экран">⛶ На весь экран</button><button id="new-game" class="button button-quiet" type="button">Новая игра</button></div>
     </header>
 
+    <section class="duel-timebar" aria-label="Запасы времени">
+      <div class="duel-time-side enemy-time-side">
+        <div class="duel-time-label"><span>Противник</span><strong><span id="mobile-opponent-time">60</span> с</strong></div>
+        <div class="duel-track enemy-duel-track"><div id="mobile-opponent-fill" class="duel-fill enemy-duel-fill"></div></div>
+      </div>
+      <div class="duel-time-center" aria-hidden="true">VS</div>
+      <div class="duel-time-side own-time-side">
+        <div class="duel-time-label"><strong><span id="mobile-player-time">60</span> с</strong><span>Ты</span></div>
+        <div class="duel-track own-duel-track"><div id="mobile-player-fill" class="duel-fill own-duel-fill"></div></div>
+      </div>
+    </section>
+
     <section class="player-panel opponent-panel" aria-label="Противник">
       <div class="player-heading">
         <div><span class="player-dot enemy-dot"></span><strong>Противник</strong><span class="subtle">Простой ИИ</span></div>
@@ -53,10 +65,10 @@
 
     <section class="hand-area">
       <div class="hand-heading">
-        <div><h2>Карты в руке</h2><span class="subtle">Перетащи карту на свободный слот или выбери её и нажми на слот.</span></div>
-        <button id="pass-turn" class="button button-primary" type="button">Пропустить ход</button>
+        <div><h2>Карты в руке</h2><span class="subtle">Выбери карту, затем свободный слот.</span></div>
       </div>
       <div id="player-hand" class="player-hand" aria-label="Карты в руке игрока"></div>
+      <button id="pass-turn" class="button button-primary pass-turn-button" type="button">Пропустить ход</button>
     </section>
 
     <aside class="game-footer" aria-label="Журнал партии">
