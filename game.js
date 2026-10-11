@@ -178,7 +178,14 @@
       body.appendChild(desc);
     }
 
-    face.append(top, body);
+    const art = document.createElement("img");
+    art.className = "card-art";
+    art.src = "image2.avif";
+    art.alt = "";
+    art.loading = "lazy";
+    art.decoding = "async";
+
+    face.append(top, art, body);
     return face;
   }
 
