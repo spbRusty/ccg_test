@@ -6,33 +6,14 @@
   const MAX_HAND = 7;
   const MAX_TIME = 60;
   const CARD_TYPES = (() => {
-    const definitions = {};
-    const effects = ["gain","steal","swap","discount","slow","copy","cancel","delayed","conditional","percent","fieldGain","fieldDrain","fieldTax","mill","hijack","accumulate","discharge","transferCharge","massDestroy","return","move","evolve","combo","shield","overheat"];
-    const prefixes = ["Аварийный","Квантовый","Паразитный","Реверсивный","Хрональный","Нестабильный","Зеркальный","Гравитационный","Пульсирующий","Забытый","Призрачный","Каскадный","Резонансный","Синтетический","Сломанный","Петлевой","Теневой","Искровой","Пограничный","Нулевой","Распадающийся","Сверхпроводящий","Искажённый","Последний","Невозможный"];
-    const nouns = ["Импульс","Контур","Реактор","Протокол","Модуль","Сдвиг","Узел","Фантом","Каскад","Сигнал","Парадокс","Резонатор","Разлом","Триггер","Механизм","Осколок","Преобразователь","Архив","Маятник","Сингулярность"];
-    const colors = ["#8ce0a0","#62d9e8","#ff8c78","#f0c875","#a9a0ff","#d59aff","#80b7ff","#ff727e","#68d9c1","#e6a0ff"];
-    const symbols = ["↗","⇢","⇄","»","…","⟲","×","◷","!","%","⌂","⌁","⚡","⌫","⇥","◉","↯","⤳","✣","⤺","⌘","⟳","⌁","◇","☄"];
-    function describe(type,a) {
-      const d={
-        gain:"Восстанови "+a+" секунд времени.",steal:"Перенеси к себе "+a+" секунд от противника.",swap:"Поменяйся запасами времени с противником.",
-        discount:"Следующая твоя карта дешевле на "+a+" секунд.",slow:"Следующая карта противника дороже на "+a+" секунд.",copy:"Повтори эффект последней разыгранной карты.",
-        cancel:"Удали последнюю карту противника с поля и получи "+a+" секунд.",delayed:"В начале следующего хода противник потеряет "+a+" секунд, ты получишь их.",
-        conditional:"Забери "+a+" секунд; если у врага меньше 20 секунд, эффект удвоится.",percent:"Забери "+a+"% оставшегося времени противника.",
-        fieldGain:"Получи "+a+" секунду за каждую свою карту на поле, включая эту.",fieldDrain:"Уничтожь самую дорогую карту врага и получи "+a+" секунд.",
-        fieldTax:"Противник теряет "+a+" секунд за каждую свою карту на поле.",mill:"Сожги "+a+" верхние карты колоды противника.",hijack:"Укради случайную карту из руки противника.",
-        accumulate:"Каждый твой ход получает "+a+" заряда. При 3+ зарядах даёт бонус.",discharge:"Потрать накопленные заряды: каждый даёт "+a+" секунд.",
-        transferCharge:"Передай "+a+" заряда другой своей карте.",massDestroy:"Уничтожь до "+a+" случайных карт противника.",return:"Верни до "+a+" своих карт с поля в руку.",
-        move:"Перемести свою карту в другой слот и получи "+a+" секунд.",evolve:"Усиль выбранную свою карту: каждый уровень даёт дополнительный заряд.",
-        combo:"Получи "+a+" секунд за каждую другую свою карту на поле.",shield:"Дай выбранной карте щит от одного уничтожения.",
-        overheat:"Сними до "+a+" своих карт; за каждую получи заряд."
-      };return d[type]||"Измени течение времени.";
-    }
-    effects.forEach((type,ei)=>{for(let v=0;v<20;v++){
-      const key="card_"+String(ei*20+v+1).padStart(3,"0");
-      const amount=1+((ei*7+v*3)%(type==="percent"?24:["mill","massDestroy","return","overheat"].includes(type)?4:9));
-      const cost=1+((ei*3+v*5)%8);
-      definitions[key]={key,name:prefixes[ei]+" "+nouns[v],cost,type,amount,symbol:symbols[ei],description:describe(type,amount),color:colors[(ei+v)%colors.length],variant:v+1};
-    }});return definitions;
+    const definitions = {}, effects=["gain","steal","swap","discount","slow","copy","cancel","delayed","conditional","percent","fieldGain","fieldDrain","fieldTax","mill","hijack","accumulate","discharge","transferCharge","massDestroy","return","move","evolve","combo","shield","overheat","massPlay","trap","ruleChange","random","duplicate","sacrifice"];
+    const prefixes=["Аварийный","Квантовый","Паразитный","Реверсивный","Хрональный","Нестабильный","Зеркальный","Гравитационный","Пульсирующий","Забытый","Призрачный","Каскадный","Резонансный","Синтетический","Сломанный","Петлевой","Теневой","Искровой","Пограничный","Нулевой","Распадающийся","Сверхпроводящий","Искажённый","Последний","Невозможный","Скрытый","Переписанный","Непредсказуемый","Копирующий","Жертвенный","Запредельный"];
+    const nouns=["Импульс","Контур","Реактор","Протокол","Модуль","Сдвиг","Узел","Фантом","Каскад","Сигнал","Парадокс","Резонатор","Разлом","Триггер","Механизм","Осколок","Преобразователь"];
+    const colors=["#8ce0a0","#62d9e8","#ff8c78","#f0c875","#a9a0ff","#d59aff","#80b7ff","#ff727e","#68d9c1","#e6a0ff"];
+    const symbols=["↗","⇢","⇄","»","…","⟲","×","◷","!","%","⌂","⌁","⚡","⌫","⇥","◉","↯","⤳","✣","⤺","⌘","⟳","⌁","◇","☄","⇶","♧","⤴","?","⧉","†"];
+    function describe(t,n){const d={gain:"Восстанови "+n+" секунд времени.",steal:"Перенеси к себе "+n+" секунд от противника.",swap:"Поменяйся запасами времени с противником.",discount:"Следующая твоя карта дешевле на "+n+" секунд.",slow:"Следующая карта противника дороже на "+n+" секунд.",copy:"Повтори эффект последней разыгранной карты.",cancel:"Удали последнюю карту противника с поля и получи "+n+" секунд.",delayed:"В начале следующего хода противник потеряет "+n+" секунд, ты получишь их.",conditional:"Забери "+n+" секунд; если у врага меньше 20 секунд, эффект удвоится.",percent:"Забери "+n+"% оставшегося времени противника.",fieldGain:"Получи "+n+" секунду за каждую свою карту на поле, включая эту.",fieldDrain:"Уничтожь самую дорогую карту врага и получи "+n+" секунд.",fieldTax:"Противник теряет "+n+" секунд за каждую свою карту на поле.",mill:"Сожги "+n+" верхние карты колоды противника.",hijack:"Укради случайную карту из руки противника.",accumulate:"Каждый твой ход получает "+n+" заряда. При 3+ зарядах даёт бонус.",discharge:"Потрать накопленные заряды: каждый даёт "+n+" секунд.",transferCharge:"Передай "+n+" заряда другой своей карте.",massDestroy:"Уничтожь до "+n+" случайных карт противника.",return:"Верни до "+n+" своих карт с поля в руку.",move:"Перемести свою карту в другой слот и получи "+n+" секунд.",evolve:"Усиль выбранную свою карту: каждый уровень даёт дополнительный заряд.",combo:"Получи "+n+" секунд за каждую другую свою карту на поле.",shield:"Дай выбранной карте щит от одного уничтожения.",overheat:"Сними до "+n+" своих карт; за каждую получи заряд.",massPlay:"Добери "+n+" карт и снизь стоимость следующей карты на "+n+" секунд.",trap:"Установи скрытую ловушку: следующая карта противника будет остановлена.",ruleChange:"Усиль следующий эффект: добавь "+n+" к его числовому значению.",random:"Случайная аномалия: эффект выбирается при розыгрыше.",duplicate:"Создай копию другой своей карты на поле.",sacrifice:"Пожертвуй другой своей картой и получи "+n+" секунд плюс её заряды."};return d[t]||"Измени течение времени.";}
+    effects.forEach((type,ei)=>{for(let v=0;v<(ei<4?17:16);v++){const key="card_"+String(Object.keys(definitions).length+1).padStart(3,"0"),amount=1+((ei*7+v*3)%(type==="percent"?24:["mill","massDestroy","return","overheat","massPlay"].includes(type)?4:9)),cost=1+((ei*3+v*5)%8);definitions[key]={key,name:prefixes[ei]+" "+nouns[v],cost,type,amount,symbol:symbols[ei],description:describe(type,amount),color:colors[(ei+v)%colors.length],variant:v+1};}});
+    return definitions;
   })();
   const CARD_POOL = Object.keys(CARD_TYPES);
   const selectedCardIds = new Set();
@@ -76,7 +57,9 @@
       discount: 0,
       penalty: 0,
       delayed: [],
-      turnPlays: 0
+      turnPlays: 0,
+      hiddenTrap: 0,
+      ruleBonus: 0
     };
   }
 
@@ -497,7 +480,7 @@
       }
       case "cancel": {const removed=removeLatestEnemyCard(actorKey),before=actor.time;actor.time=Math.min(MAX_TIME,actor.time+effect.amount);addLog(prefix+(removed?"Срыв: ":"Нечего убирать: ")+"получено "+(actor.time-before)+" сек.");break;}
       case "accumulate":{const c=actor.board.find(x=>x&&x.id===effect.id);if(c)c.charges=(c.charges||0)+effect.amount;addLog(prefix+"Накопление: +"+effect.amount+" заряда.");break;}
-      case "discharge":{const c=actor.board.find(x=>x&&x.id===effect.id),n=c?(c.charges||0):0;if(c)c.charges=0;const before=actor.time;actor.time=Math.min(MAX_TIME,actor.time+n*effect.amount);addLog(prefix+"Разряд: "+n+" зарядов, +"+(actor.time-before)+" сек.");break;}
+      case "discharge":{let n=0;actor.board.forEach(c=>{if(c){n+=(c.charges||0);c.charges=0;}});const before=actor.time;actor.time=Math.min(MAX_TIME,actor.time+n*effect.amount);addLog(prefix+"Разряд: потрачено "+n+" зарядов, +"+(actor.time-before)+" сек.");break;}
       case "transferCharge":{const c=actor.board.find(x=>x&&x.id===effect.id),o=actor.board.find(x=>x&&x.id!==effect.id&&(x.charges||0)>0);if(c&&o){const n=Math.min(effect.amount,o.charges);o.charges-=n;c.charges=(c.charges||0)+n;addLog(prefix+"Передано "+n+" зарядов.");}else addLog(prefix+"Нет заряженной карты для передачи.");break;}
       case "massDestroy":{const list=target.board.map((c,i)=>({c,i})).filter(x=>x.c&&x.c.shield<=0).sort(()=>Math.random()-.5).slice(0,effect.amount);list.forEach(({c,i})=>{target.board[i]=null;target.discard.push(c);});addLog(prefix+"Уничтожено карт противника: "+list.length+".");break;}
       case "return":{let n=0;actor.board.forEach((c,i)=>{if(c&&n<effect.amount&&actor.hand.length<MAX_HAND){actor.board[i]=null;actor.hand.push(c);n++;}});addLog(prefix+"Возвращено в руку карт: "+n+".");break;}
@@ -506,6 +489,12 @@
       case "combo":{const n=Math.max(0,actor.board.filter(c=>c&&c.id!==effect.id).length),before=actor.time;actor.time=Math.min(MAX_TIME,actor.time+n*effect.amount);addLog(prefix+"Цепная реакция: "+n+" карт, +"+(actor.time-before)+" сек.");break;}
       case "shield":{const c=actor.board.find(x=>x&&x.id!==effect.id);if(c)c.shield=(c.shield||0)+1;addLog(prefix+(c?"Щит установлен на «"+c.name+"».":"Нет карты для защиты."));break;}
       case "overheat":{let n=0;actor.board.forEach((c,i)=>{if(c&&c.id!==effect.id&&n<effect.amount){actor.board[i]=null;actor.discard.push(c);n++;}});const c=actor.board.find(x=>x&&x.id===effect.id);if(c)c.charges=(c.charges||0)+n;addLog(prefix+"Перегрузка: снято карт "+n+", зарядов +"+n+".");break;}
+      case "massPlay":{for(let i=0;i<effect.amount;i++)drawCard(actorKey);actor.discount=Math.max(actor.discount,effect.amount);addLog(prefix+"Добор карт и скидка на следующую карту: "+effect.amount+".");break;}
+      case "trap":{actor.hiddenTrap=effect.amount;addLog(prefix+"Скрытая ловушка установлена.");break;}
+      case "ruleChange":{actor.ruleBonus=effect.amount;addLog(prefix+"Следующий эффект усилен на "+effect.amount+".");break;}
+      case "random":{const r=Math.floor(Math.random()*4);if(r===0){const before=actor.time;actor.time=Math.min(MAX_TIME,actor.time+effect.amount);addLog(prefix+"Аномалия: +"+(actor.time-before)+" сек.");}else if(r===1){const n=transferTime(actorKey,effect.amount);addLog(prefix+"Аномалия: перенесено "+n+" сек.");}else if(r===2){const n=Math.min(effect.amount,target.time);target.time-=n;addLog(prefix+"Аномалия: враг теряет "+n+" сек.");}else{const list=target.board.map((c,i)=>({c,i})).filter(x=>x.c&&x.c.shield<=0);if(list.length){const x=list[Math.floor(Math.random()*list.length)];target.board[x.i]=null;target.discard.push(x.c);addLog(prefix+"Аномалия уничтожает «"+x.c.name+"».");}else addLog(prefix+"Аномалия не находит цель.");}break;}
+      case "duplicate":{const source=actor.board.find(c=>c&&c.id!==effect.id),slot=actor.board.findIndex(c=>!c);if(source&&slot>=0){actor.board[slot]={...source,id:"card-"+(++sequence),playedAt:++sequence,charges:source.charges||0,shield:0};addLog(prefix+"Создана копия «"+source.name+"».");}else addLog(prefix+"Нет цели или слота для копии.");break;}
+      case "sacrifice":{const index=actor.board.findIndex(c=>c&&c.id!==effect.id);if(index>=0){const c=actor.board[index];actor.board[index]=null;actor.discard.push(c);const before=actor.time;actor.time=Math.min(MAX_TIME,actor.time+effect.amount+(c.charges||0));addLog(prefix+"Пожертвована «"+c.name+"», получено "+(actor.time-before)+" сек.");}else addLog(prefix+"Нет карты для жертвоприношения.");break;}
       default:break;
     }
   }
@@ -618,8 +607,10 @@
 
     addLog(labelOf(actorKey) + " разыгрывает «" + card.name + "» за " + cost + " сек.");
 
-    if(card.type==="copy"){if(lastEffect)applyEffect(lastEffect,actorKey,true);else addLog("Эхо не нашло предыдущего эффекта.");}
-    else{applyEffect(card,actorKey,false);if(card.type!=="cancel")lastEffect={type:card.type,amount:card.amount};}
+    const trapOwner=enemyOf(actorKey);let trapped=false;
+    if(players[trapOwner].hiddenTrap){players[trapOwner].hiddenTrap=0;const slot=actor.board.findIndex(c=>c&&c.id===card.id);if(slot>=0)actor.board[slot]=null;actor.discard.push(card);trapped=true;addLog("Скрытая ловушка останавливает карту «"+card.name+"»!");}
+    if(!trapped){if(card.type==="copy"){if(lastEffect)applyEffect(lastEffect,actorKey,true);else addLog("Эхо не нашло предыдущего эффекта.");}
+    else{const resolved={...card,amount:card.amount+(actor.ruleBonus||0)};actor.ruleBonus=0;applyEffect(resolved,actorKey,false);if(card.type!=="cancel")lastEffect={type:card.type,amount:card.amount,id:card.id};}}
     actor.turnPlays++;if(checkGameOver())return true;drawCard(actorKey);animatedCardId=card.id;playSound("card");render();
     if(actorKey==="player")setMessage("Карта разыграна. Можешь разыграть ещё или завершить ход.");return true;
   }
@@ -660,6 +651,7 @@
       case "move":score+=1;break;case "evolve":score+=actor.board.filter(Boolean).length*.8;break;
       case "combo":score+=actor.board.filter(Boolean).length*card.amount*.4;break;case "shield":score+=2;break;
       case "overheat":score+=actor.board.filter(Boolean).length*.8;break;
+      case "massPlay":score+=actor.hand.length<5?3:1;break;case "trap":score+=2.4;break;case "ruleChange":score+=2;break;case "random":score+=1.8;break;case "duplicate":score+=actor.board.filter(Boolean).length?2.5:-1;break;case "sacrifice":score+=actor.board.filter(Boolean).length?2:0;break;
       default: break;
     }
     return score;
