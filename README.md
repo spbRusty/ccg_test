@@ -28,6 +28,7 @@ npm run preview
 - `src/cards/card-data.ts` — генерация библиотеки из 500 карт.
 - `src/cards/types.ts` — типы данных карт и перечень эффектов.
 - `src/ui/card-face.ts` — отрисовка лицевой стороны карты.
+- `src/ui/collection.ts` — коллекция, фильтрация и просмотр подробностей карт.
 - `src/game/player.ts` — создание игроков и перемешивание колод.
 - `src/ai/scoring.ts` — оценка карт для AI.
 - `src/effects/apply-effect.ts` — обработчики игровых эффектов.
