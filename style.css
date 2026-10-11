@@ -25,7 +25,7 @@ button { font: inherit; }
   margin: 0;
   padding: 10px clamp(10px, 2vw, 22px);
   display: grid;
-  grid-template-columns: minmax(190px, 220px) minmax(0, 1fr);
+  grid-template-columns: minmax(270px, 320px) minmax(0, 1fr);
   grid-template-rows: auto auto minmax(0, 1fr) auto auto;
   gap: 8px 14px;
   overflow: hidden;
@@ -174,11 +174,11 @@ h2 { margin: 0; font-size: 15px; }
 .button:disabled { opacity: .4; cursor: not-allowed; }
 .button-quiet { color: var(--muted); background: #202633; }
 .button-primary { background: #c7f5f7; color: #102128; border-color: #c7f5f7; }
-.game-footer { grid-column: 1; grid-row: 1 / 6; min-height: 0; overflow: hidden; border: 1px solid #2b3342; border-radius: 12px; padding: 12px 10px; background: rgba(16,19,26,.92); display: flex; flex-direction: column; gap: 8px; }
+.game-footer { grid-column: 1; grid-row: 2 / 4; align-self: start; height: min(58vh, 520px); min-height: 240px; max-height: 520px; min-width: 0; overflow: hidden; border: 1px solid #2b3342; border-radius: 12px; padding: 12px 10px; background: rgba(16,19,26,.96); display: flex; flex-direction: column; gap: 8px; }
 .log-heading { color: var(--gold); font-size: 10px; font-weight: 800; letter-spacing: .14em; }
 #game-message { margin: 0; color: #d7deea; font-size: 11px; }
-.event-log { display: flex; flex-direction: column-reverse; gap: 7px; min-height: 0; flex: 1; overflow: auto; color: var(--muted); font-size: 10px; }
-.event-log p { margin: 0; }
+.event-log { display: flex; flex-direction: column; gap: 7px; min-height: 0; flex: 1; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-width: thin; color: var(--muted); font-size: 11px; }
+.event-log p { margin: 0; flex: 0 0 auto; overflow-wrap: anywhere; }
 .event-log p:first-child { color: #dce5f1; }
 .game-over { border-color: var(--gold); box-shadow: 0 0 0 1px #f0c8752b; }
 @media (min-width: 700px) {
