@@ -120,13 +120,14 @@
 
   function addLog(message) {
     logs.push(message);
-    logs = logs.slice(-8);
+    logs = logs.slice(-50);
     $("event-log").replaceChildren();
     logs.slice().reverse().forEach((line) => {
       const p = document.createElement("p");
       p.textContent = line;
       $("event-log").appendChild(p);
     });
+    $("event-log").scrollTop = $("event-log").scrollHeight;
   }
 
   function setMessage(message) {
