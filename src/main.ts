@@ -157,23 +157,23 @@ import type { CardInstance, PlayerKey, PlayerState } from "./cards/types";
       });
       hand.appendChild(button);
     });
-    $("opponent-hand-count").textContent = players.opponent.hand.length;
+    $("opponent-hand-count").textContent = String(players.opponent.hand.length);
     const countLabel=$("selected-cards-count");if(countLabel)countLabel.textContent=selectedCardIds.size?"Выбрано: "+selectedCardIds.size:"";
-    const playButton=$("play-selected");if(playButton)playButton.disabled=turn!=="player"||gameFinished||!selectedCardIds.size;
+    const playButton=$("play-selected") as HTMLButtonElement | null;if(playButton)playButton.disabled=turn!=="player"||gameFinished||!selectedCardIds.size;
 
   }
 
   function renderStats() {
-    $("player-time").textContent = players.player.time;
-    $("opponent-time").textContent = players.opponent.time;
+    $("player-time").textContent = String(players.player.time);
+    $("opponent-time").textContent = String(players.opponent.time);
     $("player-time-bar").style.width = Math.max(0, players.player.time / START_TIME * 100) + "%";
     $("opponent-time-bar").style.width = Math.max(0, players.opponent.time / START_TIME * 100) + "%";
     const mobileOpponentTime = $("mobile-opponent-time");
     const mobilePlayerTime = $("mobile-player-time");
     const mobileOpponentFill = $("mobile-opponent-fill");
     const mobilePlayerFill = $("mobile-player-fill");
-    if (mobileOpponentTime) mobileOpponentTime.textContent = players.opponent.time;
-    if (mobilePlayerTime) mobilePlayerTime.textContent = players.player.time;
+    if (mobileOpponentTime) mobileOpponentTime.textContent = String(players.opponent.time);
+    if (mobilePlayerTime) mobilePlayerTime.textContent = String(players.player.time);
     if (mobileOpponentFill) mobileOpponentFill.style.width = Math.max(0, players.opponent.time / START_TIME * 100) + "%";
     if (mobilePlayerFill) mobilePlayerFill.style.width = Math.max(0, players.player.time / START_TIME * 100) + "%";
     $("player-status").textContent = gameFinished ? "Игра завершена" : turn === "player" ? "Твой ход" : "Ход противника";
@@ -206,8 +206,8 @@ import type { CardInstance, PlayerKey, PlayerState } from "./cards/types";
     // Счётчики соответствуют количеству карт, отображаемых во вкладках.
     // Показываем только карты, которые ещё остались в колоде.
     const playerCards=players.player.deck;
-    $("player-collection-count").textContent=playerCards.length;
-    $("opponent-collection-count").textContent=players.opponent.played.length;
+    $("player-collection-count").textContent=String(playerCards.length);
+    $("opponent-collection-count").textContent=String(players.opponent.played.length);
     const allCards=collectionMode==="player"?playerCards:players.opponent.played;
     const query=(($("card-search") as HTMLInputElement | null)?.value||"").trim().toLocaleLowerCase("ru");
     const cards=query?allCards.filter(c=>(c.name+" "+c.description+" "+c.type).toLocaleLowerCase("ru").includes(query)):allCards;
@@ -425,7 +425,7 @@ import type { CardInstance, PlayerKey, PlayerState } from "./cards/types";
 
   function playSound(kind) {
     try {
-      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      const AudioContextClass = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
       if (!AudioContextClass) return;
       if (!audioContext) audioContext = new AudioContextClass();
       if (audioContext.state === "suspended") audioContext.resume();
@@ -602,7 +602,7 @@ import type { CardInstance, PlayerKey, PlayerState } from "./cards/types";
       if (face) showCardDetails(face.dataset.cardKey);
     });
     document.addEventListener("focusin", (event) => {
-      const face = event.target.closest(".card-face[data-card-key]");
+      const face = (event.target as Element | null)?.closest<HTMLElement>(".card-face[data-card-key]");
       if (face) showCardDetails(face.dataset.cardKey);
     });
     $("new-game").addEventListener("click", resetGame);
@@ -658,12 +658,12 @@ import type { CardInstance, PlayerKey, PlayerState } from "./cards/types";
     });
 
     $("battlefield").addEventListener("dragleave", (event) => {
-      const slot = event.target.closest(".slot");
+      const slot = (event.target as Element | null)?.closest<HTMLElement>(".slot");
       if (slot && !slot.contains(event.relatedTarget as Node | null)) slot.classList.remove("drop-target");
     });
 
     $("battlefield").addEventListener("drop", (event) => {
-      const slot = event.target.closest(".slot.player-slot");
+      const slot = (event.target as Element | null)?.closest<HTMLElement>(".slot.player-slot");
       if (!slot || turn !== "player" || gameFinished) return;
       event.preventDefault();
       slot.classList.remove("drop-target");
