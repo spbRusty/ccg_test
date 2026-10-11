@@ -140,13 +140,10 @@ h2 { margin: 0; font-size: 15px; }
 .card-face > * { position: relative; z-index: 1; }
 .card-top { display: flex; justify-content: space-between; align-items: center; gap: 4px; }
 .card-cost { background: #111722; border: 1px solid #465368; border-radius: 5px; padding: 1px 5px; color: var(--gold); font-weight: 900; font-size: 11px; }
-.card-symbol { font-size: 17px; color: var(--card-glow, var(--cyan)); font-weight: 800; }
 .card-name { font-size: clamp(10px, 1.6vw, 12px); font-weight: 800; line-height: 1.12; overflow-wrap: anywhere; }
 .card-description { color: #bdc6d5; font-size: 9px; line-height: 1.2; margin-top: 3px; }
-.card-type { margin-top: 5px; font-size: 8px; letter-spacing: .1em; color: var(--card-glow, var(--cyan)); text-transform: uppercase; font-weight: 800; }
 .slot .card-face { min-height: 80px; }
 .slot .card-description { display: block; font-size: 9px; line-height: 1.18; }
-.slot .card-type { margin-top: auto; }
 .hand-area { grid-column: 2; grid-row: 5; padding-top: 0; min-width: 0; }
 .hand-heading { align-items: flex-end; margin-bottom: 8px; }
 .hand-heading > div { min-width: 0; }
@@ -189,7 +186,6 @@ h2 { margin: 0; font-size: 15px; }
   .battlefield { gap: 9px; padding-top: 12px; }
   .slot, .slot .card-face { min-height: 0; }
   .hand-card .card-face { min-height: 125px; padding: 9px; }
-  .card-symbol { font-size: 21px; }
   .card-description { font-size: 10px; }
   .slot .card-description { display: block; font-size: 9px; }
 }
@@ -206,7 +202,6 @@ h2 { margin: 0; font-size: 15px; }
   .player-hand { gap: 3px; }
   .hand-card .card-face { min-height: 72px; padding: 5px 4px; }
   .card-name { font-size: 8px; }
-  .card-type { font-size: 7px; }
   .card-description { font-size: 7px; }
   .hand-heading { gap: 4px; }
   .button { padding: 6px; font-size: 9px; }
@@ -231,4 +226,34 @@ h2 { margin: 0; font-size: 15px; }
   .battlefield { gap: 3px; }
   .card-description { font-size: 7px !important; }
   .hand-card .card-face { min-height: 58px; }
+}
+
+/* Разыгрывание карты */
+.slot.card-entering .card-face {
+  animation: card-land .28s cubic-bezier(.2,.8,.25,1) both;
+}
+@keyframes card-land {
+  from { opacity: 0; transform: translateY(-18px) scale(1.07); filter: brightness(1.65); }
+  72% { opacity: 1; transform: translateY(2px) scale(.985); filter: brightness(1.15); }
+  to { opacity: 1; transform: translateY(0) scale(1); filter: brightness(1); }
+}
+
+/* Журнал оставляем только в десктопной раскладке */
+@media (max-width: 700px) {
+  .game-shell {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+  }
+  .topbar, .opponent-panel, .battlefield, .own-panel, .hand-area {
+    grid-column: 1;
+  }
+  .topbar { grid-row: 1; }
+  .opponent-panel { grid-row: 2; }
+  .battlefield { grid-row: 3; }
+  .own-panel { grid-row: 4; }
+  .hand-area { grid-row: 5; }
+  .game-footer { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .slot.card-entering .card-face { animation: none; }
 }
