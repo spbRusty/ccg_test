@@ -83,10 +83,12 @@ h2 { margin: 0; font-size: 15px; }
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: clamp(6px, 1.5vw, 12px);
+  flex: 1;
+  min-height: 0;
 }
 .slot {
   min-width: 0;
-  min-height: 82px;
+  min-height: 0;
   border: 1px dashed #384254;
   border-radius: 9px;
   background: rgba(255,255,255,.018);
@@ -110,7 +112,7 @@ h2 { margin: 0; font-size: 15px; }
 .card-face {
   width: 100%;
   min-width: 0;
-  min-height: 82px;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -185,8 +187,7 @@ h2 { margin: 0; font-size: 15px; }
 @media (min-width: 700px) {
   .game-shell { gap: 8px 14px; }
   .battlefield { gap: 9px; padding-top: 12px; }
-  .slot, .card-face { min-height: 96px; }
-  .slot .card-face { min-height: 94px; }
+  .slot, .slot .card-face { min-height: 0; }
   .hand-card .card-face { min-height: 125px; padding: 9px; }
   .card-symbol { font-size: 21px; }
   .card-description { font-size: 10px; }
