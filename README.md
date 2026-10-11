@@ -11,7 +11,9 @@ npm install
 npm run dev
 ```
 
-Vite выведет локальный адрес. Для production-сборки:
+Vite выведет локальный адрес. Перед сборкой автоматически выполняются проверка TypeScript и тесты библиотеки карт. Отдельно их можно запустить командами `npm run check` и `npm test`.
+
+Для production-сборки:
 
 ```bash
 npm run build
@@ -26,6 +28,9 @@ npm run preview
 - `src/cards/card-data.ts` — генерация библиотеки из 500 карт.
 - `src/cards/types.ts` — типы данных карт и перечень эффектов.
 - `src/ui/card-face.ts` — отрисовка лицевой стороны карты.
+- `src/game/player.ts` — создание игроков и перемешивание колод.
+- `src/ai/scoring.ts` — оценка карт для AI.
+- `src/cards/card-data.test.ts` — автоматические проверки библиотеки карт.
 - `style.css` — стили интерфейса.
 - `image2.avif` — графический ресурс карт.
 - `vite.config.ts` — конфигурация сборки и путь GitHub Pages.
