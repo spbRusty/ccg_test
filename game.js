@@ -269,6 +269,79 @@
     $("new-game").disabled = false;
   }
 
+  let collectionMode = "player";
+
+  function groupedCards(cards) {
+    const groups = new Map();
+    cards.forEach((card) => {
+      if (!groups.has(card.key)) groups.set(card.key, { card, count: 0 });
+      groups.get(card.key).count += 1;
+    });
+    return Array.from(groups.values()).sort((a, b) => a.card.name.localeCompare(b.card.name, "ru"));
+  }
+
+  function renderCollection() {
+    const list = $("collection-list");
+    if (!list) return;
+    $("tab-player-deck").classList.toggle("active", collectionMode === "player");
+    $("tab-player-deck").setAttribute("aria-selected", String(collectionMode === "player"));
+    $("tab-opponent-deck").classList.toggle("active", collectionMode === "opponent");
+    $("tab-opponent-deck").setAttribute("aria-selected", String(collectionMode === "opponent"));
+    list.replaceChildren();
+    // Все карты игрока, которые ещё не разыграны: остаток колоды и рука.
+    const cards = collectionMode === "player" ? players.player.deck.concat(players.player.hand) : players.opponent.played;
+    const groups = groupedCards(cards);
+    if (!groups.length) {
+      const empty = document.createElement("p");
+      empty.className = "collection-empty";
+      empty.textContent = collectionMode === "player" ? "Все карты уже разыграны." : "Противник ещё не разыграл ни одной карты.";
+      list.appendChild(empty);
+      return;
+    }
+    groups.forEach(({ card, count }) => {
+      const item = document.createElement("button");
+      item.type = "button";
+      item.className = "collection-card";
+      item.dataset.cardKey = card.key;
+      item.appendChild(makeCardFace(card, false));
+      const badge = document.createElement("span");
+      badge.className = "collection-count";
+      badge.textContent = "×" + count;
+      badge.setAttribute("aria-label", count + " шт.");
+      item.appendChild(badge);
+      item.addEventListener("mouseenter", () => showCardDetails(card.key));
+      item.addEventListener("focus", () => showCardDetails(card.key));
+      list.appendChild(item);
+    });
+  }
+
+  function showCardDetails(key) {
+    const card = CARD_TYPES[key];
+    const content = $("card-details-content");
+    if (!card || !content) return;
+    content.replaceChildren();
+    const title = document.createElement("h3");
+    title.className = "details-card-name";
+    title.textContent = card.name;
+    title.style.color = card.color;
+    const category = document.createElement("p");
+    category.className = "details-category";
+    category.textContent = card.category;
+    const stats = document.createElement("div");
+    stats.className = "details-stats";
+    const cost = document.createElement("span");
+    cost.className = "details-stat";
+    cost.textContent = "Стоимость: " + card.cost + " сек.";
+    const effect = document.createElement("span");
+    effect.className = "details-stat";
+    effect.textContent = "Сила эффекта: " + card.amount;
+    stats.append(cost, effect);
+    const description = document.createElement("p");
+    description.className = "details-description";
+    description.textContent = card.description;
+    content.append(title, category, stats, description);
+  }
+
   function render() {
     renderStats();
     renderBoard();
@@ -609,6 +682,16 @@
   }
 
   function initEvents() {
+    $("tab-player-deck").addEventListener("click", () => { collectionMode = "player"; renderCollection(); });
+    $("tab-opponent-deck").addEventListener("click", () => { collectionMode = "opponent"; renderCollection(); });
+    document.addEventListener("mouseover", (event) => {
+      const face = event.target.closest(".card-face[data-card-key]");
+      if (face) showCardDetails(face.dataset.cardKey);
+    });
+    document.addEventListener("focusin", (event) => {
+      const face = event.target.closest(".card-face[data-card-key]");
+      if (face) showCardDetails(face.dataset.cardKey);
+    });
     $("new-game").addEventListener("click", resetGame);
     $("pass-turn").addEventListener("click", passTurn);
 
