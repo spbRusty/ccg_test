@@ -56,10 +56,8 @@
     </section>
 
     <section class="hand-area">
-      <div class="hand-heading">
-        <div><h2>Карты в руке</h2><span class="subtle">Выбери карту, затем свободный слот.</span></div>
-        <button id="pass-turn" class="button button-primary pass-turn-button" type="button">Пропустить ход</button>
-      </div>
+      <div class="hand-heading"><div><h2>Карты в руке</h2><span class="subtle">Выбирай несколько карт и разыгрывай их за один ход.</span><span id="selected-cards-count" class="subtle"></span></div><div class="hand-actions"><button id="play-selected" class="button button-primary" type="button">Разыграть выбранные</button><button id="pass-turn" class="button button-quiet pass-turn-button" type="button">Завершить ход</button></div></div>
+      <div class="board-actions"><button id="move-selected" class="button button-quiet" type="button">Переместить выбранную</button><button id="return-selected" class="button button-quiet" type="button">Вернуть в руку</button><button id="remove-selected" class="button button-quiet" type="button">Снять выбранные карты</button><button id="sacrifice-selected" class="button button-quiet" type="button">Пожертвовать выбранные</button><button id="clear-board-selection" class="button button-quiet" type="button">Снять выделение</button></div>
       <div id="player-hand" class="player-hand" aria-label="Карты в руке игрока"></div>
     </section>
 
@@ -71,10 +69,10 @@
     <aside class="collection-panel" aria-label="Колоды и описание карты">
       <section class="collection-top">
         <div class="collection-tabs" role="tablist" aria-label="Выбор колоды">
-          <button id="tab-player-deck" class="collection-tab active" type="button" role="tab" aria-selected="true">Моя колода <span id="player-collection-count" class="tab-count">48</span></button>
-          <button id="tab-opponent-deck" class="collection-tab" type="button" role="tab" aria-selected="false">Колода противника <span id="opponent-collection-count" class="tab-count">48</span></button>
+          <button id="tab-player-deck" class="collection-tab active" type="button" role="tab" aria-selected="true">Все карты <span id="player-collection-count" class="tab-count">500</span></button>
+          <button id="tab-opponent-deck" class="collection-tab" type="button" role="tab" aria-selected="false">Карты противника <span id="opponent-collection-count" class="tab-count">0</span></button>
         </div>
-        <div id="collection-list" class="collection-list" role="tabpanel" aria-live="polite"></div>
+        <input id="card-search" class="card-search" type="search" placeholder="Поиск среди 500 карт…" aria-label="Поиск по библиотеке карт"><div id="collection-list" class="collection-list" role="tabpanel" aria-live="polite"></div>
       </section>
       <section class="card-details" aria-label="Описание карты">
         <div class="details-heading">КАРТА</div>
