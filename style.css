@@ -1839,3 +1839,15 @@ h2 { margin: 0; font-size: 15px; }
     padding:0 !important; margin:0 !important; gap:4px !important;
   }
 }
+
+
+/* Боковые панели тянутся на всю высоту игровой сетки, включая зону руки. */
+@media (min-width: 701px) {
+  .game-shell.screen-active .game-footer,
+  .game-shell.screen-active .collection-panel {
+    grid-row: 1 / -1 !important;
+    align-self: stretch !important;
+    height: 100% !important;
+    min-height: 0 !important;
+  }
+}
