@@ -1283,7 +1283,7 @@ h2 { margin: 0; font-size: 15px; }
 .menu-content h1{font-size:clamp(34px,7vw,58px);letter-spacing:-.055em;margin:12px 0 10px}
 .menu-subtitle{color:#aeb9cb;font-size:15px;line-height:1.6;margin:0 0 26px}
 .menu-options{display:flex;flex-direction:column;gap:9px}
-.menu-option{display:grid;grid-template-columns:38px 1fr 18px;align-items:center;gap:12px;width:100%;min-height:58px;padding:10px 15px;border:1px solid #394558;border-radius:11px;background:#1b2330;color:#eaf0fa;text-align:left;font:700 15px/1.2 inherit;cursor:pointer;transition:transform .15s,border-color .15s,background .15s}
+.menu-option{display:grid;grid-template-columns:38px 1fr 18px;align-items:center;gap:12px;width:100%;min-height:58px;padding:10px 15px;border:1px solid #394558;border-radius:11px;background:#1b2330;color:#eaf0fa;text-align:left;font:inherit;font-weight:700;font-size:15px;line-height:1.2;cursor:pointer;transition:transform .15s,border-color .15s,background .15s}
 .menu-option:hover{transform:translateX(3px);border-color:#67cbd9;background:#222e3d}
 .menu-option.featured{border-color:#5abfce;background:linear-gradient(100deg,#1b4955,#263447 78%);box-shadow:inset 3px 0 #7ce6ee}
 .menu-option-icon{display:grid;place-items:center;width:36px;height:36px;border:1px solid #ffffff20;border-radius:9px;color:#f0c875;font-size:21px;background:#0d141dcc}
