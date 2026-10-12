@@ -1927,3 +1927,80 @@ h2 { margin: 0; font-size: 15px; }
   display: none !important;
 }
 .deck-card:focus-visible { outline-offset: 2px; }
+
+
+/* Music volume control */
+.setting-volume-row {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(90px, 1.25fr) 42px;
+  align-items: center;
+  gap: 10px;
+}
+.setting-volume-row input[type="range"] {
+  width: 100%;
+  min-width: 0;
+  accent-color: #71d9e6;
+  cursor: pointer;
+}
+.setting-volume-row output {
+  color: #dce8f3;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* Deck thumbnails: six columns by five rows for a full 30-card deck. */
+@media (min-width: 701px) {
+  .deck-builder {
+    grid-template-columns: minmax(0, 1fr) minmax(420px, 42%) !important;
+    gap: 14px !important;
+  }
+}
+#deck-list.deck-list {
+  display: grid !important;
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  grid-auto-rows: max-content !important;
+  align-content: start !important;
+  align-items: start !important;
+  justify-items: stretch !important;
+  gap: 12px !important;
+  row-gap: 12px !important;
+  column-gap: 8px !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  padding: 4px !important;
+}
+#deck-list .deck-card {
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  aspect-ratio: 2 / 3 !important;
+  margin: 0 !important;
+  padding: 2px !important;
+  box-sizing: border-box !important;
+}
+#deck-list .deck-card-preview {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  aspect-ratio: 2 / 3 !important;
+  margin: 0 !important;
+}
+@media (max-width: 1000px) and (min-width: 701px) {
+  .deck-builder {
+    grid-template-columns: minmax(0, 1fr) minmax(360px, 43%) !important;
+  }
+}
+@media (max-width: 700px) {
+  .deck-builder {
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: minmax(300px, 1fr) minmax(350px, 1fr) !important;
+    overflow-y: auto !important;
+  }
+  #deck-list.deck-list {
+    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    row-gap: 10px !important;
+  }
+}
