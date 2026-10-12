@@ -1851,3 +1851,79 @@ h2 { margin: 0; font-size: 15px; }
     min-height: 0 !important;
   }
 }
+
+
+/* Main menu labels stay centered on one line in both languages. */
+.main-menu .menu-option {
+  grid-template-columns: 28px minmax(0, 1fr) 18px !important;
+  align-items: center;
+  overflow: hidden;
+}
+.main-menu .menu-option > span:nth-child(2) {
+  display: block;
+  min-width: 0;
+  text-align: center !important;
+  white-space: nowrap;
+  font-size: clamp(11px, 1vw, 14px);
+  line-height: 1.2;
+}
+.main-menu .menu-option-icon { justify-self: center; }
+.main-menu .menu-option-arrow { justify-self: center; }
+
+/* Deck library and selected-deck thumbnails use identical horizontal/vertical spacing. */
+.deck-library {
+  gap: 8px !important;
+  row-gap: 8px !important;
+  column-gap: 8px !important;
+}
+.deck-list {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(62px, 1fr)) !important;
+  align-content: start;
+  align-items: start;
+  gap: 8px !important;
+  row-gap: 8px !important;
+  column-gap: 8px !important;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 2px;
+}
+.deck-card {
+  display: block !important;
+  position: relative;
+  width: 100% !important;
+  height: auto !important;
+  min-width: 0;
+  min-height: 0 !important;
+  aspect-ratio: 2 / 3 !important;
+  padding: 3px !important;
+  overflow: hidden;
+  border-radius: 8px;
+  text-align: initial;
+}
+.deck-card-preview {
+  display: block !important;
+  position: relative;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  aspect-ratio: 2 / 3 !important;
+  padding: 2px !important;
+  overflow: hidden;
+}
+.deck-card-preview .card-art {
+  display: block !important;
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+.deck-card-preview .card-name,
+.deck-card-preview .card-type,
+.deck-card-preview .card-cost,
+.deck-card-preview .card-description,
+.deck-card-info {
+  display: none !important;
+}
+.deck-card:focus-visible { outline-offset: 2px; }
