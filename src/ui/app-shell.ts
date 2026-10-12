@@ -167,30 +167,49 @@ export function initAppShell(startSinglePlayer: () => void): void {
     const libraryList = $("deck-library");
     if (!deckList || !libraryList) return;
     const query = (($("deck-search") as HTMLInputElement | null)?.value || "").trim().toLocaleLowerCase(language);
-    libraryList.replaceChildren();
-    Object.values(CARD_TYPES)
-      .filter(card => !query || (card.name + " " + card.description + " " + card.type).toLocaleLowerCase(language).includes(query))
-      .forEach(card => {
-        const item = document.createElement("button");
-        item.type = "button";
-        item.className = "builder-card";
-        item.draggable = true;
-        item.dataset.cardKey = card.key;
-        item.appendChild(makeCardFace(card, true));
-        const copies = countOf(card.key);
-        if (copies) {
-          const badge = document.createElement("span");
-          badge.className = "builder-count";
-          badge.textContent = String(copies) + "/" + MAX_COPIES;
-          item.appendChild(badge);
-        }
-        item.addEventListener("click", () => addCard(card.key));
-        item.addEventListener("dragstart", event => {
-          event.dataTransfer?.setData("text/card-key", card.key);
-          if (event.dataTransfer) event.dataTransfer.effectAllowed = "copy";
+    const libraryNeedsRender = libraryList.dataset.query !== query
+      || libraryList.dataset.language !== language
+      || libraryList.children.length === 0;
+
+    // Keep the 500-card library DOM stable while adding/removing cards from the deck.
+    // Rebuilding it on every click reset focus/scroll and made all thumbnails jump.
+    if (libraryNeedsRender) {
+      const libraryScrollTop = libraryList.scrollTop;
+      libraryList.replaceChildren();
+      Object.values(CARD_TYPES)
+        .filter(card => !query || (card.name + " " + card.description + " " + card.type).toLocaleLowerCase(language).includes(query))
+        .forEach(card => {
+          const item = document.createElement("button");
+          item.type = "button";
+          item.className = "builder-card";
+          item.draggable = true;
+          item.dataset.cardKey = card.key;
+          item.appendChild(makeCardFace(card, true));
+          item.addEventListener("click", () => addCard(card.key));
+          item.addEventListener("dragstart", event => {
+            event.dataTransfer?.setData("text/card-key", card.key);
+            if (event.dataTransfer) event.dataTransfer.effectAllowed = "copy";
+          });
+          libraryList.appendChild(item);
         });
-        libraryList.appendChild(item);
-      });
+      libraryList.dataset.query = query;
+      libraryList.dataset.language = language;
+      libraryList.scrollTop = libraryScrollTop;
+    }
+
+    libraryList.querySelectorAll<HTMLButtonElement>(".builder-card").forEach(item => {
+      const copies = countOf(item.dataset.cardKey || "");
+      let badge = item.querySelector<HTMLElement>(".builder-count");
+      if (copies && !badge) {
+        badge = document.createElement("span");
+        badge.className = "builder-count";
+        item.appendChild(badge);
+      }
+      if (badge) {
+        badge.textContent = copies ? String(copies) + "/" + MAX_COPIES : "";
+        badge.hidden = copies === 0;
+      }
+    });
 
     deckList.replaceChildren();
     deck.forEach((key, index) => {
