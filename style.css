@@ -1765,3 +1765,44 @@ h2 { margin: 0; font-size: 15px; }
     z-index: 0 !important;
   }
 }
+
+
+/* Main play column: three equal-height zones with compact control bars. */
+@media (min-width: 701px) {
+  .game-shell.screen-active { grid-template-rows: auto minmax(0,1fr) auto minmax(0,1fr) auto minmax(0,1fr) !important; gap:6px 12px !important; align-content:stretch !important; }
+  .game-shell .topbar { grid-column:2 !important; grid-row:1 !important; }
+  .game-shell .opponent-panel,.game-shell .own-panel { display:none !important; }
+  .game-shell .battlefield { display:contents !important; }
+  .game-shell #opponent-row-1,.game-shell #player-row-1 { display:grid !important; grid-template-columns:repeat(6,minmax(0,1fr)) !important; grid-template-rows:minmax(0,1fr) !important; align-self:stretch !important; min-height:0 !important; height:100% !important; gap:8px !important; }
+  .game-shell #opponent-row-1 { grid-column:2 !important; grid-row:2 !important; }
+  .game-shell #opponent-row-2,.game-shell #player-row-2 { display:none !important; }
+  .game-shell .duel-timebar { grid-column:2 !important; grid-row:3 !important; display:grid !important; width:100% !important; margin:0 !important; padding:5px 12px !important; grid-template-columns:minmax(0,1fr) 36px minmax(0,1fr) !important; align-self:center !important; }
+  .game-shell #player-row-1 { grid-column:2 !important; grid-row:4 !important; }
+  .game-shell .hand-area,.game-shell .hand-heading { display:contents !important; }
+  .game-shell .hand-heading > div:first-child { grid-column:2; grid-row:5; align-self:center; min-width:0; white-space:nowrap; }
+  .game-shell #hand-hint { display:none; }
+  .game-shell .hand-actions { grid-column:2; grid-row:5; justify-self:end; align-self:center; display:flex !important; flex-wrap:nowrap !important; gap:4px !important; }
+  .game-shell .board-actions { grid-column:2; grid-row:5; justify-self:start; align-self:center; display:flex !important; flex-wrap:nowrap !important; gap:4px !important; padding:0 !important; transform:translateX(125px); }
+  .game-shell .hand-actions .button,.game-shell .board-actions .button { white-space:nowrap; padding:5px 6px !important; font-size:9px !important; }
+  .game-shell #player-hand { grid-column:2 !important; grid-row:6 !important; display:grid !important; grid-template-columns:repeat(5,minmax(0,1fr)) !important; grid-template-rows:minmax(0,1fr) !important; align-self:stretch !important; height:100% !important; min-height:0 !important; gap:8px !important; }
+  .game-shell .slot,.game-shell .hand-card { height:100% !important; min-height:0 !important; max-height:none !important; aspect-ratio:auto !important; }
+  .game-shell .slot > .card-face,.game-shell .hand-card > .card-face { height:100% !important; min-height:0 !important; }
+}
+@media (max-width:700px) {
+  .game-shell.screen-active { height:100dvh !important; min-height:0 !important; overflow-y:auto !important; grid-template-rows:auto minmax(0,1fr) auto minmax(0,1fr) auto minmax(0,1fr) !important; gap:5px !important; }
+  .game-shell .opponent-panel,.game-shell .own-panel { display:none !important; }
+  .game-shell .battlefield { display:contents !important; }
+  .game-shell #opponent-row-1,.game-shell #player-row-1 { display:grid !important; grid-template-columns:repeat(3,minmax(0,1fr)) !important; grid-template-rows:repeat(2,minmax(0,1fr)) !important; height:100% !important; min-height:0 !important; gap:4px !important; }
+  .game-shell #opponent-row-1 { grid-column:1 !important; grid-row:2 !important; }
+  .game-shell #opponent-row-2,.game-shell #player-row-2 { display:none !important; }
+  .game-shell .duel-timebar { grid-column:1 !important; grid-row:3 !important; display:grid !important; margin:0 !important; padding:4px 5px !important; }
+  .game-shell #player-row-1 { grid-column:1 !important; grid-row:4 !important; }
+  .game-shell .hand-area,.game-shell .hand-heading { display:contents !important; }
+  .game-shell .hand-heading > div:first-child { display:none !important; }
+  .game-shell .hand-actions { grid-column:1; grid-row:5; display:flex !important; flex-wrap:nowrap !important; gap:4px !important; overflow-x:auto; }
+  .game-shell .board-actions { grid-column:1; grid-row:5; display:flex !important; flex-wrap:nowrap !important; gap:4px !important; overflow-x:auto; padding:0 !important; transform:translateY(0); }
+  .game-shell .hand-actions .button,.game-shell .board-actions .button { flex:0 0 auto !important; padding:5px 6px !important; font-size:9px !important; }
+  .game-shell #player-hand { grid-column:1 !important; grid-row:6 !important; display:grid !important; grid-template-columns:repeat(5,minmax(0,1fr)) !important; grid-template-rows:minmax(0,1fr) !important; height:100% !important; min-height:0 !important; gap:4px !important; }
+  .game-shell .slot,.game-shell .hand-card { height:100% !important; min-height:0 !important; max-height:none !important; aspect-ratio:auto !important; }
+  .game-shell .slot > .card-face,.game-shell .hand-card > .card-face { height:100% !important; min-height:0 !important; }
+}
