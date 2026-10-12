@@ -30,7 +30,7 @@ import type { CardViewData } from "../cards/types";
 
     const art = document.createElement("img");
     art.className = "card-art";
-    art.src = "image2.avif";
+    art.src = "cards/" + (card.art || "card-art-01.avif");
     art.alt = "";
     art.loading = "lazy";
     art.decoding = "async";
