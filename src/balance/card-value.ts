@@ -234,7 +234,8 @@ export function summarizeAudit(rows: CardBalanceRow[]) {
   const mismatches = rows.filter((row) => row.flags.includes("cost-gap"));
   const loopRisks = rows.filter((row) => row.flags.includes("combo-loop-risk"));
   const changedCandidates = rows.filter((row) => row.costDelta !== 0);
-  const byType = Object.groupBy(rows, (row) => row.type);
+  const byType: Record<string, CardBalanceRow[]> = {};
+  for (const row of rows) (byType[row.type] ??= []).push(row);
   return {
     total: rows.length,
     flagged: flagged.length,
