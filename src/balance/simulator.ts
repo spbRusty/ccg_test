@@ -1,8 +1,8 @@
-import { CARD_POOL, CARD_TYPES } from "../cards/card-data";
-import type { CardInstance, PlayerKey, PlayerState } from "../cards/types";
-import { createPlayer } from "../game/player";
-import { applyEffect } from "../effects/apply-effect";
-import { scoreCard } from "../ai/scoring";
+import { CARD_POOL, CARD_TYPES } from "../cards/card-data.ts";
+import type { CardInstance, PlayerKey, PlayerState } from "../cards/types.ts";
+import { createPlayer } from "../game/player.ts";
+import { applyEffect } from "../effects/apply-effect.ts";
+import { scoreCard } from "../ai/scoring.ts";
 
 const START_TIME = 60;
 const MAX_TIME = 60;
