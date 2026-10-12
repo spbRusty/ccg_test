@@ -2063,3 +2063,24 @@ h2 { margin: 0; font-size: 15px; }
 @media (max-width: 700px) {
   .deck-list { grid-template-columns: repeat(6, minmax(0, 1fr)) !important; gap: 10px 5px !important; row-gap: 10px !important; }
 }
+
+
+/* Explicit spacing for the "All cards" library grid (not the selected deck). */
+#deck-library.deck-library {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(105px, 1fr)) !important;
+  gap: 14px 12px !important;
+  row-gap: 14px !important;
+  column-gap: 12px !important;
+  padding: 10px 8px 16px !important;
+  align-content: start !important;
+  align-items: start !important;
+  box-sizing: border-box;
+}
+#deck-library > .builder-card {
+  width: 100%;
+  min-width: 0;
+  margin: 0 !important;
+  align-self: start;
+  justify-self: stretch;
+}
