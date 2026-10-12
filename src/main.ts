@@ -4,6 +4,7 @@ import { scoreCard } from "./ai/scoring";
 import { applyEffect } from "./effects/apply-effect";
 import { createCollectionUI } from "./ui/collection";
 import type { PlayerKey, PlayerState } from "./cards/types";
+import { getSavedDeckKeys, initAppShell } from "./ui/app-shell";
 
 (() => {
   "use strict";
@@ -22,6 +23,8 @@ import type { PlayerKey, PlayerState } from "./cards/types";
   let aiTimer: ReturnType<typeof setTimeout> | null = null;
   let animatedCardId = null;
   let audioContext: AudioContext | null = null;
+  let musicOscillators: OscillatorNode[] = [];
+  let musicGain: GainNode | null = null;
   let gameFinished = false;
   let logs: string[] = [];
   let boardMoveSlot: number | null = null;
@@ -223,6 +226,7 @@ import type { PlayerKey, PlayerState } from "./cards/types";
   }
 
   function playSound(kind) {
+    if (localStorage.getItem("rift.sound") === "off") return;
     try {
       const AudioContextClass = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
       if (!AudioContextClass) return;
@@ -244,6 +248,47 @@ import type { PlayerKey, PlayerState } from "./cards/types";
       oscillator.stop(now + 0.13);
     } catch (_) {
       // Sound is optional; never interrupt gameplay.
+    }
+  }
+
+  function setMusicEnabled(enabled: boolean): void {
+    try {
+      const AudioContextClass = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!AudioContextClass) return;
+      if (!audioContext) audioContext = new AudioContextClass();
+      if (audioContext.state === "suspended") void audioContext.resume();
+      const now = audioContext.currentTime;
+      if (enabled) {
+        if (musicOscillators.length) return;
+        musicGain = audioContext.createGain();
+        musicGain.gain.setValueAtTime(0.0001, now);
+        musicGain.gain.exponentialRampToValueAtTime(0.012, now + 1.2);
+        musicGain.connect(audioContext.destination);
+        [110, 164.81, 220].forEach((frequency, index) => {
+          const oscillator = audioContext!.createOscillator();
+          oscillator.type = index === 1 ? "triangle" : "sine";
+          oscillator.frequency.value = frequency;
+          const voice = audioContext!.createGain();
+          voice.gain.value = index === 0 ? 0.42 : 0.18;
+          oscillator.connect(voice);
+          voice.connect(musicGain!);
+          oscillator.start();
+          musicOscillators.push(oscillator);
+        });
+      } else if (musicGain) {
+        const gain = musicGain;
+        gain.gain.cancelScheduledValues(now);
+        gain.gain.setValueAtTime(Math.max(gain.gain.value, 0.0001), now);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+        window.setTimeout(() => {
+          musicOscillators.forEach(oscillator => { try { oscillator.stop(); } catch (_) {} });
+          musicOscillators = [];
+          gain.disconnect();
+          if (musicGain === gain) musicGain = null;
+        }, 220);
+      }
+    } catch (_) {
+      // Audio is optional; never interrupt gameplay.
     }
   }
 
@@ -380,7 +425,7 @@ import type { PlayerKey, PlayerState } from "./cards/types";
     lastEffect = null;
     gameFinished = false;
     players = {
-      player: createPlayer("Ты", START_TIME, () => "card-" + (++sequence)),
+      player: createPlayer("Ты", START_TIME, () => "card-" + (++sequence), getSavedDeckKeys()),
       opponent: createPlayer("Противник", START_TIME, () => "card-" + (++sequence))
     };
     for (let i = 0; i < HAND_SIZE; i++) {
@@ -474,5 +519,7 @@ import type { PlayerKey, PlayerState } from "./cards/types";
   document.addEventListener("DOMContentLoaded", () => {
     initEvents();
     resetGame();
+    initAppShell(resetGame);
+    document.addEventListener("rift-music-change", (event) => setMusicEnabled(Boolean((event as CustomEvent<{enabled:boolean}>).detail?.enabled)));
   });
 })();
