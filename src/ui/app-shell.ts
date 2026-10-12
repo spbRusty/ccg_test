@@ -80,17 +80,21 @@ export function initAppShell(startSinglePlayer: () => void): void {
 
   function t(key: string): string { return words[language][key] || key; }
   function setText(id: string, key: string): void { const el = $(id); if (el) el.textContent = t(key); }
+  function setMenuOptionText(id: string, key: string): void {
+    const label = $(id)?.querySelector<HTMLElement>("span:nth-child(2)");
+    if (label) label.textContent = t(key);
+  }
 
   function applyLanguage(): void {
     document.documentElement.lang = language;
     setText("menu-eyebrow", "eyebrow");
     setText("menu-title", "title");
     setText("menu-subtitle", "subtitle");
-    setText("menu-pvp", "pvp");
-    setText("menu-single", "single");
-    setText("menu-collection", "collection");
-    setText("menu-progress", "progress");
-    setText("menu-shop", "shop");
+    setMenuOptionText("menu-pvp", "pvp");
+    setMenuOptionText("menu-single", "single");
+    setMenuOptionText("menu-collection", "collection");
+    setMenuOptionText("menu-progress", "progress");
+    setMenuOptionText("menu-shop", "shop");
     setText("settings-title", "settings");
     setText("sound-label", "sound");
     setText("music-label", "music");
