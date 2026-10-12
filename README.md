@@ -26,6 +26,8 @@ npm run preview
 
 Команда `npm run balance:audit` оценивает все 500 карт в одном фиксированном эталонном состоянии и создаёт `reports/card-balance-audit.csv` и `reports/card-balance-audit.md`. В CSV есть текущая цена, ориентировочная ценность, экспериментальная цена-кандидат и флаги риска. Цены в `src/cards/card-data.ts` команда не меняет: оценки для контекстных и утилитарных эффектов — только эвристика, не подтверждённый баланс. Генератор запускается и в CI.
 
+Для первичного прогона AI-vs-AI используйте `npm run balance:simulate -- 1000 1` (число матчей и стартовый seed). Команда создаёт `reports/card-balance-simulation.csv` и `reports/card-balance-simulation.md`. Симулятор использует текущие правила эффектов и текущую оценку AI, ограничивает матч 100 ходами и отдельно считает партии, дошедшие до лимита. Это проверка экономики и перекоса первого хода, а не замена тестам с людьми.
+
 ## Структура
 
 - `src/main.ts` — запуск игры, состояние партии, ходы и обработчики событий.
@@ -40,7 +42,10 @@ npm run preview
 - `src/effects/apply-effect.test.ts` — регрессионные тесты игровых эффектов.
 - `src/balance/card-value.ts` — эвристическая оценка ценности и флаги риска.
 - `src/balance/card-value.test.ts` — тесты аудита библиотеки.
-- `scripts/balance-audit.mjs` — генерация CSV и Markdown-отчёта.
+- `src/balance/simulator.ts` — воспроизводимый AI-vs-AI симулятор.
+- `src/balance/simulator.test.ts` — тесты воспроизводимости симуляций.
+- `scripts/balance-audit.mjs` — генерация CSV и Markdown-отчёта по картам.
+- `scripts/balance-simulate.mjs` — генерация отчёта по серии матчей.
 - `style.css` — стили интерфейса.
 - `image2.avif` — графический ресурс карт.
 - `vite.config.ts` — конфигурация сборки и путь GitHub Pages.
