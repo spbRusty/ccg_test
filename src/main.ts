@@ -25,6 +25,7 @@ import { getSavedDeckKeys, initAppShell } from "./ui/app-shell";
   let audioContext: AudioContext | null = null;
   let musicOscillators: OscillatorNode[] = [];
   let musicGain: GainNode | null = null;
+  let musicTimer: ReturnType<typeof setInterval> | null = null;
   let gameFinished = false;
   let logs: string[] = [];
   let boardMoveSlot: number | null = null;
@@ -258,34 +259,80 @@ import { getSavedDeckKeys, initAppShell } from "./ui/app-shell";
       if (!audioContext) audioContext = new AudioContextClass();
       if (audioContext.state === "suspended") void audioContext.resume();
       const now = audioContext.currentTime;
+
       if (enabled) {
         if (musicOscillators.length) return;
         musicGain = audioContext.createGain();
         musicGain.gain.setValueAtTime(0.0001, now);
-        musicGain.gain.exponentialRampToValueAtTime(0.012, now + 1.2);
+        musicGain.gain.exponentialRampToValueAtTime(0.022, now + 1.8);
         musicGain.connect(audioContext.destination);
-        [110, 164.81, 220].forEach((frequency, index) => {
+
+        // Soft, sustained harmonic bed. The chord progression changes every four bars.
+        const chords = [
+          [110, 164.81, 220],
+          [87.31, 130.81, 196],
+          [98, 146.83, 196],
+          [82.41, 123.47, 164.81]
+        ];
+        const chordVoices: OscillatorNode[] = [];
+        chords[0].forEach((frequency, index) => {
           const oscillator = audioContext!.createOscillator();
           oscillator.type = index === 1 ? "triangle" : "sine";
-          oscillator.frequency.value = frequency;
+          oscillator.frequency.setValueAtTime(frequency, now);
           const voice = audioContext!.createGain();
-          voice.gain.value = index === 0 ? 0.42 : 0.18;
+          voice.gain.value = index === 0 ? 0.19 : 0.105;
           oscillator.connect(voice);
           voice.connect(musicGain!);
           oscillator.start();
           musicOscillators.push(oscillator);
+          chordVoices.push(oscillator);
         });
+
+        // A slow, repeating bell-like melody; each note fades naturally into the next.
+        const melody = [440, 523.25, 659.25, 587.33, 523.25, 392, 440, 329.63,
+          392, 523.25, 493.88, 440, 392, 329.63, 392, 440,
+          349.23, 440, 523.25, 493.88, 440, 392, 349.23, 293.66,
+          329.63, 392, 440, 523.25, 493.88, 440, 392, 329.63];
+        let step = 0;
+        const playNote = () => {
+          if (!audioContext || !musicGain || !musicOscillators.length) return;
+          const time = audioContext.currentTime;
+          if (step % 8 === 0) {
+            const chord = chords[Math.floor(step / 8) % chords.length];
+            chordVoices.forEach((voice, index) => voice.frequency.setTargetAtTime(chord[index], time, 0.8));
+          }
+          // Leave a little space after each phrase for a calm, unhurried feel.
+          if (step % 8 !== 7) {
+            const oscillator = audioContext.createOscillator();
+            oscillator.type = "sine";
+            oscillator.frequency.setValueAtTime(melody[step % melody.length], time);
+            const envelope = audioContext.createGain();
+            envelope.gain.setValueAtTime(0.0001, time);
+            envelope.gain.exponentialRampToValueAtTime(0.18, time + 0.045);
+            envelope.gain.exponentialRampToValueAtTime(0.0001, time + 0.56);
+            oscillator.connect(envelope);
+            envelope.connect(musicGain);
+            oscillator.start(time);
+            oscillator.stop(time + 0.59);
+            oscillator.onended = () => { oscillator.disconnect(); envelope.disconnect(); };
+          }
+          step += 1;
+        };
+        playNote();
+        musicTimer = window.setInterval(playNote, 620);
       } else if (musicGain) {
+        if (musicTimer) window.clearInterval(musicTimer);
+        musicTimer = null;
         const gain = musicGain;
         gain.gain.cancelScheduledValues(now);
         gain.gain.setValueAtTime(Math.max(gain.gain.value, 0.0001), now);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.18);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
         window.setTimeout(() => {
-          musicOscillators.forEach(oscillator => { try { oscillator.stop(); } catch (_) {} });
+          musicOscillators.forEach(oscillator => { try { oscillator.stop(); oscillator.disconnect(); } catch (_) {} });
           musicOscillators = [];
           gain.disconnect();
           if (musicGain === gain) musicGain = null;
-        }, 220);
+        }, 300);
       }
     } catch (_) {
       // Audio is optional; never interrupt gameplay.
