@@ -1560,3 +1560,57 @@ h2 { margin: 0; font-size: 15px; }
   .builder-card { min-height: 190px; }
   .deck-builder { grid-template-rows: minmax(320px, 1fr) minmax(230px, .8fr); }
 }
+
+
+/* Enforce identical physical card height on the board and in the hand.
+   Grid rows have explicit height so flex/grid sizing cannot squash board cards. */
+.game-shell.screen-active { --game-card-height: clamp(88px, 14vh, 124px); }
+.game-shell #opponent-row-1,
+.game-shell #player-row-1 {
+  display: grid !important;
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  grid-template-rows: var(--game-card-height);
+  grid-auto-rows: var(--game-card-height);
+  height: var(--game-card-height);
+  min-height: var(--game-card-height);
+  max-height: var(--game-card-height);
+  flex: 0 0 var(--game-card-height) !important;
+  align-items: stretch;
+}
+.game-shell .slot {
+  width: 100%;
+  height: var(--game-card-height) !important;
+  min-height: var(--game-card-height) !important;
+  max-height: var(--game-card-height) !important;
+  align-self: stretch;
+}
+.game-shell .slot > .card-face,
+.game-shell .hand-card > .card-face {
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: none;
+}
+.game-shell .hand-card {
+  height: var(--game-card-height) !important;
+  min-height: var(--game-card-height) !important;
+  max-height: var(--game-card-height) !important;
+}
+.game-shell .battlefield {
+  height: auto;
+  min-height: 0;
+  overflow: visible;
+}
+@media (max-width: 700px) {
+  .game-shell.screen-active { --game-card-height: clamp(82px, 12vh, 104px); }
+  .game-shell #opponent-row-1,
+  .game-shell #player-row-1 {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    grid-template-rows: repeat(2, var(--game-card-height));
+    grid-auto-rows: var(--game-card-height);
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    flex: 0 0 auto !important;
+  }
+  .game-shell .battlefield { overflow: visible; }
+}
