@@ -11,7 +11,7 @@ const MUSIC_KEY = "rift.music";
 type Language = "ru" | "en";
 const words: Record<Language, Record<string, string>> = {
   ru: {
-    eyebrow: "КОЛЛЕКЦИОННАЯ КАРТОЧНАЯ ИГРА", title: "Временной разлом",
+    eyebrow: "КОЛЛЕКЦИОННАЯ КАРТОЧНАЯ ИГРА", title: "Временной разлом", gameEyebrow: "ПРОТОТИП ККИ", opponentSubtitle: "Простой ИИ", opponentHand: "В руке:", ownTime: "Твоё время", handHint: "Выбирай несколько карт и разыгрывай их за один ход.", move: "Переместить выбранную", return: "Вернуть в руку", remove: "Снять выбранные карты", sacrifice: "Пожертвовать выбранные", clear: "Снять выделение",
     subtitle: "Собери колоду. Измени ход времени. Переживи разлом.",
     pvp: "PvP", single: "Одиночная кампания", collection: "Коллекция и колоды",
     progress: "Лента прогресса", shop: "Магазин", settings: "Настройки",
@@ -33,7 +33,7 @@ const words: Record<Language, Record<string, string>> = {
     searchLibrary: "Поиск среди 500 карт…", deckHint: "Собери колоду из 30 карт. До двух копий каждой карты."
   },
   en: {
-    eyebrow: "COLLECTIBLE CARD GAME", title: "Temporal Rift",
+    eyebrow: "COLLECTIBLE CARD GAME", title: "Temporal Rift", gameEyebrow: "CCG PROTOTYPE", opponentSubtitle: "Basic AI", opponentHand: "In hand:", ownTime: "Your time", handHint: "Select multiple cards to play them in one turn.", move: "Move selected", return: "Return to hand", remove: "Remove selected", sacrifice: "Sacrifice selected", clear: "Clear selection",
     subtitle: "Build your deck. Bend time. Survive the rift.",
     pvp: "PvP", single: "Single-player campaign", collection: "Collection & Decks",
     progress: "Progress track", shop: "Shop", settings: "Settings",
@@ -105,6 +105,18 @@ export function initAppShell(startSinglePlayer: () => void): void {
     setText("deck-save", "save");
     setText("game-menu", "back");
     setText("fullscreen-toggle", "fullscreen");
+    setText("game-eyebrow", "gameEyebrow");
+    setText("game-title", "title");
+    setText("opponent-label", "opponent");
+    setText("opponent-subtitle", "opponentSubtitle");
+    setText("opponent-hand-label", "opponentHand");
+    setText("own-time-label", "ownTime");
+    setText("hand-hint", "handHint");
+    setText("move-selected", "move");
+    setText("return-selected", "return");
+    setText("remove-selected", "remove");
+    setText("sacrifice-selected", "sacrifice");
+    setText("clear-board-selection", "clear");
     setText("new-game", "newGame");
     setText("play-selected", "play");
     setText("pass-turn", "pass");
