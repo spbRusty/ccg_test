@@ -26,6 +26,7 @@ import { getSavedDeckKeys, initAppShell } from "./ui/app-shell";
   let musicOscillators: OscillatorNode[] = [];
   let musicGain: GainNode | null = null;
   let musicTimer: number | null = null;
+  let musicVolume = 0.75;
   let gameFinished = false;
   let logs: string[] = [];
   let boardMoveSlot: number | null = null;
@@ -264,7 +265,7 @@ import { getSavedDeckKeys, initAppShell } from "./ui/app-shell";
         if (musicOscillators.length) return;
         musicGain = audioContext.createGain();
         musicGain.gain.setValueAtTime(0.0001, now);
-        musicGain.gain.exponentialRampToValueAtTime(0.022, now + 1.8);
+        musicGain.gain.exponentialRampToValueAtTime(Math.max(0.0001, 0.075 * musicVolume), now + 1.8);
         musicGain.connect(audioContext.destination);
 
         // Soft, sustained harmonic bed. The chord progression changes every four bars.
@@ -568,6 +569,13 @@ import { getSavedDeckKeys, initAppShell } from "./ui/app-shell";
     resetGame();
     initAppShell(resetGame);
     document.addEventListener("rift-music-change", (event) => setMusicEnabled(Boolean((event as CustomEvent<{enabled:boolean}>).detail?.enabled)));
+    document.addEventListener("rift-music-volume-change", (event) => {
+      const detail = (event as CustomEvent<{volume:number}>).detail;
+      musicVolume = Math.max(0, Math.min(1, Number(detail?.volume ?? 0.75)));
+      if (musicGain && audioContext && musicOscillators.length) {
+        musicGain.gain.setTargetAtTime(0.075 * musicVolume, audioContext.currentTime, 0.08);
+      }
+    });
     document.addEventListener("pointerdown", () => {
       const musicToggle = $("music-toggle") as HTMLInputElement | null;
       if (musicToggle?.checked && musicOscillators.length === 0) setMusicEnabled(true);
