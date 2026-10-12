@@ -1,5 +1,5 @@
-import { CARD_TYPES, CARD_POOL } from "../cards/card-data";
-import type { CardInstance, PlayerState } from "../cards/types";
+import { CARD_TYPES, CARD_POOL } from "../cards/card-data.ts";
+import type { CardInstance, PlayerState } from "../cards/types.ts";
 
 function shuffle<T>(items: T[]): T[] {
   for (let i = items.length - 1; i > 0; i--) {

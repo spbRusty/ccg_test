@@ -4,6 +4,8 @@ name: Build and deploy to GitHub Pages
 on:
   push:
     branches: ["main"]
+  pull_request:
+    branches: ["main"]
   workflow_dispatch:
 
 permissions:
@@ -29,12 +31,23 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Build game
         run: npm run build
+      - name: Generate balance audit report
+        run: npm run balance:audit
+      - name: Run balance simulation smoke test
+        run: npm run balance:simulate -- 1000 1
+      - name: Upload balance reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: card-balance-reports
+          path: reports/card-balance-*.*
+          if-no-files-found: error
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: dist
 
   deploy:
+    if: github.event_name != 'pull_request'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
