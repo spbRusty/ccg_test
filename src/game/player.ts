@@ -9,9 +9,11 @@ function shuffle<T>(items: T[]): T[] {
   return items;
 }
 
-export function createDeck(createId: () => string): CardInstance[] {
-  return shuffle(CARD_POOL.slice())
-    .slice(0, 30)
+export function createDeck(createId: () => string, preferredKeys: string[] = []): CardInstance[] {
+  const keys = preferredKeys.length === 30 && preferredKeys.every(key => key in CARD_TYPES)
+    ? preferredKeys.slice()
+    : shuffle(CARD_POOL.slice()).slice(0, 30);
+  return keys
     .map((key) => ({
       ...CARD_TYPES[key],
       key,
@@ -26,12 +28,13 @@ export function createPlayer(
   name: string,
   startTime: number,
   createId: () => string,
+  preferredDeckKeys: string[] = [],
 ): PlayerState {
   return {
     name,
     time: startTime,
     hand: [],
-    deck: createDeck(createId),
+    deck: createDeck(createId, preferredDeckKeys),
     board: Array<CardInstance | null>(6).fill(null),
     played: [],
     discard: [],
