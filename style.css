@@ -1724,3 +1724,44 @@ h2 { margin: 0; font-size: 15px; }
   .game-shell #player-row-1 { grid-template-columns: repeat(3, minmax(0, 64px)) !important; }
   .game-shell .player-hand { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; }
 }
+
+
+/* Final board layout: desktop uses one six-card row per side; mobile keeps a compact 3x2 grid. */
+@media (min-width: 701px) {
+  .game-shell #opponent-row-1,
+  .game-shell #player-row-1 {
+    grid-template-columns: repeat(6, minmax(0, 76px)) !important;
+    grid-template-rows: auto !important;
+    grid-auto-rows: auto !important;
+    justify-content: center !important;
+    align-items: start !important;
+    height: auto !important;
+  }
+  .game-shell .battlefield {
+    grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr) !important;
+    min-height: 300px !important;
+  }
+}
+@media (max-width: 700px) {
+  .game-shell #opponent-row-1,
+  .game-shell #player-row-1 {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    grid-template-rows: repeat(2, auto) !important;
+    grid-auto-rows: auto !important;
+  }
+  .game-shell .slot .card-face .card-art,
+  .game-shell .hand-card .card-face .card-art {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    object-fit: cover !important;
+    object-position: center !important;
+    z-index: 0 !important;
+  }
+}
