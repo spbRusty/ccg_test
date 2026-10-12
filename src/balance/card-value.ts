@@ -112,7 +112,7 @@ export function estimateReferenceValue(
       value = Math.min(room, amount * state.friendlyBoardCards);
       break;
     case "fieldDrain":
-      value = (Math.min(amount, room) + (state.hasEnemyTarget ? 3 : 0));
+      value = (2 * Math.min(amount, room) + (state.hasEnemyTarget ? 3 : 0));
       break;
     case "fieldTax":
       value = Math.min(enemyTime, amount * state.enemyBoardCards);
