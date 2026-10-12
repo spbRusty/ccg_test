@@ -7,6 +7,7 @@ const STORAGE_KEY = "rift.customDeck";
 const LANGUAGE_KEY = "rift.language";
 const SOUND_KEY = "rift.sound";
 const MUSIC_KEY = "rift.music";
+const MUSIC_VOLUME_KEY = "rift.musicVolume";
 
 type Language = "ru" | "en";
 const words: Record<Language, Record<string, string>> = {
@@ -15,7 +16,7 @@ const words: Record<Language, Record<string, string>> = {
     subtitle: "Собери колоду. Измени ход времени. Переживи разлом.",
     pvp: "PvP", single: "Одиночная кампания", collection: "Коллекция и колоды",
     progress: "Лента прогресса", shop: "Магазин", settings: "Настройки",
-    sound: "Звуковые эффекты", music: "Музыка", language: "Язык приложения",
+    sound: "Звуковые эффекты", music: "Музыка", musicVolume: "Громкость музыки", language: "Язык приложения",
     back: "В меню", deckTitle: "Конструктор колоды", library: "Все карты",
     search: "Поиск карт…", deck: "Твоя колода", empty: "Перетащи карту сюда или нажми на карту слева.",
     starter: "Случайная колода", clear: "Очистить", save: "Сохранить колоду",
@@ -37,7 +38,7 @@ const words: Record<Language, Record<string, string>> = {
     subtitle: "Build your deck. Bend time. Survive the rift.",
     pvp: "PvP", single: "Single-player campaign", collection: "Collection & Decks",
     progress: "Progress track", shop: "Shop", settings: "Settings",
-    sound: "Sound effects", music: "Music", language: "App language",
+    sound: "Sound effects", music: "Music", musicVolume: "Music volume", language: "App language",
     back: "Main menu", deckTitle: "Deck builder", library: "All cards",
     search: "Search cards…", deck: "Your deck", empty: "Drag a card here or click a card on the left.",
     starter: "Random deck", clear: "Clear", save: "Save deck",
@@ -98,6 +99,7 @@ export function initAppShell(startSinglePlayer: () => void): void {
     setText("settings-title", "settings");
     setText("sound-label", "sound");
     setText("music-label", "music");
+    setText("music-volume-label", "musicVolume");
     setText("language-label", "language");
     setText("collection-back", "back");
     setText("deck-title", "deckTitle");
@@ -273,6 +275,21 @@ export function initAppShell(startSinglePlayer: () => void): void {
   });
   ($("language-select") as HTMLSelectElement | null)?.setAttribute("value", language);
   if ($("language-select")) ($("language-select") as HTMLSelectElement).value = language;
+  const musicVolume = $("music-volume") as HTMLInputElement | null;
+  const musicVolumeValue = $("music-volume-value") as HTMLOutputElement | null;
+  const savedMusicVolume = Math.max(0, Math.min(100, Number(localStorage.getItem(MUSIC_VOLUME_KEY) ?? "75") || 0));
+  if (musicVolume) {
+    musicVolume.value = String(savedMusicVolume);
+    if (musicVolumeValue) musicVolumeValue.value = savedMusicVolume + "%";
+    document.dispatchEvent(new CustomEvent("rift-music-volume-change", { detail: { volume: savedMusicVolume / 100 } }));
+    musicVolume.addEventListener("input", () => {
+      const value = Math.max(0, Math.min(100, Number(musicVolume.value) || 0));
+      if (musicVolumeValue) musicVolumeValue.value = value + "%";
+      localStorage.setItem(MUSIC_VOLUME_KEY, String(value));
+      document.dispatchEvent(new CustomEvent("rift-music-volume-change", { detail: { volume: value / 100 } }));
+    });
+  }
+
   ["sound-toggle", "music-toggle"].forEach(id => {
     const input = $(id) as HTMLInputElement | null;
     if (!input) return;
