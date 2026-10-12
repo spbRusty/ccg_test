@@ -1404,3 +1404,23 @@ h2 { margin: 0; font-size: 15px; }
  .deck-list{grid-template-columns:repeat(6,minmax(0,1fr))}
 }
 @media(prefers-reduced-motion:reduce){.menu-option,.builder-card,.settings-toggle{transition:none}}
+
+
+/* Keep the complete board and hand visible on short desktop viewports */
+@media (max-height:850px) and (min-width:701px) {
+  .game-shell.screen-active{gap:6px 10px;padding-top:6px;padding-bottom:6px;grid-template-rows:auto auto minmax(220px,1fr) auto auto}
+  .game-shell #opponent-row-1,.game-shell #player-row-1{grid-template-columns:repeat(6,minmax(0,100px))!important;justify-content:center}
+  .game-shell .player-hand{grid-template-columns:repeat(5,minmax(0,95px))!important;justify-content:center}
+  .game-shell .battlefield{gap:5px;padding:6px}
+  .game-shell .hand-heading{margin-bottom:3px}
+  .game-shell .board-actions{padding-bottom:3px}
+  .game-shell .hand-card .card-face{padding:4px}
+}
+@media (max-height:680px) and (min-width:701px) {
+  .game-shell.screen-active{grid-template-rows:auto auto minmax(190px,1fr) auto auto;gap:4px 8px}
+  .game-shell .player-panel{padding:5px 9px}
+  .game-shell #opponent-row-1,.game-shell #player-row-1{grid-template-columns:repeat(6,minmax(0,82px))!important}
+  .game-shell .player-hand{grid-template-columns:repeat(5,minmax(0,78px))!important}
+  .game-shell .hand-heading .subtle{display:none}
+  .game-shell .board-actions .button{padding:3px 5px;font-size:8px}
+}
