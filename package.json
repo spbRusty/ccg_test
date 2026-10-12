@@ -8,6 +8,7 @@
     "check": "tsc --noEmit",
     "test": "vitest run",
     "build": "npm run check && npm test && vite build && node scripts/copy-assets.mjs",
+    "balance:audit": "node --experimental-strip-types scripts/balance-audit.mjs",
     "preview": "vite preview"
   },
   "devDependencies": {
