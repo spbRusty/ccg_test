@@ -33,11 +33,13 @@ jobs:
         run: npm run build
       - name: Generate balance audit report
         run: npm run balance:audit
-      - name: Upload balance audit report
+      - name: Run balance simulation smoke test
+        run: npm run balance:simulate -- 100 1
+      - name: Upload balance reports
         uses: actions/upload-artifact@v4
         with:
-          name: card-balance-audit
-          path: reports/card-balance-audit.*
+          name: card-balance-reports
+          path: reports/card-balance-*.*
           if-no-files-found: error
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
