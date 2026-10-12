@@ -1435,3 +1435,128 @@ h2 { margin: 0; font-size: 15px; }
 .main-menu .menu-option>span:nth-child(2){text-align:center}
 .main-menu .menu-option-icon{justify-self:center;width:30px;height:30px;font-size:18px}
 .main-menu .menu-option-arrow{text-align:center}
+
+
+/* Gameplay layout: board cards use the same responsive height as hand cards.
+   Keep the board in the scrollable game viewport when the hand wraps. */
+.game-shell.screen-active {
+  overflow-x: hidden;
+  overflow-y: auto;
+  grid-template-rows: auto auto minmax(190px, 1fr) auto auto;
+}
+.game-shell .battlefield { min-height: 0; flex: 0 0 auto; }
+.game-shell .card-row { flex: 0 0 auto; min-height: 0; }
+.game-shell #opponent-row-2,
+.game-shell #player-row-2 { display: none; }
+.game-shell #opponent-row-1,
+.game-shell #player-row-1 {
+  grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+  justify-content: stretch;
+  gap: clamp(4px, .7vw, 9px);
+}
+.game-shell .slot {
+  height: clamp(76px, 13vh, 116px);
+  min-height: 0;
+}
+.game-shell .slot .card-face,
+.game-shell .hand-card .card-face {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+.game-shell .hand-card { height: clamp(76px, 13vh, 116px); }
+.game-shell .player-hand {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-content: start;
+  gap: 6px;
+}
+.game-shell .hand-card .card-description,
+.game-shell .slot .card-description {
+  display: block;
+  overflow: hidden;
+  font-size: clamp(7px, .72vw, 10px);
+  line-height: 1.15;
+}
+.game-shell .game-footer { min-height: 0; }
+@media (max-width: 700px) {
+  .game-shell.screen-active { overflow-y: auto; height: 100dvh; }
+  .game-shell .battlefield { gap: 6px; }
+  .game-shell #opponent-row-1,
+  .game-shell #player-row-1 {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 5px;
+  }
+  .game-shell .slot { height: clamp(76px, 12vh, 100px); }
+  .game-shell .hand-card { height: clamp(76px, 12vh, 100px); }
+  .game-shell .player-hand { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; }
+  .game-shell .hand-card .card-description,
+  .game-shell .slot .card-description { font-size: clamp(6px, 1.65vw, 8px); }
+}
+
+/* Deck builder: full card mechanics in a scrollable gallery, readable deck list. */
+.deck-library {
+  grid-template-columns: repeat(auto-fill, minmax(142px, 1fr));
+  align-content: start;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.builder-card {
+  aspect-ratio: 2 / 3;
+  height: auto;
+  min-height: 214px;
+}
+.builder-card .card-face { padding: 8px 7px; }
+.builder-card .card-description {
+  display: block;
+  overflow: hidden;
+  font-size: 10px;
+  line-height: 1.25;
+  max-height: 5em;
+}
+.deck-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.deck-card {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  align-items: stretch;
+  gap: 8px;
+  width: 100%;
+  min-height: 86px;
+  height: 86px;
+  aspect-ratio: auto;
+  padding: 5px;
+  text-align: left;
+}
+.deck-card-preview {
+  width: 54px !important;
+  height: 74px !important;
+  min-height: 0;
+  padding: 4px !important;
+}
+.deck-card-preview .card-name { font-size: 8px; }
+.deck-card-preview .card-description { display: none; }
+.deck-card-info {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow: hidden;
+  padding: 2px 18px 2px 0;
+}
+.deck-card-name { font-size: 11px; line-height: 1.2; }
+.deck-card-description {
+  color: #bdc6d5;
+  font-size: 10px;
+  line-height: 1.25;
+  overflow: hidden;
+}
+@media (max-width: 700px) {
+  .deck-library { grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); }
+  .builder-card { min-height: 190px; }
+  .deck-builder { grid-template-rows: minmax(320px, 1fr) minmax(230px, .8fr); }
+}
