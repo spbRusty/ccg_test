@@ -277,7 +277,7 @@ export function initAppShell(startSinglePlayer: () => void): void {
     const input = $(id) as HTMLInputElement | null;
     if (!input) return;
     const key = id === "sound-toggle" ? SOUND_KEY : MUSIC_KEY;
-    input.checked = id === "sound-toggle" ? localStorage.getItem(key) !== "off" : localStorage.getItem(key) === "on";
+    input.checked = localStorage.getItem(key) !== "off";
     input.addEventListener("change", () => { localStorage.setItem(key, input.checked ? "on" : "off"); if (id === "music-toggle") document.dispatchEvent(new CustomEvent("rift-music-change", { detail: { enabled: input.checked } })); });
   });
 
