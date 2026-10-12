@@ -1659,3 +1659,68 @@ h2 { margin: 0; font-size: 15px; }
   min-height: 0;
   overflow: visible;
 }
+
+
+/* Compact battlefield: keep cards small and reserve enough vertical room for both sides. */
+.game-shell.screen-active {
+  grid-template-rows: auto auto minmax(300px, auto) auto auto !important;
+}
+.game-shell .battlefield {
+  display: grid;
+  grid-template-rows: auto auto auto;
+  align-content: center;
+  gap: 8px;
+  padding: 8px;
+  min-height: 300px;
+  height: auto !important;
+  overflow: visible;
+}
+.game-shell #opponent-row-1,
+.game-shell #player-row-1 {
+  grid-template-columns: repeat(3, minmax(0, 76px)) !important;
+  grid-template-rows: repeat(2, auto) !important;
+  justify-content: center !important;
+  gap: 5px;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  flex: 0 0 auto !important;
+}
+.game-shell .slot {
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  aspect-ratio: 2 / 3;
+}
+.game-shell .slot > .card-face {
+  width: 100%;
+  height: 100% !important;
+  min-height: 0 !important;
+}
+.game-shell .hand-card {
+  width: 100%;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  aspect-ratio: 2 / 3;
+}
+.game-shell .player-hand {
+  grid-template-columns: repeat(5, minmax(0, 76px)) !important;
+  justify-content: center;
+  align-content: start;
+  gap: 5px;
+}
+@media (min-width: 701px) {
+  .game-shell .battlefield { min-height: 300px; }
+  .game-shell #opponent-row-1,
+  .game-shell #player-row-1 { grid-template-columns: repeat(3, minmax(0, 76px)) !important; }
+  .game-shell .player-hand { grid-template-columns: repeat(5, minmax(0, 76px)) !important; }
+}
+@media (max-width: 700px) {
+  .game-shell.screen-active { grid-template-rows: auto auto auto auto auto !important; }
+  .game-shell .battlefield { min-height: 270px; }
+  .game-shell #opponent-row-1,
+  .game-shell #player-row-1 { grid-template-columns: repeat(3, minmax(0, 64px)) !important; }
+  .game-shell .player-hand { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; }
+}
