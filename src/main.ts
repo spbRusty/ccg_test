@@ -569,6 +569,8 @@ import { getSavedDeckKeys, initAppShell } from "./ui/app-shell";
     resetGame();
     initAppShell(resetGame);
     document.addEventListener("rift-music-change", (event) => setMusicEnabled(Boolean((event as CustomEvent<{enabled:boolean}>).detail?.enabled)));
+    const initialVolume = $("music-volume") as HTMLInputElement | null;
+    if (initialVolume) musicVolume = Math.max(0, Math.min(1, Number(initialVolume.value) / 100));
     document.addEventListener("rift-music-volume-change", (event) => {
       const detail = (event as CustomEvent<{volume:number}>).detail;
       musicVolume = Math.max(0, Math.min(1, Number(detail?.volume ?? 0.75)));
