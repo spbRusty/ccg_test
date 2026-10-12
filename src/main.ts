@@ -25,7 +25,7 @@ import { getSavedDeckKeys, initAppShell } from "./ui/app-shell";
   let audioContext: AudioContext | null = null;
   let musicOscillators: OscillatorNode[] = [];
   let musicGain: GainNode | null = null;
-  let musicTimer: ReturnType<typeof setInterval> | null = null;
+  let musicTimer: number | null = null;
   let gameFinished = false;
   let logs: string[] = [];
   let boardMoveSlot: number | null = null;
@@ -568,5 +568,9 @@ import { getSavedDeckKeys, initAppShell } from "./ui/app-shell";
     resetGame();
     initAppShell(resetGame);
     document.addEventListener("rift-music-change", (event) => setMusicEnabled(Boolean((event as CustomEvent<{enabled:boolean}>).detail?.enabled)));
+    document.addEventListener("pointerdown", () => {
+      const musicToggle = $("music-toggle") as HTMLInputElement | null;
+      if (musicToggle?.checked && musicOscillators.length === 0) setMusicEnabled(true);
+    }, { passive: true });
   });
 })();
