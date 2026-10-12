@@ -1806,3 +1806,36 @@ h2 { margin: 0; font-size: 15px; }
   .game-shell .slot,.game-shell .hand-card { height:100% !important; min-height:0 !important; max-height:none !important; aspect-ratio:auto !important; }
   .game-shell .slot > .card-face,.game-shell .hand-card > .card-face { height:100% !important; min-height:0 !important; }
 }
+
+
+/* All player card actions share one horizontal toolbar between board and hand. */
+@media (min-width:701px) {
+  .game-shell .hand-heading > div:first-child { display:none !important; }
+  .game-shell .hand-actions {
+    grid-column:2 !important; grid-row:5 !important;
+    justify-self:start !important; width:100% !important;
+    display:flex !important; flex-wrap:nowrap !important;
+    align-items:center !important; overflow-x:auto !important;
+    gap:5px !important;
+  }
+  .game-shell .board-actions {
+    display:flex !important; flex:0 0 auto !important;
+    width:auto !important; transform:none !important;
+    padding:0 !important; margin:0 !important;
+    gap:4px !important;
+  }
+}
+@media (max-width:700px) {
+  .game-shell .hand-actions {
+    grid-column:1 !important; grid-row:5 !important;
+    justify-self:stretch !important; width:100% !important;
+    display:flex !important; flex-wrap:nowrap !important;
+    align-items:center !important; overflow-x:auto !important;
+    gap:4px !important;
+  }
+  .game-shell .board-actions {
+    display:flex !important; flex:0 0 auto !important;
+    width:auto !important; transform:none !important;
+    padding:0 !important; margin:0 !important; gap:4px !important;
+  }
+}
