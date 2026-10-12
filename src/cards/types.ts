@@ -16,6 +16,7 @@ export interface CardDefinition {
   description: string;
   color: string;
   variant: number;
+  art?: string;
 }
 
 export interface CardViewData extends CardDefinition {
