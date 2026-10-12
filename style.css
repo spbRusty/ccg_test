@@ -1424,3 +1424,14 @@ h2 { margin: 0; font-size: 15px; }
   .game-shell .hand-heading .subtle{display:none}
   .game-shell .board-actions .button{padding:3px 5px;font-size:8px}
 }
+
+/* Main menu: center every label and heading */
+.main-menu .menu-content{text-align:center}
+.main-menu .menu-content .eyebrow,
+.main-menu .menu-content h1,
+.main-menu .menu-subtitle,
+.main-menu .menu-footnote{text-align:center}
+.main-menu .menu-option{grid-template-columns:30px minmax(0,1fr) 18px;text-align:center}
+.main-menu .menu-option>span:nth-child(2){text-align:center}
+.main-menu .menu-option-icon{justify-self:center;width:30px;height:30px;font-size:18px}
+.main-menu .menu-option-arrow{text-align:center}
