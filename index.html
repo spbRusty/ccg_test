@@ -8,13 +8,30 @@
   <link rel="stylesheet" href="./style.css">
 </head>
 <body>
-  <main class="game-shell">
+  <section id="main-menu" class="main-menu screen-active" aria-label="Главное меню">
+    <div class="menu-backdrop"></div>
+    <div class="menu-content">
+      <div id="menu-eyebrow" class="eyebrow">КОЛЛЕКЦИОННАЯ КАРТОЧНАЯ ИГРА</div>
+      <h1 id="menu-title">Временной разлом</h1>
+      <p id="menu-subtitle" class="menu-subtitle">Собери колоду. Измени ход времени. Переживи разлом.</p>
+      <nav class="menu-options" aria-label="Главное меню">
+        <button id="menu-pvp" class="menu-option" type="button"><span class="menu-option-icon">⚔</span><span>PvP</span><span class="menu-option-arrow">›</span></button>
+        <button id="menu-single" class="menu-option featured" type="button"><span class="menu-option-icon">◈</span><span>Одиночная кампания</span><span class="menu-option-arrow">›</span></button>
+        <button id="menu-collection" class="menu-option" type="button"><span class="menu-option-icon">▤</span><span>Коллекция и колоды</span><span class="menu-option-arrow">›</span></button>
+        <button id="menu-progress" class="menu-option" type="button"><span class="menu-option-icon">⌁</span><span>Лента прогресса</span><span class="menu-option-arrow">›</span></button>
+        <button id="menu-shop" class="menu-option" type="button"><span class="menu-option-icon">◇</span><span>Магазин</span><span class="menu-option-arrow">›</span></button>
+      </nav>
+      <div class="menu-footnote">TEMPORAL RIFT <span>·</span> BUILD YOUR OWN DESTINY</div>
+    </div>
+  </section>
+
+  <main id="game-shell" class="game-shell">
     <header class="topbar">
       <div>
         <div class="eyebrow">ПРОТОТИП ККИ</div>
         <h1>Временной разлом</h1>
       </div>
-      <div class="topbar-actions"><button id="fullscreen-toggle" class="button button-quiet fullscreen-toggle" type="button" aria-label="Развернуть на весь экран">⛶ На весь экран</button><button id="new-game" class="button button-quiet" type="button">Новая игра</button></div>
+      <div class="topbar-actions"><button id="game-menu" class="button button-quiet" type="button">В меню</button><button id="fullscreen-toggle" class="button button-quiet fullscreen-toggle" type="button" aria-label="Развернуть на весь экран">⛶ На весь экран</button><button id="new-game" class="button button-quiet" type="button">Новая игра</button></div>
     </header>
 
     <section class="player-panel opponent-panel" aria-label="Противник">
@@ -56,32 +73,61 @@
     </section>
 
     <section class="hand-area">
-      <div class="hand-heading"><div><h2>Карты в руке</h2><span class="subtle">Выбирай несколько карт и разыгрывай их за один ход.</span><span id="selected-cards-count" class="subtle"></span></div><div class="hand-actions"><button id="play-selected" class="button button-primary" type="button">Разыграть выбранные</button><button id="pass-turn" class="button button-quiet pass-turn-button" type="button">Завершить ход</button></div></div>
+      <div class="hand-heading"><div><h2 id="hand-title">Карты в руке</h2><span class="subtle">Выбирай несколько карт и разыгрывай их за один ход.</span><span id="selected-cards-count" class="subtle"></span></div><div class="hand-actions"><button id="play-selected" class="button button-primary" type="button">Разыграть выбранные</button><button id="pass-turn" class="button button-quiet pass-turn-button" type="button">Завершить ход</button></div></div>
       <div class="board-actions"><button id="move-selected" class="button button-quiet" type="button">Переместить выбранную</button><button id="return-selected" class="button button-quiet" type="button">Вернуть в руку</button><button id="remove-selected" class="button button-quiet" type="button">Снять выбранные карты</button><button id="sacrifice-selected" class="button button-quiet" type="button">Пожертвовать выбранные</button><button id="clear-board-selection" class="button button-quiet" type="button">Снять выделение</button></div>
       <div id="player-hand" class="player-hand" aria-label="Карты в руке игрока"></div>
     </section>
 
     <aside class="game-footer" aria-label="Журнал партии">
-      <div class="log-heading">ЖУРНАЛ ПАРТИИ</div>
+      <div id="log-title" class="log-heading">ЖУРНАЛ ПАРТИИ</div>
       <p id="game-message" role="status" aria-live="polite">Выбери карту и разыграй её. Стоимость вычитается из твоего времени.</p>
       <div id="event-log" class="event-log" aria-label="История ходов"></div>
     </aside>
     <aside class="collection-panel" aria-label="Колоды и описание карты">
       <section class="collection-top">
         <div class="collection-tabs" role="tablist" aria-label="Выбор колоды">
-          <button id="tab-player-deck" class="collection-tab active" type="button" role="tab" aria-selected="true">Все карты <span id="player-collection-count" class="tab-count">500</span></button>
-          <button id="tab-opponent-deck" class="collection-tab" type="button" role="tab" aria-selected="false">Карты противника <span id="opponent-collection-count" class="tab-count">0</span></button>
+          <button id="tab-player-deck" class="collection-tab active" type="button" role="tab" aria-selected="true"><span id="tab-player-deck-label">Все карты</span> <span id="player-collection-count" class="tab-count">500</span></button>
+          <button id="tab-opponent-deck" class="collection-tab" type="button" role="tab" aria-selected="false"><span id="tab-opponent-deck-label">Карты противника</span> <span id="opponent-collection-count" class="tab-count">0</span></button>
         </div>
         <input id="card-search" class="card-search" type="search" placeholder="Поиск среди 500 карт…" aria-label="Поиск по библиотеке карт"><div id="collection-list" class="collection-list" role="tabpanel" aria-live="polite"></div>
       </section>
       <section class="card-details" aria-label="Описание карты">
-        <div class="details-heading">КАРТА</div>
+        <div id="details-title" class="details-heading">КАРТА</div>
         <div id="card-details-content" class="card-details-content">
           <p class="details-empty">Наведи курсор на карту, чтобы увидеть подробности.</p>
         </div>
       </section>
     </aside>
   </main>
+  <section id="collection-screen" class="collection-screen" aria-label="Коллекция и конструктор колоды">
+    <header class="collection-screen-header">
+      <button id="collection-back" class="button button-quiet" type="button">← В меню</button>
+      <div><div class="eyebrow">TEMPORAL RIFT</div><h1 id="deck-title">Конструктор колоды</h1></div>
+      <div class="deck-count-wrap"><span id="deck-count">0/30</span></div>
+    </header>
+    <div class="deck-builder">
+      <section class="builder-library">
+        <div class="builder-heading"><h2 id="library-title">Все карты</h2><span id="deck-hint" class="subtle">Собери колоду из 30 карт. До двух копий каждой карты.</span></div>
+        <input id="deck-search" class="card-search" type="search" placeholder="Поиск карт…" aria-label="Поиск карт">
+        <div id="deck-library" class="deck-library" aria-label="Библиотека карт"></div>
+      </section>
+      <section class="builder-deck">
+        <div class="builder-heading"><h2 id="deck-panel-title">Твоя колода</h2><span class="subtle">30</span></div>
+        <div class="deck-toolbar"><button id="deck-random" class="button button-quiet" type="button">Случайная колода</button><button id="deck-clear" class="button button-quiet" type="button">Очистить</button></div>
+        <div id="deck-list" class="deck-list" aria-label="Текущая колода"></div>
+        <p id="deck-status" class="deck-status" role="status"></p>
+        <button id="deck-save" class="button button-primary deck-save" type="button" disabled>Сохранить колоду</button>
+      </section>
+    </div>
+  </section>
+
+  <button id="settings-toggle" class="settings-toggle" type="button" aria-label="Настройки" aria-expanded="false">⚙</button>
+  <section id="settings-panel" class="settings-panel" aria-label="Настройки">
+    <h2 id="settings-title">Настройки</h2>
+    <label class="setting-row" for="sound-toggle"><span id="sound-label">Звуковые эффекты</span><input id="sound-toggle" type="checkbox"></label>
+    <label class="setting-row" for="music-toggle"><span id="music-label">Музыка</span><input id="music-toggle" type="checkbox"></label>
+    <label class="setting-row" for="language-select"><span id="language-label">Язык приложения</span><select id="language-select"><option value="ru">Русский</option><option value="en">English</option></select></label>
+  </section>
   <script type="module" src="./src/main.ts"></script>
 </body>
 </html>
