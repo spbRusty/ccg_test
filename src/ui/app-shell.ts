@@ -11,7 +11,7 @@ const MUSIC_KEY = "rift.music";
 type Language = "ru" | "en";
 const words: Record<Language, Record<string, string>> = {
   ru: {
-    eyebrow: "КОЛЛЕКЦИОННАЯ КАРТОЧНАЯ ИГРА", title: "Временной разлом", gameEyebrow: "ПРОТОТИП ККИ", opponentSubtitle: "Простой ИИ", opponentHand: "В руке:", ownTime: "Твоё время", handHint: "Выбирай несколько карт и разыгрывай их за один ход.", move: "Переместить выбранную", return: "Вернуть в руку", remove: "Снять выбранные карты", sacrifice: "Пожертвовать выбранные", clear: "Снять выделение",
+    eyebrow: "КОЛЛЕКЦИОННАЯ КАРТОЧНАЯ ИГРА", title: "Временной разлом", gameEyebrow: "ПРОТОТИП ККИ", opponentSubtitle: "Простой ИИ", opponentHand: "В руке:", ownTime: "Твоё время", handHint: "Выбирай несколько карт и разыгрывай их за один ход.", move: "Переместить выбранную", return: "Вернуть в руку", remove: "Снять выбранные карты", sacrifice: "Пожертвовать выбранные", boardClear: "Снять выделение",
     subtitle: "Собери колоду. Измени ход времени. Переживи разлом.",
     pvp: "PvP", single: "Одиночная кампания", collection: "Коллекция и колоды",
     progress: "Лента прогресса", shop: "Магазин", settings: "Настройки",
@@ -33,7 +33,7 @@ const words: Record<Language, Record<string, string>> = {
     searchLibrary: "Поиск среди 500 карт…", deckHint: "Собери колоду из 30 карт. До двух копий каждой карты."
   },
   en: {
-    eyebrow: "COLLECTIBLE CARD GAME", title: "Temporal Rift", gameEyebrow: "CCG PROTOTYPE", opponentSubtitle: "Basic AI", opponentHand: "In hand:", ownTime: "Your time", handHint: "Select multiple cards to play them in one turn.", move: "Move selected", return: "Return to hand", remove: "Remove selected", sacrifice: "Sacrifice selected", clear: "Clear selection",
+    eyebrow: "COLLECTIBLE CARD GAME", title: "Temporal Rift", gameEyebrow: "CCG PROTOTYPE", opponentSubtitle: "Basic AI", opponentHand: "In hand:", ownTime: "Your time", handHint: "Select multiple cards to play them in one turn.", move: "Move selected", return: "Return to hand", remove: "Remove selected", sacrifice: "Sacrifice selected", boardClear: "Clear selection",
     subtitle: "Build your deck. Bend time. Survive the rift.",
     pvp: "PvP", single: "Single-player campaign", collection: "Collection & Decks",
     progress: "Progress track", shop: "Shop", settings: "Settings",
@@ -116,7 +116,7 @@ export function initAppShell(startSinglePlayer: () => void): void {
     setText("return-selected", "return");
     setText("remove-selected", "remove");
     setText("sacrifice-selected", "sacrifice");
-    setText("clear-board-selection", "clear");
+    setText("clear-board-selection", "boardClear");
     setText("new-game", "newGame");
     setText("play-selected", "play");
     setText("pass-turn", "pass");
@@ -138,7 +138,7 @@ export function initAppShell(startSinglePlayer: () => void): void {
     collection?.classList.toggle("screen-active", screen === "collection");
     settings?.classList.remove("open");
     settingsToggle?.setAttribute("aria-expanded", "false");
-    window.scrollTo({ top: 0, behavior: "instant" });
+    window.scrollTo({ top: 0, behavior: "auto" });
   }
 
   function countOf(key: string): number { return deck.filter(item => item === key).length; }
