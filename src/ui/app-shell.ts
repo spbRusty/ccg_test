@@ -170,7 +170,7 @@ export function initAppShell(startSinglePlayer: () => void): void {
         item.className = "builder-card";
         item.draggable = true;
         item.dataset.cardKey = card.key;
-        item.appendChild(makeCardFace(card, false));
+        item.appendChild(makeCardFace(card, true));
         const copies = countOf(card.key);
         if (copies) {
           const badge = document.createElement("span");
@@ -195,7 +195,18 @@ export function initAppShell(startSinglePlayer: () => void): void {
       item.className = "deck-card";
       item.draggable = true;
       item.title = language === "ru" ? "Нажми, чтобы убрать из колоды" : "Click to remove from deck";
-      item.appendChild(makeCardFace(card, false));
+      const preview = makeCardFace(card, false);
+      preview.classList.add("deck-card-preview");
+      const info = document.createElement("span");
+      info.className = "deck-card-info";
+      const name = document.createElement("strong");
+      name.className = "deck-card-name";
+      name.textContent = card.name + " · " + card.cost + "с";
+      const description = document.createElement("span");
+      description.className = "deck-card-description";
+      description.textContent = card.description;
+      info.append(name, description);
+      item.append(preview, info);
       item.addEventListener("click", () => { deck.splice(index, 1); renderDeck(); });
       item.addEventListener("dragstart", event => {
         event.dataTransfer?.setData("text/deck-index", String(index));
