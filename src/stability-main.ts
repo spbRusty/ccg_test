@@ -28,7 +28,7 @@ function handCard(card: Card): string {
 }
 function boardSlot(card: Card | null, own: boolean): string {
   if (!card) return '<div class="slot empty"><span class="slot-plus">＋</span><small>СВОБОДНО</small></div>';
-  return '<button type="button" class="slot filled ' + (own ? "own" : "enemy") + '" ' +
+  return '<button type="button" class="slot filled ' + (own ? "own" : "enemy") + '" data-card-id="' + esc(card.uid) + '" data-side="' + (own ? "player" : "enemy") + '" ' +
     (own ? 'data-r="' + esc(card.uid) + '"' : "disabled") + '>' +
     art(card, "slot-art") + '<span class="slot-copy"><strong>' + esc(card.name) + '</strong><small>' + esc(card.text) + '</small></span>' +
     '<b class="slot-cost">' + card.cost + '</b></button>';
@@ -39,6 +39,60 @@ function statusPanel(label: string, value: number, own: boolean, tail: string): 
     '<div class="status-top"><span class="status-dot"></span><span class="status-label">' + label + '</span><strong>' + value + '</strong><small>СТАБИЛЬНОСТЬ</small></div>' +
     '<div class="stability-track"><span style="width:' + width + '%"></span></div><div class="status-tail">' + tail + '</div></section>';
 }
+
+function triggerResolutionEffects(beforePlayer: number, beforeEnemy: number, played: Array<{ side: "player" | "enemy"; card: Card }>): void {
+  const arena = root.querySelector<HTMLElement>(".center-column");
+  if (!arena) return;
+  const overlay = document.createElement("div");
+  overlay.className = "resolution-effects";
+  overlay.setAttribute("aria-hidden", "true");
+  arena.appendChild(overlay);
+
+  const deltaPlayer = game.player.stability - beforePlayer;
+  const deltaEnemy = game.enemy.stability - beforeEnemy;
+  const showNumber = (side: "player" | "enemy", delta: number) => {
+    if (!delta) return;
+    const status = root.querySelector<HTMLElement>(side === "player" ? ".own-status" : ".enemy-status");
+    if (!status) return;
+    const number = document.createElement("span");
+    number.className = "floating-number " + (delta < 0 ? "damage-number" : "heal-number");
+    number.textContent = (delta > 0 ? "+" : "−") + Math.abs(delta);
+    status.appendChild(number);
+    window.setTimeout(() => number.remove(), 1500);
+  };
+  showNumber("player", deltaPlayer);
+  showNumber("enemy", deltaEnemy);
+
+  if (deltaPlayer < 0 || deltaEnemy < 0) overlay.classList.add("impact");
+  if (deltaPlayer > 0 || deltaEnemy > 0) overlay.classList.add("restore");
+
+  played.forEach(({ side, card }, index) => {
+    const slot = root.querySelector<HTMLElement>('.slot[data-card-id="' + CSS.escape(card.uid) + '"]');
+    if (slot) {
+      const kind = card.effect?.kind || "default";
+      slot.classList.add("card-reveal", "effect-" + String(kind).replace(/[^a-z-]/gi, ""));
+      window.setTimeout(() => slot.classList.remove("card-reveal"), 1100);
+      const rect = slot.getBoundingClientRect();
+      const arenaRect = arena.getBoundingClientRect();
+      const burst = document.createElement("span");
+      burst.className = "effect-burst " + (side === "player" ? "burst-player" : "burst-enemy");
+      burst.style.left = (rect.left - arenaRect.left + rect.width / 2) + "px";
+      burst.style.top = (rect.top - arenaRect.top + rect.height / 2) + "px";
+      overlay.appendChild(burst);
+      for (let i = 0; i < 9; i++) {
+        const particle = document.createElement("i");
+        particle.className = "effect-particle " + (side === "player" ? "particle-player" : "particle-enemy");
+        const angle = (Math.PI * 2 * i / 9) + index * .4;
+        const distance = 24 + (i % 3) * 13;
+        particle.style.setProperty("--dx", (Math.cos(angle) * distance) + "px");
+        particle.style.setProperty("--dy", (Math.sin(angle) * distance) + "px");
+        burst.appendChild(particle);
+      }
+    }
+  });
+  window.setTimeout(() => overlay.remove(), 1300);
+}
+
 function paint(): void {
   if (!game) return;
   const p = game.player, q = game.enemy;
@@ -108,12 +162,19 @@ function paint(): void {
     busy = true;
     notice = "Выбор закрыт. Карты вскрываются…";
     paint();
+    const beforePlayer = game.player.stability;
+    const beforeEnemy = game.enemy.stability;
+    const played = [
+      ...game.player.committed.map(card => ({ side: "player" as const, card })),
+      ...game.enemy.committed.map(card => ({ side: "enemy" as const, card }))
+    ];
     window.setTimeout(() => {
       resolveRound(game);
       busy = false;
       notice = game.winner ? "Дуэль завершена." : "Раунд завершён. Выбери следующий ход.";
       selectedCard = null;
       paint();
+      triggerResolutionEffects(beforePlayer, beforeEnemy, played);
     }, 420);
   };
   root.querySelector<HTMLButtonElement>("#valve")!.onclick = () => {

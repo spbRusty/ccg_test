@@ -180,3 +180,126 @@ button:disabled { opacity: .38; cursor: not-allowed; }
   .quiet-button, .primary-button { padding: 9px 7px; font-size: 9px; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; } }
+
+
+/* Full-height game shell: the page itself never scrolls. */
+html, body, #app { height: 100%; min-height: 0; overflow: hidden; }
+body { height: 100dvh; }
+#ui {
+  display: flex; flex-direction: column; height: 100dvh; min-height: 0;
+  overflow: hidden; padding: 10px clamp(10px, 1.5vw, 24px);
+}
+.topbar { flex: 0 0 auto; min-height: 54px; padding-bottom: 9px; }
+.game-layout {
+  flex: 1 1 auto; min-height: 0; overflow: hidden; padding-top: 10px;
+  grid-template-rows: minmax(0, 1fr); align-items: stretch;
+}
+.side-panel { min-height: 0; height: 100%; overflow: hidden; }
+.left-panel .log-list {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+  scrollbar-width: thin; scrollbar-color: #3c555d #0b1219; padding-right: 4px;
+}
+.log-list::-webkit-scrollbar { width: 6px; }
+.log-list::-webkit-scrollbar-track { background: #0b1219; }
+.log-list::-webkit-scrollbar-thumb { background: #3c555d; border-radius: 6px; }
+.center-column {
+  position: relative; min-height: 0; height: 100%; overflow: hidden; gap: 6px;
+  display: grid;
+  grid-template-rows: auto auto minmax(58px, 1fr) auto minmax(58px, 1fr) auto auto auto;
+}
+.board { height: auto; min-height: 0; grid-template-rows: minmax(0, 1fr); gap: 6px; }
+.slot { height: 100%; min-height: 0; }
+.hand-section { min-height: 0; margin-top: 0; display: flex; flex-direction: column; }
+.hand-heading { flex: 0 0 auto; margin-bottom: 5px; }
+.hand-grid { min-height: 0; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.hand-card { min-height: 0; }
+.hand-art-wrap { height: clamp(44px, 9vh, 86px); flex: 0 1 auto; }
+.hand-copy { min-height: 48px; padding: 5px 6px; gap: 3px; }
+.hand-copy > span { -webkit-line-clamp: 2; }
+.committed-row { flex: 0 0 auto; min-height: 20px; margin-top: 5px; }
+.game-actions { min-height: 38px; }
+.right-panel .archive-art { flex: 0 1 126px; min-height: 65px; }
+.right-panel .side-rule { flex: 0 0 auto; }
+.left-panel .side-rule { flex: 0 0 auto; }
+
+/* Avoid text/image selection and accidental browser drag while keeping controls usable. */
+*, *::before, *::after { -webkit-user-select: none; user-select: none; }
+img, svg, canvas, .hand-card, .slot, .archive-art {
+  -webkit-user-drag: none; user-drag: none; -webkit-touch-callout: none;
+}
+input, select, textarea { -webkit-user-select: text; user-select: text; }
+#ui { -webkit-tap-highlight-color: transparent; }
+.hand-card, .slot, button { touch-action: manipulation; }
+
+/* Card reveal, effect pulse, impact and restoration effects. */
+.resolution-effects { position: absolute; inset: 0; z-index: 8; pointer-events: none; overflow: hidden; }
+.resolution-effects.impact::before, .resolution-effects.restore::before {
+  content: ""; position: absolute; inset: 4px; border-radius: 8px; opacity: 0;
+  animation: arena-flash .72s ease-out both;
+}
+.resolution-effects.impact::before { background: radial-gradient(ellipse at center, #ff694d25, transparent 68%); }
+.resolution-effects.restore::before { background: radial-gradient(ellipse at center, #78ffd225, transparent 68%); }
+.floating-number {
+  position: absolute; right: 10px; top: 5px; z-index: 12; pointer-events: none;
+  font-size: clamp(19px, 2vw, 28px); line-height: 1; font-weight: 950;
+  text-shadow: 0 2px 0 #080d13, 0 0 15px currentColor;
+  animation: number-float 1.35s cubic-bezier(.15,.7,.25,1) both;
+}
+.damage-number { color: #ff766e; }
+.heal-number { color: #8dffd0; }
+.slot.card-reveal { z-index: 2; animation: slot-reveal-impact .88s cubic-bezier(.15,.8,.2,1) both; }
+.slot.effect-damage, .slot.effect-own-count, .slot.effect-enemy-count, .slot.effect-transfer {
+  box-shadow: inset 0 0 0 1px #ff7a69, 0 0 22px #ff5e493b;
+}
+.slot.effect-heal, .slot.effect-own-heal, .slot.effect-guard, .slot.effect-boost {
+  box-shadow: inset 0 0 0 1px #8dffd0, 0 0 22px #67ffc33b;
+}
+.effect-burst { position: absolute; z-index: 9; width: 1px; height: 1px; }
+.effect-particle {
+  position: absolute; display: block; width: 4px; height: 4px; border-radius: 50%;
+  left: 0; top: 0; opacity: 0; animation: particle-burst .72s ease-out both;
+}
+.burst-player .effect-particle, .particle-player { background: #9dffcf; box-shadow: 0 0 9px #83ffd7; }
+.burst-enemy .effect-particle, .particle-enemy { background: #ff8677; box-shadow: 0 0 9px #ff5e49; }
+@keyframes arena-flash { 0% { opacity: 0; } 18% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes number-float { 0% { opacity: 0; transform: translateY(12px) scale(.65); } 18% { opacity: 1; transform: translateY(0) scale(1.2); } 72% { opacity: 1; } 100% { opacity: 0; transform: translateY(-34px) scale(.92); } }
+@keyframes slot-reveal-impact { 0% { filter: brightness(2.2) saturate(1.5); transform: scale(.94); } 35% { filter: brightness(1.45) saturate(1.25); transform: scale(1.035); } 100% { filter: brightness(1); transform: scale(1); } }
+@keyframes particle-burst { 0% { opacity: 0; transform: translate(0,0) scale(.4); } 18% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx),var(--dy)) scale(0); } }
+
+@media (max-height: 820px) and (min-width: 721px) {
+  #ui { padding-top: 6px; padding-bottom: 6px; }
+  .topbar { min-height: 46px; padding-bottom: 6px; }
+  .game-layout { padding-top: 6px; gap: 8px; }
+  .center-column { gap: 4px; grid-template-rows: auto auto minmax(48px, 1fr) auto minmax(48px, 1fr) auto auto auto; }
+  .status-panel { padding: 5px 9px 4px; }
+  .status-top strong { font-size: 23px; }
+  .stability-track { margin: 5px 0 4px; }
+  .hand-art-wrap { height: clamp(36px, 7.8vh, 64px); }
+  .hand-copy { min-height: 41px; padding: 4px; }
+  .hand-copy > span { font-size: 7px; }
+  .side-panel { padding: 9px; }
+  .panel-heading { margin-bottom: 8px; }
+  .archive-art { margin-bottom: 6px; }
+  .side-rule { margin-top: 8px; padding-top: 8px; }
+  .side-rule p { line-height: 1.35; }
+}
+@media (max-width: 1120px) {
+  .game-layout { grid-template-rows: minmax(0, 1fr); }
+  .right-panel { height: 100%; overflow: auto; }
+}
+@media (max-width: 720px) {
+  html, body, #app { height: auto; min-height: 100%; overflow: auto; }
+  body { height: auto; min-height: 100dvh; }
+  #ui { height: auto; min-height: 100dvh; overflow: visible; display: block; }
+  .game-layout { display: flex; flex-direction: column; overflow: visible; }
+  .center-column { display: flex; height: auto; overflow: visible; }
+  .board { height: auto; }
+  .slot { height: clamp(82px, 24vw, 126px); }
+  .hand-art-wrap { height: clamp(95px, 29vw, 140px); }
+  .left-panel, .right-panel { height: auto; overflow: visible; }
+  .left-panel .log-list { max-height: 180px; min-height: 80px; overflow-y: auto; }
+  .resolution-effects { position: fixed; inset: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .resolution-effects *, .floating-number, .slot.card-reveal { animation-duration: .01ms !important; }
+}
