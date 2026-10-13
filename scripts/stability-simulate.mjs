@@ -80,7 +80,7 @@ const markdown = [
   "- Ничьи: **" + count("draw") + " (" + pct(count("draw")) + ")**",
   "- Достигли лимита раундов: **" + count("turn-limit") + " (" + pct(count("turn-limit")) + ")**",
   "- Первым разрешал эффекты игрок: **" + playerFirstCount + " матчей**; противник: **" + (matches - playerFirstCount) + "**.",
-  "- Победы стороны, первой разрешавшей эффекты, среди решённых матчей: **" + firstResolverWins + "/" + decisive + " (" + firstResolverWinPct + ")**.",
+  "- Победы стороны со стартовой инициативой в нечётных раундах, среди решённых матчей: **" + firstResolverWins + "/" + decisive + " (" + firstResolverWinPct + ")**.",
   "- Средняя длительность: **" + mean("rounds").toFixed(2) + " раунда**",
   "- Средняя оставшаяся Стабильность первого игрока: **" + mean("playerStability").toFixed(2) + "**",
   "- Средняя оставшаяся Стабильность второго игрока: **" + mean("enemyStability").toFixed(2) + "**",
