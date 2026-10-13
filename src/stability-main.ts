@@ -92,6 +92,7 @@ function triggerResolutionEffects(beforePlayer: number, beforeEnemy: number, pla
   overlay.setAttribute("aria-hidden", "true");
   arena.appendChild(overlay);
 
+  played.forEach((item,index)=>playCardSound(index));
   const deltaPlayer = game.player.stability - beforePlayer;
   const deltaEnemy = game.enemy.stability - beforeEnemy;
   const showNumber = (side: "player" | "enemy", delta: number) => {
@@ -175,6 +176,7 @@ function paint(): void {
       '</aside>' +
     '</div>' +
     (game.winner ? '<div class="result-overlay"><div class="result-card"><span class="panel-kicker">ДУЭЛЬ ЗАВЕРШЕНА</span><h2>' + (game.winner === "draw" ? "НИЧЬЯ" : game.winner === "player" ? "ЛАГЕРЬ УСТОЯЛ" : "ЛАГЕРЬ ПАЛ") + '</h2><p>' + (game.winner === "player" ? "Твой лагерь сохранил стабильность." : game.winner === "draw" ? "Оба лагеря потеряли устойчивость." : "Стабильность твоего лагеря обнулилась.") + '</p><button id="restart" class="primary-button">НОВАЯ ДУЭЛЬ →</button></div></div>' : "");
+  root.innerHTML = localizeHTML(root.innerHTML);
   root.querySelectorAll<HTMLImageElement>("img[data-art]").forEach(image => {
     image.addEventListener("error", () => {
       const source = image.dataset.art || "";
@@ -357,20 +359,18 @@ function paint(): void {
   };
 }
 function start(): void {
-  const stability = (document.querySelector<HTMLSelectElement>("#start-stability")?.value || "15") === "20" ? 20 : 15;
-  const maxPlays = document.querySelector<HTMLInputElement>("#max-two")?.checked ? 2 : 0;
-  settings = { startStability: stability as 15 | 20, maxPlays: maxPlays as 0 | 2, handLimit: 6, deckSize: 30 };
+  const stability = startStability;
+  const maxPlays = maxPlaysSetting;
+  settings = { startStability: stability, maxPlays, handLimit: 6, deckSize: 30 };
   game = createGame(settings);
   busy = false;
   selectedCard = null;
   notice = "Выбери карты и закрой выбор.";
   menu.classList.add("hidden");
+  root.classList.remove("menu-empty");
+  if (savedDeck.length) { const cards = savedDeck.slice(0,30).map((id,n) => { const d = CARDS.find(x=>x.id===id) || CARDS[n%CARDS.length]; return {...d,effect:{...d.effect},uid:"custom-"+n+"-"+d.id,playedRound:0} as Card; }); while(cards.length<30) { const d=CARDS[cards.length%CARDS.length]; cards.push({...d,effect:{...d.effect},uid:"custom-"+cards.length+"-"+d.id,playedRound:0} as Card); } game.player.hand=cards.splice(0,5); game.player.deck=cards; }
+  if (musicVolume>0) { audio(); startMusic(); }
   paint();
 }
-document.querySelector<HTMLButtonElement>("#start-game")!.addEventListener("click", start);
-document.querySelector<HTMLButtonElement>("#rules-toggle")!.addEventListener("click", () => {
-  const rules = document.querySelector<HTMLElement>("#menu-rules")!;
-  rules.hidden = !rules.hidden;
-});
-start();
-menu.classList.remove("hidden");
+root.classList.add("menu-empty");
+renderMenu("home");
