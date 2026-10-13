@@ -31,8 +31,11 @@ import type { CardViewData } from "../cards/types";
     const art = document.createElement("img");
     art.className = "card-art";
     const artFile = card.art || "card-art-01.avif";
-    // Resolve against Vite's deployment base, including GitHub Pages' /ccg_test/ path.
-    art.src = new URL(import.meta.env.BASE_URL + "cards/" + artFile, window.location.origin).href;
+    // Derive the deployment root from the module script: /ccg_test/assets/app.js
+    // on Pages and /src/main.ts in dev. This avoids fragile document-relative URLs.
+    const moduleScript = Array.from(document.scripts).find((script) => script.type === "module" && script.src);
+    const deploymentBase = moduleScript ? new URL("../", moduleScript.src).pathname : "/";
+    art.src = new URL(deploymentBase + "cards/" + artFile, window.location.origin).href;
     art.alt = "";
     // The same three small AVIF files are reused; eager loading avoids mobile WebViews
     // postponing images inside nested scrolling containers.
