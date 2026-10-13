@@ -16,5 +16,23 @@ export function commit(game: Game, side: Side): void { game[side].locked = true;
 function hit(game: Game, side: Side, amount: number): void { if (amount <= 0) return; const p = game[side], guardIndex = p.board.findIndex(c => c?.effect.kind === "guard"); if (guardIndex >= 0) { p.discard.push(p.board[guardIndex]!); p.board[guardIndex] = null; game.log.push("Живая преграда поглотила удар."); amount = 0; } p.stability = Math.max(0, p.stability - amount); }
 function apply(game: Game, side: Side, c: Card, timing: "play" | "end", random: () => number): void { if (c.timing !== timing) return; const p = game[side], foeSide: Side = side === "player" ? "enemy" : "player", foe = game[foeSide], effect = c.effect; let amount = effect.amount; if (timing === "play" && p.boost) { amount += p.boost; p.boost = 0; } switch (effect.kind) { case "damage": hit(game, foeSide, amount); break; case "heal": p.stability = Math.min(60, p.stability + amount); break; case "own-heal": p.stability = Math.min(60, p.stability + p.board.filter(Boolean).length * amount); break; case "draw": draw(p, amount, game.settings, random); break; case "remove": for (let j = 0; j < amount; j++) { const eligible = foe.board.map((x, i) => x && x.playedRound < game.round ? i : -1).filter(i => i >= 0); if (!eligible.length) break; const i = eligible[Math.floor(random() * eligible.length)]; foe.discard.push(foe.board[i]!); foe.board[i] = null; } break; case "return": for (let j = 0; j < amount; j++) { const i = p.board.findIndex(x => x && x.uid !== c.uid && x.playedRound < game.round); if (i < 0) break; const old = p.board[i]!; p.board[i] = null; if (p.hand.length < game.settings.handLimit) p.hand.push(old); else p.discard.push(old); } break; case "boost": p.boost += amount; break; case "delay": p.delayed += amount; break; case "own-count": hit(game, foeSide, p.board.filter(Boolean).length * amount); break; case "enemy-count": hit(game, foeSide, foe.board.filter(Boolean).length * amount); break; case "transfer": hit(game, foeSide, amount); p.stability = Math.min(60, p.stability + amount); break; case "guard": break; } }
 export function resolveRound(game: Game, random: () => number = Math.random): void { if (game.winner || !game.player.locked || !game.enemy.locked) return; for (const side of ["player", "enemy"] as const) { const p = game[side]; for (const c of p.committed) { const i = p.board.findIndex(x => x === null); if (i < 0) { p.discard.push(c); continue; } c.playedRound = game.round; p.board[i] = c; } } for (const side of ["player", "enemy"] as const) { const p = game[side], foe: Side = side === "player" ? "enemy" : "player"; if (p.delayed) { hit(game, foe, p.delayed); p.delayed = 0; } } for (const side of ["player", "enemy"] as const) { const p = game[side], list = [...p.committed]; p.committed = []; for (const c of list) apply(game, side, c, "play", random); } for (const side of ["player", "enemy"] as const) for (const c of [...game[side].board]) if (c) apply(game, side, c, "end", random); if (game.player.stability === 0 && game.enemy.stability === 0) game.winner = "draw"; else if (game.player.stability === 0) game.winner = "enemy"; else if (game.enemy.stability === 0) game.winner = "player"; if (game.winner) return; game.log.push("Раунд " + game.round + " завершён."); game.round++; for (const p of [game.player, game.enemy]) p.locked = false; draw(game.player, 1, game.settings, random); draw(game.enemy, 1, game.settings, random); }
-export function aiCommit(game: Game, random: () => number = Math.random): void { const p = game.enemy; if (p.locked || game.winner) return; const cards = p.hand.filter(c => p.stability - c.cost >= 1).sort((a, b) => value(b) - value(a)); let count = 0; for (const c of cards) { if (count >= (game.settings.maxPlays || 6) || p.board.every(Boolean)) break; if (random() < 0.25) continue; const result = selectCard(game, "enemy", c.uid); if (result.ok) count++; } p.locked = true; }
+export function aiCommit(game: Game, random: () => number = Math.random): void {
+  const p = game.enemy;
+  if (p.locked || game.winner) return;
+  const cards = p.hand.filter(c => p.stability - c.cost >= 1).sort((a, b) => value(b) - value(a));
+  let count = 0;
+  for (const c of cards) {
+    if (count >= (game.settings.maxPlays || 6)) break;
+    if (p.stability - c.cost < 1) continue;
+    if (random() < 0.25) continue;
+    if (p.board.every(Boolean)) {
+      const weakest = p.board.filter((item): item is Card => item !== null).sort((a, b) => value(a) - value(b))[0];
+      if (!weakest || value(c) <= value(weakest)) break;
+      removeOwn(game, "enemy", weakest.uid);
+    }
+    const result = selectCard(game, "enemy", c.uid);
+    if (result.ok) count++;
+  }
+  p.locked = true;
+}
 function value(c: Card): number { return c.effect.amount - c.cost * 0.25 + (c.timing === "end" ? 1.5 : 0); }
