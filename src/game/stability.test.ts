@@ -125,6 +125,27 @@ describe("Stability rules", () => {
     expect(game.player.board.some((item) => item?.uid === "old-card")).toBe(true);
     expect(game.player.discard.some((item) => item.uid === "old-card")).toBe(false);
   });
+  it("alternates effect resolution order to avoid fixed second-player advantage", () => {
+    const playMirrorRound = (round: number) => {
+      const game = createGame({}, () => 0.5);
+      game.round = round;
+      game.player.stability = 6;
+      game.enemy.stability = 6;
+      game.player.hand = [card("raid", "player-raid"), card("ration", "player-heal")];
+      game.enemy.hand = [card("raid", "enemy-raid"), card("ration", "enemy-heal")];
+      for (const side of ["player", "enemy"] as const) {
+        const first = game[side].hand[0];
+        const second = game[side].hand[1];
+        expect(selectCard(game, side, first.uid).ok).toBe(true);
+        expect(selectCard(game, side, second.uid).ok).toBe(true);
+        commit(game, side);
+      }
+      resolveRound(game, () => 0);
+      return game.winner;
+    };
+    expect(playMirrorRound(1)).toBe("enemy");
+    expect(playMirrorRound(2)).toBe("player");
+  });
   it("lets the AI spend down to one Stability when it is under pressure", () => {
     const game = createGame({}, () => 0.5);
     game.enemy.stability = 3;
