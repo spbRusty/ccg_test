@@ -125,13 +125,14 @@ describe("Stability rules", () => {
     expect(game.player.board.some((item) => item?.uid === "old-card")).toBe(true);
     expect(game.player.discard.some((item) => item.uid === "old-card")).toBe(false);
   });
-  it("sacrifices the weakest old card when the AI has a better card and a full field", () => {
+  it("sacrifices enough weak old cards to play multiple cards on a full field", () => {
     const game = createGame({ startStability: 20, maxPlays: 0 }, () => 0.5);
     game.enemy.board = Array.from({ length: 6 }, (_, i) => card("map", "old-" + i));
-    game.enemy.hand = [card("blackout", "strong-new-card")];
+    game.enemy.hand = [card("blackout", "strong-new-card"), card("sniper", "second-new-card")];
     aiCommit(game, () => 0.99);
-    expect(game.enemy.board.filter(Boolean)).toHaveLength(5);
-    expect(game.enemy.discard.some((item) => item.uid.startsWith("old-"))).toBe(true);
+    expect(game.enemy.board.filter(Boolean)).toHaveLength(4);
+    expect(game.enemy.discard.filter((item) => item.uid.startsWith("old-"))).toHaveLength(2);
     expect(game.enemy.committed.some((item) => item.uid === "strong-new-card")).toBe(true);
+    expect(game.enemy.committed.some((item) => item.uid === "second-new-card")).toBe(true);
   });
 });
