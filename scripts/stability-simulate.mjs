@@ -43,6 +43,7 @@ for (let i = 0; i < matches; i++) {
   }
   results.push({
     seed,
+    firstResolver: game.firstResolver,
     winner: game.winner ?? "turn-limit",
     rounds: Math.min(game.round, maxRounds),
     playerStability: game.player.stability,
@@ -54,9 +55,13 @@ for (let i = 0; i < matches; i++) {
 const count = (winner) => results.filter((row) => row.winner === winner).length;
 const mean = (key) => results.reduce((sum, row) => sum + row[key], 0) / results.length;
 const pct = (value) => (value * 100 / matches).toFixed(1) + "%";
+const firstResolverWins = results.filter((row) => row.winner === row.firstResolver).length;
+const decisive = count("player") + count("enemy");
+const firstResolverWinPct = decisive ? (firstResolverWins * 100 / decisive).toFixed(1) + "%" : "n/a";
+const playerFirstCount = results.filter((row) => row.firstResolver === "player").length;
 const csv = [
-  "seed,winner,rounds,player_stability,enemy_stability,player_cards_on_field_or_discard,enemy_cards_on_field_or_discard",
-  ...results.map((row) => [row.seed, row.winner, row.rounds, row.playerStability, row.enemyStability, row.playerCardsPlayed, row.enemyCardsPlayed].join(",")),
+  "seed,first_resolver,winner,rounds,player_stability,enemy_stability,player_cards_on_field_or_discard,enemy_cards_on_field_or_discard",
+  ...results.map((row) => [row.seed, row.firstResolver, row.winner, row.rounds, row.playerStability, row.enemyStability, row.playerCardsPlayed, row.enemyCardsPlayed].join(",")),
 ].join("\n") + "\n";
 const markdown = [
   "# Симуляция «Стабильности»",
@@ -71,6 +76,8 @@ const markdown = [
   "- Победы второго игрока: **" + count("enemy") + " (" + pct(count("enemy")) + ")**",
   "- Ничьи: **" + count("draw") + " (" + pct(count("draw")) + ")**",
   "- Достигли лимита раундов: **" + count("turn-limit") + " (" + pct(count("turn-limit")) + ")**",
+  "- Первым разрешал эффекты игрок: **" + playerFirstCount + " матчей**; противник: **" + (matches - playerFirstCount) + "**.",
+  "- Победы стороны, первой разрешавшей эффекты, среди решённых матчей: **" + firstResolverWins + "/" + decisive + " (" + firstResolverWinPct + ")**.",
   "- Средняя длительность: **" + mean("rounds").toFixed(2) + " раунда**",
   "- Средняя оставшаяся Стабильность первого игрока: **" + mean("playerStability").toFixed(2) + "**",
   "- Средняя оставшаяся Стабильность второго игрока: **" + mean("enemyStability").toFixed(2) + "**",
