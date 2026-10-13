@@ -364,3 +364,6 @@ input, select, textarea { -webkit-user-select: text; user-select: text; }
   .right-panel { display: flex; }
   .archive-list { max-height: 280px; }
 }
+
+.pending-slot { border-style: dashed !important; border-color: var(--gold) !important; box-shadow: inset 0 0 0 1px #e8c17c55, 0 0 16px #e8c17c18; }
+.pending-slot::after { content: "ВЫБРАНА"; position: absolute; left: 4px; top: 4px; z-index: 2; padding: 3px 4px; border-radius: 2px; background: #17140eeb; color: var(--gold); font-size: 6px; font-weight: 900; letter-spacing: .08em; }
