@@ -23,7 +23,8 @@ export function aiCommit(game: Game, random: () => number = Math.random): void {
   let count = 0;
   for (const c of cards) {
     if (count >= (game.settings.maxPlays || 6)) break;
-    if (p.stability - c.cost < 1) continue;
+    const reserve = Math.max(3, Math.min(6, Math.floor(p.stability * 0.35)));
+    if (p.stability - c.cost < reserve) continue;
     if (random() < 0.25) continue;
     if (p.board.every(Boolean)) {
       const weakest = p.board.filter((item): item is Card => item !== null).sort((a, b) => value(a) - value(b))[0];
