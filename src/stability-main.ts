@@ -196,7 +196,11 @@ function paint(): void {
     button.addEventListener("click", () => {
       if (dragMoved) { dragMoved = false; return; }
       if (busy || p.locked || game.winner) return;
+      const used = new Set(p.committed.map(card => card.targetSlot).filter((slot): slot is number => slot !== undefined));
+      const slotIndex = p.board.findIndex((card, index) => !card && !used.has(index));
+      if (slotIndex < 0) { notice = "Сначала освободи слот."; paint(); return; }
       const result = selectCard(game, "player", button.dataset.id!);
+      if (result.ok) { const committed = p.committed.find(card => card.uid === button.dataset.id); if (committed) committed.targetSlot = slotIndex; }
       notice = result.message;
       selectedCard = null;
       paint();
