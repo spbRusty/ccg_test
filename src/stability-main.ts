@@ -1,1 +1,17 @@
-import "./main.ts";
+import * as ex from "excalibur";
+import {createGame,selectCard,removeOwn,commit,aiCommit,resolveRound,type Game,type Settings,type Card} from "./game/stability";
+import "./../style.css";
+const root=document.querySelector<HTMLDivElement>("#ui")!;
+let s:Settings={startStability:15,maxPlays:0,handLimit:6,deckSize:30},g:Game,busy=false;
+const e=(v:string)=>v.replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]!));
+function card(c:Card){return '<button class="card" data-id="'+c.uid+'"><b class="cost">'+c.cost+'</b><strong>'+e(c.name)+'</strong><span>'+e(c.text)+'</span></button>'}
+function slot(c:Card|null,own:boolean){return c?'<button class="slot '+(own?'own':'enemy')+'" '+(own?'data-r="'+c.uid+'"':'disabled')+'><b>'+e(c.name)+'</b><small>'+e(c.text)+'</small></button>':'<div class="slot empty">СВОБОДНО</div>'}
+function paint(){const p=g.player,q=g.enemy;root.innerHTML='<header><div class="logo">СТАБИЛЬНОСТЬ<small>ДУЭЛЬ В ПУСТОШИ</small></div><span>РАУНД '+g.round+'</span><button id="settings">⚙</button></header><section class="status red"><div><small>ЧУЖОЙ ЛАГЕРЬ</small><strong>'+q.stability+'</strong><small>СТАБИЛЬНОСТЬ</small></div><span>'+(q.locked?'ХОД ЗАКРЫТ':'ВЫБИРАЕТ')+' ▰'.repeat(q.committed.length)+'</span></section><section class="board">'+q.board.map(c=>slot(c,false)).join('')+'</section><div class="divider">РАЗЛОМ</div><section class="board">'+p.board.map(c=>slot(c,true)).join('')+'</section><section class="status green"><div><small>ТВОЙ ЛАГЕРЬ</small><strong>'+p.stability+'</strong><small>СТАБИЛЬНОСТЬ</small></div><span>РУКА '+p.hand.length+'/6</span></section><h3>РУКА <small>ЗАКРЫТО '+p.committed.length+' · ОПЛАЧЕНО '+p.committed.reduce((n,c)=>n+c.cost,0)+'</small></h3><div class="committed">'+p.committed.map(c=>'<button class="face-down" data-id="'+c.uid+'">ЗАКРЫТА '+c.cost+' · ОТМЕНИТЬ</button>').join('')+'</div><section class="hand">'+p.hand.map(card).join('')+'</section><footer><span class="note">Цена списывается сразу. Минимум Стабильности — 1.</span><button id="valve" '+(p.locked||p.stability<3||p.hand.length>=6?'disabled':'')+'>КЛАПАН −2</button><button id="lock" '+(p.locked||g.winner||busy?'disabled':'')+'>ЗАКРЫТЬ ВЫБОР →</button></footer>'+(g.winner?'<div class="overlay"><div class="dialog"><h1>'+(g.winner==='draw'?'НИЧЬЯ':g.winner==='player'?'ТЫ УСТОЯЛ':'ЛАГЕРЬ ПАЛ')+'</h1><button id="restart">НОВАЯ ДУЭЛЬ</button></div></div>':'');
+root.querySelectorAll<HTMLButtonElement>('[data-id]').forEach(b=>b.onclick=()=>{if(!busy&&!p.locked){selectCard(g,'player',b.dataset.id!);paint()}});
+root.querySelectorAll<HTMLButtonElement>('[data-r]').forEach(b=>b.onclick=()=>{removeOwn(g,'player',b.dataset.r!);paint()});
+document.getElementById('lock')!.onclick=()=>{commit(g,'player');aiCommit(g);busy=true;paint();setTimeout(()=>{resolveRound(g);busy=false;paint()},450)};
+document.getElementById('valve')!.onclick=()=>{p.stability-=2;let c=p.deck.pop();if(!c&&p.discard.length){p.deck=p.discard.splice(0).sort(()=>Math.random()-.5);c=p.deck.pop()}if(c)p.hand.push(c);else p.stability+=2;paint()};
+document.getElementById('settings')!.onclick=()=>{s.startStability=prompt('Старт: 15 или 20','15')==='20'?20:15;s.maxPlays=confirm('Максимум две карты за раунд?')?2:0;start()};
+document.getElementById('restart')?.addEventListener('click',start)}
+function start(){g=createGame(s);busy=false;paint()}
+const engine=new ex.Engine({canvasElementId:'game',width:1200,height:800,displayMode:ex.DisplayMode.FitScreen,backgroundColor:ex.Color.fromHex('#080d13')});engine.start().then(start);
