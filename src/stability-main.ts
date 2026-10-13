@@ -1,20 +1,146 @@
-import * as ex from "excalibur";
-import {createGame,selectCard,removeOwn,commit,aiCommit,resolveRound,type Game,type Settings,type Card} from "./game/stability";
+import { createGame, selectCard, removeOwn, commit, aiCommit, resolveRound, type Game, type Settings, type Card } from "./game/stability";
 import "./../style.css";
-const root=document.querySelector<HTMLDivElement>("#ui")!;
-let s:Settings={startStability:15,maxPlays:0,handLimit:6,deckSize:30},g:Game,busy=false,notice="Выбери карты и закрой выбор.";
-const e=(v:string)=>v.replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]!));
-function shuffle<T>(items:T[]):T[]{const a=[...items];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
-function card(c:Card){return '<button class="card" data-id="'+c.uid+'"><b class="cost">'+c.cost+'</b><strong>'+e(c.name)+'</strong><span>'+e(c.text)+'</span></button>'}
-function slot(c:Card|null,own:boolean){return c?'<button class="slot '+(own?'own':'enemy')+'" '+(own?'data-r="'+c.uid+'"':'disabled')+'><b>'+e(c.name)+'</b><small>'+e(c.text)+'</small></button>':'<div class="slot empty">СВОБОДНО</div>'}
-function paint(){const p=g.player,q=g.enemy;root.innerHTML='<header><div class="logo">СТАБИЛЬНОСТЬ<small>ДУЭЛЬ В ПУСТОШИ</small></div><span>РАУНД '+g.round+'</span><button id="settings">⚙</button></header><section class="status red"><div><small>ЧУЖОЙ ЛАГЕРЬ</small><strong>'+q.stability+'</strong><small>СТАБИЛЬНОСТЬ</small></div><span>'+(q.locked?'ХОД ЗАКРЫТ':'ВЫБИРАЕТ')+' ▰'.repeat(q.committed.length)+'</span></section><section class="board">'+q.board.map(c=>slot(c,false)).join('')+'</section><div class="divider">РАЗЛОМ</div><section class="board">'+p.board.map(c=>slot(c,true)).join('')+'</section><section class="status green"><div><small>ТВОЙ ЛАГЕРЬ</small><strong>'+p.stability+'</strong><small>СТАБИЛЬНОСТЬ</small></div><span>РУКА '+p.hand.length+'/6</span></section><h3>РУКА <small>ЗАКРЫТО '+p.committed.length+' · ОПЛАЧЕНО '+p.committed.reduce((n,c)=>n+c.cost,0)+'</small></h3><div class="committed">'+p.committed.map(c=>'<button class="face-down" data-id="'+c.uid+'">ЗАКРЫТА '+c.cost+' · ОТМЕНИТЬ</button>').join('')+'</div><section class="hand">'+p.hand.map(card).join('')+'</section><footer><span class="note">'+e(notice)+'</span><button id="valve" '+(p.locked||p.stability<3||p.hand.length>=6?'disabled':'')+'>КЛАПАН −2</button><button id="lock" '+(p.locked||g.winner||busy?'disabled':'')+'>ЗАКРЫТЬ ВЫБОР →</button></footer>'+(g.winner?'<div class="overlay"><div class="dialog"><h1>'+(g.winner==='draw'?'НИЧЬЯ':g.winner==='player'?'ТЫ УСТОЯЛ':'ЛАГЕРЬ ПАЛ')+'</h1><button id="restart">НОВАЯ ДУЭЛЬ</button></div></div>':'');
-root.querySelectorAll<HTMLButtonElement>('[data-id]').forEach(b=>b.onclick=()=>{if(!busy&&!p.locked){const result=selectCard(g,'player',b.dataset.id!);notice=result.message;paint()}});
-root.querySelectorAll<HTMLButtonElement>('[data-r]').forEach(b=>b.onclick=()=>{removeOwn(g,'player',b.dataset.r!);notice='Карта отправлена в сброс.';paint()});
-document.getElementById('lock')!.onclick=()=>{commit(g,'player');aiCommit(g);busy=true;notice='Выбор закрыт. Карты вскрываются…';paint();setTimeout(()=>{resolveRound(g);busy=false;notice=g.winner?'Дуэль завершена.':'Раунд завершён. Выбери следующий ход.';paint()},450)};
-document.getElementById('valve')!.onclick=()=>{if(p.locked||p.stability<3||p.hand.length>=s.handLimit)return;p.stability-=2;let c=p.deck.pop();if(!c&&p.discard.length){p.deck=shuffle(p.discard.splice(0));c=p.deck.pop()}if(c){p.hand.push(c);notice='Клапан: карта взята за 2 Стабильности.'}else{p.stability+=2;notice='Колода и сброс пусты: оплата возвращена.'}paint()};
-document.getElementById('settings')!.onclick=()=>{s.startStability=prompt('Старт: 15 или 20','15')==='20'?20:15;s.maxPlays=confirm('Максимум две карты за раунд?')?2:0;start()};
-document.getElementById('restart')?.addEventListener('click',start)}
-function addArenaActor(x:number,y:number,w:number,h:number,fill:string,stroke:string,lineWidth=2){const actor=new ex.Actor({pos:ex.vec(x,y),width:w,height:h,anchor:ex.vec(0,0)});actor.graphics.use(new ex.Rectangle({width:w,height:h,color:ex.Color.fromHex(fill),strokeColor:ex.Color.fromHex(stroke),lineWidth}));engine.add(actor)}
-function drawArena(){addArenaActor(36,150,1128,230,"#101a22","#3b4a53",2);addArenaActor(36,420,1128,230,"#101a22","#3b4a53",2);addArenaActor(36,392,1128,4,"#e8c17c","#e8c17c",1);for(let i=0;i<6;i++){const x=58+i*183;addArenaActor(x,178,160,174,"#14212a","#744b4c",2);addArenaActor(x,448,160,174,"#14221f","#3d7667",2)}for(let i=0;i<44;i++){const x=20+((i*197)%1160),y=20+((i*113)%760),r=i%3===0?3:2;const dust=new ex.Actor({pos:ex.vec(x,y),radius:r});dust.graphics.use(new ex.Circle({radius:r,color:ex.Color.fromHex(i%2===0?"#607c82":"#a68a5c")}));engine.add(dust)}}
-function start(){g=createGame(s);busy=false;notice="Выбери карты и закрой выбор.";paint()}
-const engine=new ex.Engine({canvasElementId:'game',width:1200,height:800,displayMode:ex.DisplayMode.FitScreen,backgroundColor:ex.Color.fromHex('#080d13')});engine.start().then(()=>{drawArena();start()});
+
+const root = document.querySelector<HTMLDivElement>("#ui")!;
+const menu = document.querySelector<HTMLElement>("#main-menu")!;
+const base = ((import.meta as any).env.BASE_URL || "/") as string;
+let settings: Settings = { startStability: 15, maxPlays: 0, handLimit: 6, deckSize: 30 };
+let game: Game;
+let busy = false;
+let notice = "Выбери карты и закрой выбор.";
+let selectedCard: string | null = null;
+
+const esc = (value: string) => value.replace(/[&<>"]/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[char]!));
+const artFor = (card: Card) => base + "cards/card-art-" + String(((Number(card.uid) || 1) - 1) % 3 + 1).padStart(2, "0") + ".avif";
+function shuffle<T>(items: T[]): T[] {
+  const result = [...items];
+  for (let i = result.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [result[i], result[j]] = [result[j], result[i]]; }
+  return result;
+}
+function art(card: Card, className = "card-art"): string {
+  return '<img class="' + className + '" src="' + esc(artFor(card)) + '" data-art="' + esc(artFor(card)) + '" alt="" loading="eager" decoding="async">';
+}
+function handCard(card: Card): string {
+  const chosen = selectedCard === card.uid ? " chosen" : "";
+  return '<button type="button" class="hand-card' + chosen + '" data-id="' + esc(card.uid) + '" aria-label="' + esc(card.name) + '">' +
+    '<span class="hand-art-wrap">' + art(card) + '<b class="cost">' + card.cost + '</b></span>' +
+    '<span class="hand-copy"><strong>' + esc(card.name) + '</strong><span>' + esc(card.text) + '</span></span></button>';
+}
+function boardSlot(card: Card | null, own: boolean): string {
+  if (!card) return '<div class="slot empty"><span class="slot-plus">＋</span><small>СВОБОДНО</small></div>';
+  return '<button type="button" class="slot filled ' + (own ? "own" : "enemy") + '" ' +
+    (own ? 'data-r="' + esc(card.uid) + '"' : "disabled") + '>' +
+    art(card, "slot-art") + '<span class="slot-copy"><strong>' + esc(card.name) + '</strong><small>' + esc(card.text) + '</small></span>' +
+    '<b class="slot-cost">' + card.cost + '</b></button>';
+}
+function statusPanel(label: string, value: number, own: boolean, tail: string): string {
+  const width = Math.max(0, Math.min(100, value / 60 * 100));
+  return '<section class="status-panel ' + (own ? "own-status" : "enemy-status") + '">' +
+    '<div class="status-top"><span class="status-dot"></span><span class="status-label">' + label + '</span><strong>' + value + '</strong><small>СТАБИЛЬНОСТЬ</small></div>' +
+    '<div class="stability-track"><span style="width:' + width + '%"></span></div><div class="status-tail">' + tail + '</div></section>';
+}
+function paint(): void {
+  if (!game) return;
+  const p = game.player, q = game.enemy;
+  const logItems = [...game.log].reverse().slice(-8);
+  if (notice) logItems.push(notice);
+  root.innerHTML =
+    '<header class="topbar"><div class="brand-mark">S</div><div class="brand-copy"><strong>СТАБИЛЬНОСТЬ</strong><small>ДУЭЛЬ В ПУСТОШИ</small></div><div class="round-pill">РАУНД <b>' + game.round + '</b></div><div class="top-actions"><button id="menu-button" class="quiet-button">☰ МЕНЮ</button><button id="new-game" class="quiet-button">↻ НОВАЯ ДУЭЛЬ</button></div></header>' +
+    '<div class="game-layout">' +
+      '<aside class="side-panel left-panel"><div class="panel-heading"><span class="panel-kicker">СВОДКА</span><h2>Журнал боя</h2></div>' +
+        '<div class="side-score"><span>РАУНД</span><strong>' + game.round + '</strong></div>' +
+        '<div class="log-list">' + logItems.map((line, i) => '<p class="' + (i === logItems.length - 1 ? "log-current" : "") + '">' + esc(line) + '</p>').join("") + '</div>' +
+        '<div class="side-rule"><span class="panel-kicker">ЦЕЛЬ</span><p>Обнули Стабильность чужого лагеря. Цена каждой карты списывается сразу при выборе.</p></div>' +
+      '</aside>' +
+      '<main class="center-column">' +
+        '<div class="arena-heading"><div><span class="panel-kicker">ПРОТИВНИК</span><h2>Чужой лагерь</h2></div><span class="turn-state ' + (q.locked ? "locked" : "") + '">' + (q.locked ? "ХОД ЗАКРЫТ" : "ВЫБИРАЕТ") + '</span></div>' +
+        statusPanel("ЧУЖОЙ ЛАГЕРЬ", q.stability, false, (q.locked ? "ВЫБОР ЗАКРЫТ" : "ГОТОВИТ ХОД") + ' <span>РУКА ' + q.hand.length + '/6</span>') +
+        '<section class="board enemy-board" aria-label="Поле противника">' + q.board.map(c => boardSlot(c, false)).join("") + '</section>' +
+        '<div class="rift-divider"><span></span><b>РАЗЛОМ</b><span></span><i>✦</i></div>' +
+        '<section class="board player-board" aria-label="Твоё игровое поле">' + p.board.map(c => boardSlot(c, true)).join("") + '</section>' +
+        statusPanel("ТВОЙ ЛАГЕРЬ", p.stability, true, (p.locked ? "ХОД ЗАКРЫТ" : "ТВОЙ ХОД") + ' <span>РУКА ' + p.hand.length + '/6</span>') +
+        '<section class="hand-section"><div class="hand-heading"><div><span class="panel-kicker">ТВОЙ РЕСУРС</span><h2>Карты в руке</h2></div><span class="hand-count">' + p.hand.length + ' / 6</span></div>' +
+          '<div class="hand-grid">' + p.hand.map(handCard).join("") + '</div>' +
+          '<div class="committed-row">' + (p.committed.length ? '<span>ЗАКРЫТЫЙ ВЫБОР</span>' + p.committed.map(c => '<button class="committed-chip" data-id="' + esc(c.uid) + '">◈ ' + esc(c.name) + ' · ' + c.cost + 'с <b>×</b></button>').join("") : '<span class="committed-empty">Карты ещё не выбраны</span>') + '</div>' +
+        '</section>' +
+        '<footer class="game-actions"><p class="notice" role="status">' + esc(notice) + '</p><button id="valve" class="quiet-button" ' + (p.locked || p.stability < 3 || p.hand.length >= 6 || game.winner ? "disabled" : "") + '>КЛАПАН <b>−2</b></button><button id="lock" class="primary-button" ' + (p.locked || game.winner || busy ? "disabled" : "") + '>ЗАКРЫТЬ ВЫБОР <span>→</span></button></footer>' +
+      '</main>' +
+      '<aside class="side-panel right-panel"><div class="panel-heading"><span class="panel-kicker">АРСЕНАЛ</span><h2>Карточные архивы</h2></div>' +
+        '<div class="archive-art archive-one"><img src="' + base + 'cards/card-art-01.avif" alt="" loading="eager"><span>01 / РАЗВЕДКА</span></div>' +
+        '<div class="archive-art archive-two"><img src="' + base + 'cards/card-art-02.avif" alt="" loading="eager"><span>02 / ТЕХНОЛОГИИ</span></div>' +
+        '<div class="archive-art archive-three"><img src="' + base + 'cards/card-art-03.avif" alt="" loading="eager"><span>03 / ВЫЖИВАНИЕ</span></div>' +
+        '<div class="side-rule"><span class="panel-kicker">ТАКТИКА</span><p>Сильные карты стоят дороже. Оставляй запас Стабильности, чтобы не проиграть из-за собственной оплаты.</p></div>' +
+      '</aside>' +
+    '</div>' +
+    (game.winner ? '<div class="result-overlay"><div class="result-card"><span class="panel-kicker">ДУЭЛЬ ЗАВЕРШЕНА</span><h2>' + (game.winner === "draw" ? "НИЧЬЯ" : game.winner === "player" ? "ЛАГЕРЬ УСТОЯЛ" : "ЛАГЕРЬ ПАЛ") + '</h2><p>' + (game.winner === "player" ? "Твой лагерь сохранил стабильность." : game.winner === "draw" ? "Оба лагеря потеряли устойчивость." : "Стабильность твоего лагеря обнулилась.") + '</p><button id="restart" class="primary-button">НОВАЯ ДУЭЛЬ →</button></div></div>' : "");
+  root.querySelectorAll<HTMLImageElement>("img[data-art]").forEach(image => {
+    image.addEventListener("error", () => {
+      const source = image.dataset.art || "";
+      if (!image.dataset.fallback && source.endsWith(".avif")) {
+        image.dataset.fallback = "1";
+        image.src = source.replace(/\.avif$/i, ".jpg");
+      } else {
+        image.classList.add("art-missing");
+      }
+    }, { once: true });
+  });
+  root.querySelectorAll<HTMLButtonElement>(".hand-card[data-id], .committed-chip[data-id]").forEach(button => {
+    button.addEventListener("click", () => {
+      if (busy || p.locked || game.winner) return;
+      const result = selectCard(game, "player", button.dataset.id!);
+      notice = result.message;
+      selectedCard = null;
+      paint();
+    });
+  });
+  root.querySelectorAll<HTMLButtonElement>("[data-r]").forEach(button => button.addEventListener("click", () => {
+    if (busy || p.locked || game.winner) return;
+    removeOwn(game, "player", button.dataset.r!);
+    notice = "Карта отправлена в сброс.";
+    paint();
+  }));
+  root.querySelector<HTMLButtonElement>("#menu-button")!.onclick = () => menu.classList.remove("hidden");
+  root.querySelector<HTMLButtonElement>("#new-game")!.onclick = start;
+  root.querySelector<HTMLButtonElement>("#restart")?.addEventListener("click", start);
+  root.querySelector<HTMLButtonElement>("#lock")!.onclick = () => {
+    commit(game, "player");
+    aiCommit(game);
+    busy = true;
+    notice = "Выбор закрыт. Карты вскрываются…";
+    paint();
+    window.setTimeout(() => {
+      resolveRound(game);
+      busy = false;
+      notice = game.winner ? "Дуэль завершена." : "Раунд завершён. Выбери следующий ход.";
+      selectedCard = null;
+      paint();
+    }, 420);
+  };
+  root.querySelector<HTMLButtonElement>("#valve")!.onclick = () => {
+    if (p.locked || p.stability < 3 || p.hand.length >= settings.handLimit || game.winner) return;
+    p.stability -= 2;
+    let card = p.deck.pop();
+    if (!card && p.discard.length) { p.deck = shuffle(p.discard.splice(0)); card = p.deck.pop(); }
+    if (card) { p.hand.push(card); notice = "Клапан: карта взята за 2 Стабильности."; }
+    else { p.stability += 2; notice = "Колода и сброс пусты: оплата возвращена."; }
+    paint();
+  };
+}
+function start(): void {
+  const stability = (document.querySelector<HTMLSelectElement>("#start-stability")?.value || "15") === "20" ? 20 : 15;
+  const maxPlays = document.querySelector<HTMLInputElement>("#max-two")?.checked ? 2 : 0;
+  settings = { startStability: stability as 15 | 20, maxPlays: maxPlays as 0 | 2, handLimit: 6, deckSize: 30 };
+  game = createGame(settings);
+  busy = false;
+  selectedCard = null;
+  notice = "Выбери карты и закрой выбор.";
+  menu.classList.add("hidden");
+  paint();
+}
+document.querySelector<HTMLButtonElement>("#start-game")!.addEventListener("click", start);
+document.querySelector<HTMLButtonElement>("#rules-toggle")!.addEventListener("click", () => {
+  const rules = document.querySelector<HTMLElement>("#menu-rules")!;
+  rules.hidden = !rules.hidden;
+});
+start();
+menu.classList.remove("hidden");
