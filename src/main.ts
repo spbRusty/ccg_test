@@ -128,15 +128,19 @@ function clickableRect(x: number, y: number, w: number, h: number, color: string
   return actor;
 }
 
-function cardFace(card: UnitCard, x: number, y: number, width: number, height: number, small = false): void {
+function cardFace(card: UnitCard, x: number, y: number, width: number, height: number, small = false, onClick?: () => void): void {
   const chosen = selectedId === card.id;
-  rect(x, y, width, height, chosen ? "#253e55" : "#121d2b", 10, chosen ? "#f3c96b" : card.color, chosen ? 3 : 2);
-  rect(x, y - height * .28, width - 12, height * .36, card.color, 7, card.color, 1);
-  textActor(card.name.length > 17 ? card.name.slice(0, 16) + "…" : card.name, x, y - height * .37, small ? 10 : 12, "#08111d", true);
-  textActor(card.effect, x, y - height * .10, small ? 9 : 11, "#d8e4f4", true);
-  textActor(String(card.cost), x - width * .36, y - height * .42, small ? 12 : 15, "#ffe08a", true);
-  textActor(card.attack + " ATK", x - width * .22, y + height * .35, small ? 10 : 12, "#ff9b9b", true);
-  textActor(card.health + "/" + card.maxHealth, x + width * .22, y + height * .35, small ? 10 : 12, "#a6f3cb", true);
+  const bind = (actor: ex.Actor): ex.Actor => {
+    if (onClick) actor.on("pointerdown", event => { event.cancel(); onClick(); });
+    return actor;
+  };
+  bind(rect(x, y, width, height, chosen ? "#253e55" : "#121d2b", 10, chosen ? "#f3c96b" : card.color, chosen ? 3 : 2));
+  bind(rect(x, y - height * .28, width - 12, height * .36, card.color, 7, card.color, 1));
+  bind(textActor(card.name.length > 17 ? card.name.slice(0, 16) + "…" : card.name, x, y - height * .37, small ? 10 : 12, "#08111d", true));
+  bind(textActor(card.effect, x, y - height * .10, small ? 9 : 11, "#d8e4f4", true));
+  bind(textActor(String(card.cost), x - width * .36, y - height * .42, small ? 12 : 15, "#ffe08a", true));
+  bind(textActor(card.attack + " ATK", x - width * .22, y + height * .35, small ? 10 : 12, "#ff9b9b", true));
+  bind(textActor(card.health + "/" + card.maxHealth, x + width * .22, y + height * .35, small ? 10 : 12, "#a6f3cb", true));
 }
 
 function unitFace(card: UnitCard, x: number, y: number, side: Side): void {
@@ -207,7 +211,12 @@ function render(): void {
       statusText = selectedId === null ? "Карта не выбрана." : "Выбрана: " + card.name + ". Нажми на свободную линию.";
       render();
     }, selectedId === card.id ? "#f0c76f" : card.color);
-    cardFace(card, x, y, Math.min(CARD_W, gap - 5), CARD_H, true);
+    cardFace(card, x, y, Math.min(CARD_W, gap - 5), CARD_H, true, () => {
+      if (active !== "player" || gameOver) return;
+      selectedId = selectedId === card.id ? null : card.id;
+      statusText = selectedId === null ? "Карта не выбрана." : "Выбрана: " + card.name + ". Нажми на свободную линию.";
+      render();
+    });
   });
 
   const end = clickableRect(172, 824, 210, 48, active === "player" && !gameOver ? "#285b59" : "#202a37", endTurn, "#3f9187");
@@ -315,7 +324,7 @@ function endTurn(): void {
 
 function enemyTurn(): void {
   if (gameOver) return;
-  enemy.maxMana = Math.min(10, enemy.maxMana + 1);
+  if (round > 1) enemy.maxMana = Math.min(10, enemy.maxMana + 1);
   enemy.mana = enemy.maxMana;
   draw(enemy);
   let safety = 0;
