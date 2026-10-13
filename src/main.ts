@@ -105,7 +105,7 @@ function textActor(text: string, x: number, y: number, size: number, color = "#e
   const actor = new ex.Actor({ pos: ex.vec(x, y), anchor: ex.vec(0.5, 0.5) });
   actor.graphics.use(new ex.Text({
     text,
-    font: new ex.Font({ family: FONT, size, bold, color, textAlign: ex.TextAlign.Center, baseAlign: ex.BaseAlign.Middle })
+    font: new ex.Font({ family: FONT, size, bold, color: ex.Color.fromHex(color), textAlign: ex.TextAlign.Center, baseAlign: ex.BaseAlign.Middle })
   }));
   addActor(actor);
   return actor;
@@ -113,7 +113,7 @@ function textActor(text: string, x: number, y: number, size: number, color = "#e
 
 function rect(x: number, y: number, w: number, h: number, color: string, radius = 12, stroke = "#334257", lineWidth = 1): ex.Actor {
   const actor = new ex.Actor({ pos: ex.vec(x, y), width: w, height: h, anchor: ex.vec(0.5, 0.5) });
-  actor.graphics.use(new ex.Rectangle({ width: w, height: h, color: ex.Color.fromHex(color), strokeColor: ex.Color.fromHex(stroke), lineWidth, radius }));
+  actor.graphics.use(new ex.Rectangle({ width: w, height: h, color: ex.Color.fromHex(color), strokeColor: ex.Color.fromHex(stroke), lineWidth }));
   addActor(actor);
   return actor;
 }
@@ -235,8 +235,11 @@ function applyBattlecry(card: UnitCard, owner: Side): void {
     case "shield": case "evolve": card.health = Math.min(card.maxHealth + 3, card.health + n); card.maxHealth = Math.max(card.maxHealth, card.health); break;
     case "massDestroy": case "cancel": {
       const targets = foe.board.map((unit, i) => unit ? i : -1).filter(i => i >= 0);
-      if (targets.length) foe.discard.push(foe.board[targets[Math.floor(Math.random() * targets.length)]]!);
-      if (targets.length) foe.board[targets[Math.floor(Math.random() * targets.length)]] = null;
+      if (targets.length) {
+        const target = targets[Math.floor(Math.random() * targets.length)];
+        foe.discard.push(foe.board[target]!);
+        foe.board[target] = null;
+      }
       break;
     }
     case "fieldGain": case "combo": own.hp = Math.min(30, own.hp + own.board.filter(Boolean).length); break;
