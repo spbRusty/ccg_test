@@ -33,10 +33,10 @@ function handCard(card: Card): string {
     '<span class="hand-art-wrap">' + art(card) + '<b class="cost">' + card.cost + '</b></span>' +
     '<span class="hand-copy"><strong>' + esc(card.name) + '</strong><span>' + esc(card.text) + '</span></span></button>';
 }
-function boardSlot(card: Card | null, own: boolean, index: number): string {
+function boardSlot(card: Card | null, own: boolean, index: number, pending = false): string {
   if (!card) return '<div class="slot empty ' + (own ? 'own-empty' : '') + '" data-slot-index="' + index + '"><span class="slot-plus">＋</span><small>СВОБОДНО</small></div>';
-  return '<button type="button" draggable="false" class="slot filled ' + (own ? "own" : "enemy") + '" data-card-id="' + esc(card.uid) + '" data-side="' + (own ? "player" : "enemy") + '" data-slot-index="' + index + '" ' +
-    (own ? 'data-r="' + esc(card.uid) + '"' : "disabled") + '>' +
+  return '<button type="button" draggable="false" class="slot filled ' + (own ? "own" : "enemy") + (pending ? " pending-slot" : "") + '" data-card-id="' + esc(card.uid) + '" data-side="' + (own ? "player" : "enemy") + '" data-slot-index="' + index + '" ' +
+    (own && !pending ? 'data-r="' + esc(card.uid) + '"' : own ? "" : "disabled") + '>' +
     art(card, "slot-art") + '<span class="slot-copy"><strong>' + esc(card.name) + '</strong><small>' + esc(card.text) + '</small></span>' +
     '<b class="slot-cost">' + card.cost + '</b></button>';
 }
@@ -123,7 +123,7 @@ function paint(): void {
         statusPanel("ЧУЖОЙ ЛАГЕРЬ", q.stability, false, (q.locked ? "ВЫБОР ЗАКРЫТ" : "ГОТОВИТ ХОД") + ' <span>РУКА ' + q.hand.length + '/6</span>') +
         '<section class="board enemy-board" aria-label="Поле противника">' + q.board.map((c, i) => boardSlot(c, false, i)).join("") + '</section>' +
         '<div class="rift-divider"><span></span><b>РАЗЛОМ</b><span></span><i>✦</i></div>' +
-        '<section class="board player-board" aria-label="Твоё игровое поле">' + p.board.map((c, i) => boardSlot(c, true, i)).join("") + '</section>' +
+        '<section class="board player-board" aria-label="Твоё игровое поле">' + p.board.map((c, i) => { const pending = !c ? p.committed.find(item => item.targetSlot === i) : undefined; return boardSlot(c || pending || null, true, i, !!pending); }).join("") + '</section>' +
         statusPanel("ТВОЙ ЛАГЕРЬ", p.stability, true, (p.locked ? "ХОД ЗАКРЫТ" : "ТВОЙ ХОД") + ' <span>РУКА ' + p.hand.length + '/6</span>') +
         '<section class="hand-section"><div class="hand-heading"><div><span class="panel-kicker">ТВОЙ РЕСУРС</span><h2>Карты в руке</h2></div><span class="hand-count">' + p.hand.length + ' / 6</span></div>' +
           '<div class="hand-grid">' + p.hand.map(handCard).join("") + '</div>' +
@@ -210,7 +210,7 @@ function paint(): void {
   root.querySelectorAll<HTMLElement>(".slot[data-card-id]").forEach(slot => {
     const update = () => {
       const id = slot.dataset.cardId;
-      const card = id ? [...p.board, ...q.board].find(item => item?.uid === id) : null;
+      const card = id ? [...p.board, ...q.board, ...p.committed].find(item => item?.uid === id) : null;
       if (card) { previewCard = card; updateInspector(card); }
     };
     slot.addEventListener("mouseenter", update); slot.addEventListener("focus", update);
