@@ -305,3 +305,62 @@ input, select, textarea { -webkit-user-select: text; user-select: text; }
 }
 
 .status-panel { position: relative; }
+
+
+/* Compact header: retain logo and controls, remove the empty top band. */
+#ui { padding: 4px clamp(8px, 1vw, 16px); }
+.topbar { min-height: 0; height: 38px; padding: 0; gap: 8px; border: 0; }
+.brand-mark { width: 27px; height: 27px; font-size: 16px; }
+.brand-copy { gap: 1px; }
+.brand-copy strong { font-size: 12px; }
+.brand-copy small { font-size: 7px; }
+.round-pill { margin-left: 8px; padding: 5px 8px; }
+.top-actions { gap: 5px; }
+.top-actions .quiet-button { padding: 7px 10px; }
+.game-layout { padding-top: 0; gap: 9px; }
+.center-column { gap: 5px; }
+@media (max-height: 820px) and (min-width: 721px) {
+  #ui { padding-top: 3px; padding-bottom: 3px; }
+  .topbar { height: 32px; }
+  .brand-mark { width: 23px; height: 23px; font-size: 14px; }
+  .game-layout { padding-top: 0; }
+}
+
+/* Arsenal tabs, deck list and live card inspector. */
+.archive-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin: 0 0 8px; }
+.archive-tabs button { min-width: 0; padding: 8px 4px; border: 1px solid #344653; border-radius: 4px; background: #0b131a; color: #899aa1; font-size: 8px; font-weight: 800; letter-spacing: .04em; }
+.archive-tabs button.active { border-color: var(--mint); color: var(--mint); background: #13271f; }
+.archive-list { min-height: 0; flex: 1 1 auto; overflow: auto; display: flex; flex-direction: column; gap: 5px; padding-right: 3px; scrollbar-width: thin; scrollbar-color: #3c555d #0b1219; }
+.archive-card { display: grid; grid-template-columns: 43px minmax(0,1fr) 20px; align-items: center; gap: 7px; width: 100%; min-height: 52px; padding: 4px; border: 1px solid #263943; border-radius: 4px; background: #0d151c; text-align: left; }
+.archive-card:hover, .archive-card:focus-visible { border-color: var(--mint); background: #15231f; }
+.archive-thumb { width: 43px; height: 48px; object-fit: cover; border-radius: 2px; background: #19242c; }
+.archive-card > span { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.archive-card strong { font-size: 9px; line-height: 1.15; }
+.archive-card small { font-size: 7px; line-height: 1.25; color: #98a9ad; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.archive-card > b { color: var(--gold); font-size: 11px; text-align: center; }
+.archive-empty { color: var(--muted); font-size: 10px; line-height: 1.5; }
+.card-inspector { flex: 0 0 auto; display: grid; grid-template-columns: minmax(70px, 42%) minmax(0,1fr); gap: 9px; min-height: 130px; margin-top: 8px; padding-top: 8px; border-top: 1px solid #263540; }
+.inspector-art { width: 100%; height: 130px; object-fit: cover; border: 1px solid #354751; border-radius: 4px; background: #19242c; }
+.inspector-copy { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.inspector-copy strong { font-size: 11px; line-height: 1.2; }
+.inspector-copy > span { color: var(--gold); font-size: 7px; letter-spacing: .06em; line-height: 1.4; }
+.inspector-copy p { margin: 0; color: #aab7b9; font-size: 9px; line-height: 1.45; overflow-wrap: anywhere; }
+.inspector-placeholder { grid-column: 1 / -1; display: grid; place-items: center; min-height: 95px; padding: 8px; color: #7f9096; font-size: 10px; line-height: 1.5; text-align: center; }
+.right-panel { gap: 0; }
+.right-panel .panel-heading { flex: 0 0 auto; margin-bottom: 9px; }
+.drag-ghost { position: fixed; z-index: 1000; width: 145px; opacity: .94; pointer-events: none; transform: rotate(3deg) scale(1.04); border-color: var(--mint) !important; box-shadow: 0 14px 36px #000c, 0 0 0 2px #8dd9ba55; }
+.own-empty { transition: border-color .12s, background .12s, transform .12s, box-shadow .12s; }
+.own-empty.drop-target { border: 1px solid var(--mint); background: #17392c; color: var(--mint); transform: scale(1.025); box-shadow: 0 0 18px #8dd9ba44; }
+@media (max-width: 1120px) {
+  .right-panel { display: flex; flex-direction: column; }
+  .archive-list { max-height: 230px; flex: 0 1 auto; }
+  .card-inspector { min-height: 115px; }
+  .inspector-art { height: 115px; }
+}
+@media (max-width: 720px) {
+  .topbar { height: auto; min-height: 32px; }
+  .top-actions { width: auto; margin-left: auto; }
+  .top-actions button { flex: 0 1 auto; }
+  .right-panel { display: flex; }
+  .archive-list { max-height: 280px; }
+}
