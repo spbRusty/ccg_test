@@ -36,7 +36,8 @@ for (let i = 0; i < matches; i++) {
   const random = makeRandom(seed);
   const game = createGame({}, random);
   while (!game.winner && game.round <= maxRounds) {
-    const order = game.round % 2 === 1 ? ["player", "enemy"] : ["enemy", "player"];
+    const otherResolver = game.firstResolver === "player" ? "enemy" : "player";
+    const order = game.round % 2 === 1 ? [game.firstResolver, otherResolver] : [otherResolver, game.firstResolver];
     for (const side of order) chooseForSide(game, side, random);
     resolveRound(game, random);
   }
@@ -77,7 +78,7 @@ const markdown = [
   "## Ограничения",
   "",
   "- Оба игрока используют одну и ту же простую эвристику, а не разные стратегии.",
-  "- Оба ИИ используют одинаковую эвристику; порядок выбора, разрешения эффектов и добора чередуется по раундам.",
+  "- Оба ИИ используют одинаковую эвристику; стартовая сторона выбирается случайно, а порядок выбора, эффектов и добора чередуется по раундам.",
   "- Карты не получили балансировку автоматически. Используйте результаты для поиска перекоса первого хода и затяжных матчей.",
   "",
 ].join("\n");
