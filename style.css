@@ -412,3 +412,66 @@ input, select, textarea { -webkit-user-select: text; user-select: text; }
   .card-inspector { min-height: 210px; }
   .inspector-art { height: 210px; min-height: 180px; }
 }
+
+
+/* Card readability and reversible card placement. */
+.slot.filled { position: relative; overflow: hidden; isolation: isolate; }
+.slot.filled .slot-art {
+  position: absolute; inset: 0; z-index: -1; width: 100%; height: 100%;
+  object-fit: cover; object-position: center 24%; opacity: .96;
+}
+.slot.filled::before {
+  content: ""; position: absolute; inset: 20% 0 0; z-index: 0; pointer-events: none;
+  background: linear-gradient(180deg, transparent 0%, #07101655 30%, #071016e8 100%);
+}
+.slot-copy {
+  position: absolute; z-index: 1; left: 0; right: 0; bottom: 0;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 3px;
+  padding: 8px 7px 7px; text-align: left; background: transparent;
+}
+.slot-copy strong {
+  display: block; max-width: 100%; font-size: clamp(9px, .78vw, 12px);
+  line-height: 1.1; color: #fff4d9; text-shadow: 0 1px 4px #000;
+}
+.slot-copy small {
+  display: -webkit-box; width: 100%; overflow: hidden;
+  -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+  color: #e3e6df; font-size: clamp(7px, .58vw, 9px); line-height: 1.25;
+  text-shadow: 0 1px 3px #000;
+}
+.slot-cost { z-index: 2; }
+.pending-slot::after { content: none !important; display: none !important; }
+.slot.pending-slot { cursor: grab; }
+.slot.pending-slot.is-dragging { opacity: .45; }
+.hand-drop-target { outline: 2px dashed var(--mint); outline-offset: -3px; background-color: #17392c; }
+.committed-row { display: none !important; }
+.card-inspector { display: block; min-height: 0; padding: 8px 0 0; }
+.inspector-card {
+  position: relative; width: min(100%, 270px); height: clamp(190px, 29vh, 255px);
+  margin: 0 auto; overflow: hidden; border: 1px solid #61736d; border-radius: 5px;
+  background: #111a20; box-shadow: 0 7px 18px #0005; isolation: isolate;
+}
+.inspector-art {
+  position: absolute; inset: 0; z-index: -1; width: 100%; height: 100%;
+  max-height: none; min-height: 0; object-fit: cover; object-position: center 24%;
+  border: 0; border-radius: 0;
+}
+.inspector-card::after {
+  content: ""; position: absolute; inset: 28% 0 0; z-index: 0; pointer-events: none;
+  background: linear-gradient(180deg, transparent 0%, #07101675 30%, #071016f2 100%);
+}
+.inspector-copy {
+  position: absolute; z-index: 1; left: 0; right: 0; bottom: 0;
+  display: flex; flex-direction: column; gap: 4px; padding: 10px;
+}
+.inspector-copy strong { color: #fff1d2; font-size: 13px; text-shadow: 0 1px 4px #000; }
+.inspector-copy > span { color: #f0cf7c; font-size: 8px; }
+.inspector-copy p { color: #e2e7e1; font-size: 9px; line-height: 1.35; text-shadow: 0 1px 3px #000; }
+.inspector-placeholder { min-height: 150px; }
+@media (max-width: 720px) {
+  .slot-copy { padding: 4px; }
+  .slot-copy strong { font-size: 8px; }
+  .slot-copy small { font-size: 6px; -webkit-line-clamp: 2; }
+  .card-inspector { min-height: 0; }
+  .inspector-card { height: 220px; }
+}
