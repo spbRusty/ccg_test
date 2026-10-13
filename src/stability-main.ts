@@ -75,7 +75,7 @@ function handCard(card: Card): string {
 }
 function boardSlot(card: Card | null, own: boolean, index: number, pending = false): string {
   if (!card) return '<div class="slot empty ' + (own ? 'own-empty' : '') + '" data-slot-index="' + index + '"><span class="slot-plus">＋</span><small>СВОБОДНО</small></div>';
-  return '<button type="button" draggable="' + (own && pending ? "true" : "false") + '" class="slot filled ' + (own ? "own" : "enemy") + (pending ? " pending-slot" : "") + '" data-card-id="' + esc(card.uid) + '" data-side="' + (own ? "player" : "enemy") + '" data-slot-index="' + index + '" ' +
+  return '<button type="button" draggable="false" class="slot filled ' + (own ? "own" : "enemy") + (pending ? " pending-slot" : "") + '" data-card-id="' + esc(card.uid) + '" data-side="' + (own ? "player" : "enemy") + '" data-slot-index="' + index + '" ' +
     (own && !pending ? 'data-r="' + esc(card.uid) + '"' : own ? "" : "disabled") + '>' +
     art(card, "slot-art") + '<span class="slot-copy"><header><b class="slot-cost">' + card.cost + '</b><strong>' + esc(cardName(card)) + '</strong></header><small>' + esc(cardText(card)) + '</small></span></button>';
 }
