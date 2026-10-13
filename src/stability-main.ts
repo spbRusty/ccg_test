@@ -4,6 +4,7 @@ import "./../style.css";
 const root = document.querySelector<HTMLDivElement>("#ui")!;
 const menu = document.querySelector<HTMLElement>("#main-menu")!;
 const base = ((import.meta as any).env.BASE_URL || "/") as string;
+document.addEventListener("dragstart", event => { if (event.target instanceof Element && event.target.closest("#ui")) event.preventDefault(); });
 let settings: Settings = { startStability: 15, maxPlays: 0, handLimit: 6, deckSize: 30 };
 let game: Game;
 let busy = false;

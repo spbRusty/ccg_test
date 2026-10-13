@@ -303,3 +303,5 @@ input, select, textarea { -webkit-user-select: text; user-select: text; }
 @media (prefers-reduced-motion: reduce) {
   .resolution-effects *, .floating-number, .slot.card-reveal { animation-duration: .01ms !important; }
 }
+
+.status-panel { position: relative; }
