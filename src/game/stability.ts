@@ -26,7 +26,7 @@ export function aiCommit(game: Game, random: () => number = Math.random): void {
     const reserve = Math.max(3, Math.min(6, Math.floor(p.stability * 0.35)));
     if (p.stability - c.cost < reserve) continue;
     if (random() < 0.25) continue;
-    if (p.board.every(Boolean)) {
+    if (p.committed.length >= p.board.filter((item) => item === null).length) {
       const weakest = p.board.filter((item): item is Card => item !== null).sort((a, b) => value(a) - value(b))[0];
       if (!weakest || value(c) <= value(weakest)) break;
       removeOwn(game, "enemy", weakest.uid);
