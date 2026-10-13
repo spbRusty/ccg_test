@@ -125,6 +125,14 @@ describe("Stability rules", () => {
     expect(game.player.board.some((item) => item?.uid === "old-card")).toBe(true);
     expect(game.player.discard.some((item) => item.uid === "old-card")).toBe(false);
   });
+  it("lets the AI spend down to one Stability when it is under pressure", () => {
+    const game = createGame({}, () => 0.5);
+    game.enemy.stability = 3;
+    game.enemy.hand = [card("map", "last-resort")];
+    aiCommit(game, () => 0.99);
+    expect(game.enemy.stability).toBe(2);
+    expect(game.enemy.committed.some((item) => item.uid === "last-resort")).toBe(true);
+  });
   it("sacrifices enough weak old cards to play multiple cards on a full field", () => {
     const game = createGame({ startStability: 20, maxPlays: 0 }, () => 0.5);
     game.enemy.board = Array.from({ length: 6 }, (_, i) => card("map", "old-" + i));
