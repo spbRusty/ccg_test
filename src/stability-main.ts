@@ -375,4 +375,5 @@ function start(): void {
   paint();
 }
 root.classList.add("menu-empty");
+menu.addEventListener("pointerdown",()=>{if(musicVolume>0){audio();startMusic()}},{once:true});
 renderMenu("home");
