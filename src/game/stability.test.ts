@@ -77,4 +77,13 @@ describe("Stability rules", () => {
     expect(game.enemy.committed.length).toBeGreaterThan(3);
     expect(game.enemy.locked).toBe(true);
   });
+  it("sacrifices the weakest old card when the AI has a better card and a full field", () => {
+    const game = createGame({ startStability: 20, maxPlays: 0 }, () => 0.5);
+    game.enemy.board = Array.from({ length: 6 }, (_, i) => card("map", "old-" + i));
+    game.enemy.hand = [card("blackout", "strong-new-card")];
+    aiCommit(game, () => 0.99);
+    expect(game.enemy.board.filter(Boolean)).toHaveLength(5);
+    expect(game.enemy.discard.some((item) => item.uid.startsWith("old-"))).toBe(true);
+    expect(game.enemy.committed.some((item) => item.uid === "strong-new-card")).toBe(true);
+  });
 });
