@@ -10,7 +10,8 @@
     "build": "npm run check && npm test && vite build && node scripts/copy-assets.mjs",
     "balance:audit": "node --experimental-strip-types scripts/balance-audit.mjs",
     "preview": "vite preview",
-    "balance:simulate": "node --experimental-strip-types scripts/balance-simulate.mjs"
+    "balance:simulate": "node --experimental-strip-types scripts/balance-simulate.mjs",
+    "stability:simulate": "node --experimental-strip-types scripts/stability-simulate.mjs"
   },
   "dependencies": {
     "excalibur": "^0.31.0"
