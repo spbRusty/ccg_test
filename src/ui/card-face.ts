@@ -32,7 +32,7 @@ export function makeCardFace(card: CardViewData, showDescription: boolean): HTML
   art.className = "card-art";
   const artFile = card.art || "card-art-01.avif";
   // Vite substitutes BASE_URL with "/" locally and "/ccg_test/" on GitHub Pages.
-  const assetBase = import.meta.env.BASE_URL;
+  const assetBase = (import.meta as any).env.BASE_URL as string;
   art.src = `${assetBase}cards/${artFile}`;
   art.alt = "";
   art.loading = "eager";
