@@ -23,7 +23,7 @@ export function aiCommit(game: Game, random: () => number = Math.random): void {
   let count = 0;
   for (const c of cards) {
     if (count >= (game.settings.maxPlays || 6)) break;
-    const reserve = Math.max(3, Math.min(6, Math.floor(p.stability * 0.35)));
+    const reserve = p.stability <= 8 ? 1 : Math.max(3, Math.min(6, Math.floor(p.stability * 0.35));
     if (p.stability - c.cost < reserve) continue;
     if (random() < 0.25) continue;
     if (p.committed.length >= p.board.filter((item) => item === null).length) {
