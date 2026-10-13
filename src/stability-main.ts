@@ -4,12 +4,18 @@ import "./../style.css";
 const root = document.querySelector<HTMLDivElement>("#ui")!;
 const menu = document.querySelector<HTMLElement>("#main-menu")!;
 const base = ((import.meta as any).env.BASE_URL || "/") as string;
-document.addEventListener("dragstart", event => { if (event.target instanceof Element && event.target.closest("#ui")) event.preventDefault(); });
+
 let settings: Settings = { startStability: 15, maxPlays: 0, handLimit: 6, deckSize: 30 };
 let game: Game;
 let busy = false;
 let notice = "Выбери карты и закрой выбор.";
 let selectedCard: string | null = null;
+let archiveTab: "deck" | "enemy" = "deck";
+let previewCard: Card | null = null;
+let dragGhost: HTMLElement | null = null;
+let dragCardId: string | null = null;
+let dragOrigin: HTMLElement | null = null;
+let dragStartX = 0, dragStartY = 0, dragMoved = false;
 
 const esc = (value: string) => value.replace(/[&<>"]/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[char]!));
 const artFor = (card: Card) => base + "cards/card-art-" + String(((Number(card.uid) || 1) - 1) % 3 + 1).padStart(2, "0") + ".avif";
@@ -23,13 +29,13 @@ function art(card: Card, className = "card-art"): string {
 }
 function handCard(card: Card): string {
   const chosen = selectedCard === card.uid ? " chosen" : "";
-  return '<button type="button" class="hand-card' + chosen + '" data-id="' + esc(card.uid) + '" aria-label="' + esc(card.name) + '">' +
+  return '<button type="button" draggable="false" class="hand-card' + chosen + '" data-id="' + esc(card.uid) + '" aria-label="' + esc(card.name) + '">' +
     '<span class="hand-art-wrap">' + art(card) + '<b class="cost">' + card.cost + '</b></span>' +
     '<span class="hand-copy"><strong>' + esc(card.name) + '</strong><span>' + esc(card.text) + '</span></span></button>';
 }
-function boardSlot(card: Card | null, own: boolean): string {
-  if (!card) return '<div class="slot empty"><span class="slot-plus">＋</span><small>СВОБОДНО</small></div>';
-  return '<button type="button" class="slot filled ' + (own ? "own" : "enemy") + '" data-card-id="' + esc(card.uid) + '" data-side="' + (own ? "player" : "enemy") + '" ' +
+function boardSlot(card: Card | null, own: boolean, index: number): string {
+  if (!card) return '<div class="slot empty ' + (own ? 'own-empty' : '') + '" data-slot-index="' + index + '"><span class="slot-plus">＋</span><small>СВОБОДНО</small></div>';
+  return '<button type="button" draggable="false" class="slot filled ' + (own ? "own" : "enemy") + '" data-card-id="' + esc(card.uid) + '" data-side="' + (own ? "player" : "enemy") + '" data-slot-index="' + index + '" ' +
     (own ? 'data-r="' + esc(card.uid) + '"' : "disabled") + '>' +
     art(card, "slot-art") + '<span class="slot-copy"><strong>' + esc(card.name) + '</strong><small>' + esc(card.text) + '</small></span>' +
     '<b class="slot-cost">' + card.cost + '</b></button>';
@@ -94,6 +100,11 @@ function triggerResolutionEffects(beforePlayer: number, beforeEnemy: number, pla
   window.setTimeout(() => overlay.remove(), 1300);
 }
 
+function updateInspector(card: Card): void {
+  const panel = root.querySelector<HTMLElement>("#card-inspector");
+  if (!panel) return;
+  panel.innerHTML = art(card, "inspector-art") + '<div class="inspector-copy"><strong>' + esc(card.name) + '</strong><span>ЦЕНА ' + card.cost + ' СТАБИЛЬНОСТИ</span><p>' + esc(card.text) + '</p></div>';
+}
 function paint(): void {
   if (!game) return;
   const p = game.player, q = game.enemy;
@@ -110,9 +121,9 @@ function paint(): void {
       '<main class="center-column">' +
         '<div class="arena-heading"><div><span class="panel-kicker">ПРОТИВНИК</span><h2>Чужой лагерь</h2></div><span class="turn-state ' + (q.locked ? "locked" : "") + '">' + (q.locked ? "ХОД ЗАКРЫТ" : "ВЫБИРАЕТ") + '</span></div>' +
         statusPanel("ЧУЖОЙ ЛАГЕРЬ", q.stability, false, (q.locked ? "ВЫБОР ЗАКРЫТ" : "ГОТОВИТ ХОД") + ' <span>РУКА ' + q.hand.length + '/6</span>') +
-        '<section class="board enemy-board" aria-label="Поле противника">' + q.board.map(c => boardSlot(c, false)).join("") + '</section>' +
+        '<section class="board enemy-board" aria-label="Поле противника">' + q.board.map((c, i) => boardSlot(c, false, i)).join("") + '</section>' +
         '<div class="rift-divider"><span></span><b>РАЗЛОМ</b><span></span><i>✦</i></div>' +
-        '<section class="board player-board" aria-label="Твоё игровое поле">' + p.board.map(c => boardSlot(c, true)).join("") + '</section>' +
+        '<section class="board player-board" aria-label="Твоё игровое поле">' + p.board.map((c, i) => boardSlot(c, true, i)).join("") + '</section>' +
         statusPanel("ТВОЙ ЛАГЕРЬ", p.stability, true, (p.locked ? "ХОД ЗАКРЫТ" : "ТВОЙ ХОД") + ' <span>РУКА ' + p.hand.length + '/6</span>') +
         '<section class="hand-section"><div class="hand-heading"><div><span class="panel-kicker">ТВОЙ РЕСУРС</span><h2>Карты в руке</h2></div><span class="hand-count">' + p.hand.length + ' / 6</span></div>' +
           '<div class="hand-grid">' + p.hand.map(handCard).join("") + '</div>' +
@@ -120,11 +131,10 @@ function paint(): void {
         '</section>' +
         '<footer class="game-actions"><p class="notice" role="status">' + esc(notice) + '</p><button id="valve" class="quiet-button" ' + (p.locked || p.stability < 3 || p.hand.length >= 6 || game.winner ? "disabled" : "") + '>КЛАПАН <b>−2</b></button><button id="lock" class="primary-button" ' + (p.locked || game.winner || busy ? "disabled" : "") + '>ЗАКРЫТЬ ВЫБОР <span>→</span></button></footer>' +
       '</main>' +
-      '<aside class="side-panel right-panel"><div class="panel-heading"><span class="panel-kicker">АРСЕНАЛ</span><h2>Карточные архивы</h2></div>' +
-        '<div class="archive-art archive-one"><img src="' + base + 'cards/card-art-01.avif" alt="" loading="eager"><span>01 / РАЗВЕДКА</span></div>' +
-        '<div class="archive-art archive-two"><img src="' + base + 'cards/card-art-02.avif" alt="" loading="eager"><span>02 / ТЕХНОЛОГИИ</span></div>' +
-        '<div class="archive-art archive-three"><img src="' + base + 'cards/card-art-03.avif" alt="" loading="eager"><span>03 / ВЫЖИВАНИЕ</span></div>' +
-        '<div class="side-rule"><span class="panel-kicker">ТАКТИКА</span><p>Сильные карты стоят дороже. Оставляй запас Стабильности, чтобы не проиграть из-за собственной оплаты.</p></div>' +
+      '<aside class="side-panel right-panel"><div class="panel-heading"><span class="panel-kicker">КАРТЫ</span><h2>Арсенал</h2></div>' +
+        '<div class="archive-tabs"><button type="button" class="' + (archiveTab === "deck" ? "active" : "") + '" data-archive-tab="deck">МОЯ КОЛОДА</button><button type="button" class="' + (archiveTab === "enemy" ? "active" : "") + '" data-archive-tab="enemy">КАРТЫ ПРОТИВНИКА</button></div>' +
+        '<div class="archive-list">' + (archiveTab === "deck" ? [...p.hand, ...p.deck, ...p.committed].filter((card, index, all) => all.findIndex(item => item.uid === card.uid) === index).map(card => '<button type="button" class="archive-card" data-preview-id="' + esc(card.uid) + '">' + art(card, "archive-thumb") + '<span><strong>' + esc(card.name) + '</strong><small>' + esc(card.text) + '</small></span><b>' + card.cost + '</b></button>').join("") : game.playedByEnemy.map(card => '<button type="button" class="archive-card" data-preview-id="' + esc(card.uid) + '">' + art(card, "archive-thumb") + '<span><strong>' + esc(card.name) + '</strong><small>' + esc(card.text) + '</small></span><b>' + card.cost + '</b></button>').join("") || '<p class="archive-empty">Противник ещё не сыграл ни одной карты.</p>') + '</div>' +
+        '<div class="card-inspector" id="card-inspector">' + (previewCard ? art(previewCard, "inspector-art") + '<div class="inspector-copy"><strong>' + esc(previewCard.name) + '</strong><span>ЦЕНА ' + previewCard.cost + ' СТАБИЛЬНОСТИ</span><p>' + esc(previewCard.text) + '</p></div>' : '<div class="inspector-placeholder">Наведи курсор на карту на поле, чтобы увидеть изображение и описание.</div>') + '</div>' +
       '</aside>' +
     '</div>' +
     (game.winner ? '<div class="result-overlay"><div class="result-card"><span class="panel-kicker">ДУЭЛЬ ЗАВЕРШЕНА</span><h2>' + (game.winner === "draw" ? "НИЧЬЯ" : game.winner === "player" ? "ЛАГЕРЬ УСТОЯЛ" : "ЛАГЕРЬ ПАЛ") + '</h2><p>' + (game.winner === "player" ? "Твой лагерь сохранил стабильность." : game.winner === "draw" ? "Оба лагеря потеряли устойчивость." : "Стабильность твоего лагеря обнулилась.") + '</p><button id="restart" class="primary-button">НОВАЯ ДУЭЛЬ →</button></div></div>' : "");
@@ -141,12 +151,80 @@ function paint(): void {
   });
   root.querySelectorAll<HTMLButtonElement>(".hand-card[data-id], .committed-chip[data-id]").forEach(button => {
     button.addEventListener("click", () => {
+      if (dragMoved) { dragMoved = false; return; }
       if (busy || p.locked || game.winner) return;
       const result = selectCard(game, "player", button.dataset.id!);
       notice = result.message;
       selectedCard = null;
       paint();
     });
+  });
+  root.querySelectorAll<HTMLElement>(".hand-card[data-id]").forEach(cardEl => {
+    cardEl.addEventListener("pointerdown", event => {
+      if (event.button !== 0 || busy || p.locked || game.winner) return;
+      dragCardId = cardEl.dataset.id || null; dragOrigin = cardEl;
+      dragStartX = event.clientX; dragStartY = event.clientY; dragMoved = false;
+    });
+  });
+  document.addEventListener("pointermove", event => {
+    if (!dragCardId || !dragOrigin) return;
+    if (!dragGhost && Math.hypot(event.clientX - dragStartX, event.clientY - dragStartY) > 8) {
+      dragMoved = true; dragGhost = dragOrigin.cloneNode(true) as HTMLElement;
+      dragGhost.classList.add("drag-ghost"); document.body.appendChild(dragGhost);
+    }
+    if (dragGhost) {
+      dragGhost.style.left = (event.clientX + 12) + "px"; dragGhost.style.top = (event.clientY + 12) + "px";
+      root.querySelectorAll(".own-empty").forEach(slot => slot.classList.remove("drop-target"));
+      document.elementFromPoint(event.clientX, event.clientY)?.closest(".own-empty")?.classList.add("drop-target");
+    }
+  });
+  const finishDrag = (event: PointerEvent) => {
+    if (!dragCardId || !dragOrigin) return;
+    if (Math.hypot(event.clientX - dragStartX, event.clientY - dragStartY) > 8) {
+      dragMoved = true;
+      const target = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>(".own-empty[data-slot-index]");
+      const card = p.hand.find(item => item.uid === dragCardId);
+      if (target && card && !busy && !p.locked && !game.winner) {
+        const slotIndex = Number(target.dataset.slotIndex);
+        const result = selectCard(game, "player", dragCardId);
+        if (result.ok) {
+          const committed = p.committed.find(item => item.uid === dragCardId);
+          if (committed) committed.targetSlot = slotIndex;
+          notice = result.message; selectedCard = null;
+          paint();
+          const landed = root.querySelector<HTMLElement>('.slot[data-card-id="' + CSS.escape(dragCardId) + '"]');
+          landed?.animate([{ transform: "scale(.78) translateY(-10px)", filter: "brightness(2)" }, { transform: "scale(1.06)", filter: "brightness(1.35)" }, { transform: "scale(1)", filter: "brightness(1)" }], { duration: 330, easing: "cubic-bezier(.15,.8,.2,1)" });
+        } else {
+          notice = result.message; paint();
+        }
+      } else {
+        dragOrigin.animate([{ transform: "translate(0,0) scale(1)" }, { transform: "translate(0,-8px) scale(1.04)" }, { transform: "translate(0,0) scale(1)" }], { duration: 300, easing: "cubic-bezier(.2,.8,.2,1)" });
+      }
+      window.setTimeout(() => { dragMoved = false; }, 100);
+    }
+    dragGhost?.remove(); dragGhost = null;
+    root.querySelectorAll(".drop-target").forEach(slot => slot.classList.remove("drop-target"));
+    dragCardId = null; dragOrigin = null;
+  };
+  document.addEventListener("pointerup", finishDrag);
+  root.querySelectorAll<HTMLElement>(".slot[data-card-id]").forEach(slot => {
+    const update = () => {
+      const id = slot.dataset.cardId;
+      const card = id ? [...p.board, ...q.board].find(item => item?.uid === id) : null;
+      if (card) { previewCard = card; updateInspector(card); }
+    };
+    slot.addEventListener("mouseenter", update); slot.addEventListener("focus", update);
+  });
+  root.querySelectorAll<HTMLButtonElement>("[data-archive-tab]").forEach(button => button.addEventListener("click", () => {
+    archiveTab = button.dataset.archiveTab === "enemy" ? "enemy" : "deck"; paint();
+  }));
+  root.querySelectorAll<HTMLButtonElement>("[data-preview-id]").forEach(button => {
+    const update = () => {
+      const id = button.dataset.previewId!;
+      previewCard = [...p.hand, ...p.deck, ...p.committed, ...p.board.filter((x): x is Card => !!x), ...q.board.filter((x): x is Card => !!x), ...game.playedByEnemy].find(card => card.uid === id) || null;
+      if (previewCard) updateInspector(previewCard);
+    };
+    button.addEventListener("mouseenter", update); button.addEventListener("focus", update);
   });
   root.querySelectorAll<HTMLButtonElement>("[data-r]").forEach(button => button.addEventListener("click", () => {
     if (busy || p.locked || game.winner) return;
