@@ -44,7 +44,7 @@ jobs:
         with:
           name: card-balance-reports
           path: |
-            reports/card-balance-*.* 
+            reports/card-balance-*.*
             reports/stability-simulation.*
           if-no-files-found: error
       - name: Upload Pages artifact
