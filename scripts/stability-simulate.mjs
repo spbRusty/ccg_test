@@ -62,6 +62,10 @@ const firstResolverWins = results.filter((row) => row.winner === row.firstResolv
 const decisive = count("player") + count("enemy");
 const firstResolverWinPct = decisive ? (firstResolverWins * 100 / decisive).toFixed(1) + "%" : "n/a";
 const playerFirstCount = results.filter((row) => row.firstResolver === "player").length;
+const playerWinsWhenPlayerFirst = results.filter((row) => row.firstResolver === "player" && row.winner === "player").length;
+const enemyWinsWhenPlayerFirst = results.filter((row) => row.firstResolver === "player" && row.winner === "enemy").length;
+const playerWinsWhenEnemyFirst = results.filter((row) => row.firstResolver === "enemy" && row.winner === "player").length;
+const enemyWinsWhenEnemyFirst = results.filter((row) => row.firstResolver === "enemy" && row.winner === "enemy").length;
 const csv = [
   "seed,first_resolver,winner,rounds,player_stability,enemy_stability,player_cards_on_field_or_discard,enemy_cards_on_field_or_discard",
   ...results.map((row) => [row.seed, row.firstResolver, row.winner, row.rounds, row.playerStability, row.enemyStability, row.playerCardsPlayed, row.enemyCardsPlayed].join(",")),
@@ -81,6 +85,7 @@ const markdown = [
   "- Достигли лимита раундов: **" + count("turn-limit") + " (" + pct(count("turn-limit")) + ")**",
   "- Первым разрешал эффекты игрок: **" + playerFirstCount + " матчей**; противник: **" + (matches - playerFirstCount) + "**.",
   "- Победы стороны со стартовой инициативой в нечётных раундах, среди решённых матчей: **" + firstResolverWins + "/" + decisive + " (" + firstResolverWinPct + ")**.",
+  "- При старте с инициативой игрока: победы игрока **" + playerWinsWhenPlayerFirst + "**, противника **" + enemyWinsWhenPlayerFirst + "**; при старте с инициативой противника: победы игрока **" + playerWinsWhenEnemyFirst + "**, противника **" + enemyWinsWhenEnemyFirst + "**.",
   "- Средняя длительность: **" + mean("rounds").toFixed(2) + " раунда**",
   "- Средняя оставшаяся Стабильность первого игрока: **" + mean("playerStability").toFixed(2) + "**",
   "- Средняя оставшаяся Стабильность второго игрока: **" + mean("enemyStability").toFixed(2) + "**",
