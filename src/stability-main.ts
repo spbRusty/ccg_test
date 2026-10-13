@@ -12,10 +12,9 @@ let notice = "Выбери карты и закрой выбор.";
 let selectedCard: string | null = null;
 let archiveTab: "deck" | "enemy" = "deck";
 let previewCard: Card | null = null;
-let dragGhost: HTMLElement | null = null;
 let dragCardId: string | null = null;
 let dragOrigin: HTMLElement | null = null;
-let dragStartX = 0, dragStartY = 0, dragMoved = false;
+let dragMoved = false;
 
 const esc = (value: string) => value.replace(/[&<>"]/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[char]!));
 const artFor = (card: Card) => base + "cards/card-art-" + String(((Number(card.uid) || 1) - 1) % 3 + 1).padStart(2, "0") + ".avif";
@@ -29,7 +28,7 @@ function art(card: Card, className = "card-art"): string {
 }
 function handCard(card: Card): string {
   const chosen = selectedCard === card.uid ? " chosen" : "";
-  return '<button type="button" draggable="false" class="hand-card' + chosen + '" data-id="' + esc(card.uid) + '" aria-label="' + esc(card.name) + '">' +
+  return '<button type="button" draggable="true" class="hand-card' + chosen + '" data-id="' + esc(card.uid) + '" aria-label="' + esc(card.name) + '">' +
     '<span class="hand-art-wrap">' + art(card) + '<b class="cost">' + card.cost + '</b></span>' +
     '<span class="hand-copy"><strong>' + esc(card.name) + '</strong><span>' + esc(card.text) + '</span></span></button>';
 }
@@ -119,12 +118,9 @@ function paint(): void {
         '<div class="side-rule"><span class="panel-kicker">ЦЕЛЬ</span><p>Обнули Стабильность чужого лагеря. Цена каждой карты списывается сразу при выборе.</p></div>' +
       '</aside>' +
       '<main class="center-column">' +
-        '<div class="arena-heading"><div><span class="panel-kicker">ПРОТИВНИК</span><h2>Чужой лагерь</h2></div><span class="turn-state ' + (q.locked ? "locked" : "") + '">' + (q.locked ? "ХОД ЗАКРЫТ" : "ВЫБИРАЕТ") + '</span></div>' +
-        statusPanel("ЧУЖОЙ ЛАГЕРЬ", q.stability, false, (q.locked ? "ВЫБОР ЗАКРЫТ" : "ГОТОВИТ ХОД") + ' <span>РУКА ' + q.hand.length + '/6</span>') +
         '<section class="board enemy-board" aria-label="Поле противника">' + q.board.map((c, i) => boardSlot(c, false, i)).join("") + '</section>' +
-        '<div class="rift-divider"><span></span><b>РАЗЛОМ</b><span></span><i>✦</i></div>' +
+        '<div class="stability-duelbar"><div class="duelbar-side duelbar-player"><div class="duelbar-label"><span>ТВОЯ СТАБИЛЬНОСТЬ</span><strong>' + p.stability + '</strong></div><div class="duelbar-track"><span style="width:' + Math.max(0, Math.min(100, p.stability / 60 * 100)) + '%"></span></div></div><div class="duelbar-divider"></div><div class="duelbar-side duelbar-enemy"><div class="duelbar-label"><span>СТАБИЛЬНОСТЬ ПРОТИВНИКА</span><strong>' + q.stability + '</strong></div><div class="duelbar-track"><span style="width:' + Math.max(0, Math.min(100, q.stability / 60 * 100)) + '%"></span></div></div></div>' +
         '<section class="board player-board" aria-label="Твоё игровое поле">' + p.board.map((c, i) => { const pending = !c ? p.committed.find(item => item.targetSlot === i) : undefined; return boardSlot(c || pending || null, true, i, !!pending); }).join("") + '</section>' +
-        statusPanel("ТВОЙ ЛАГЕРЬ", p.stability, true, (p.locked ? "ХОД ЗАКРЫТ" : "ТВОЙ ХОД") + ' <span>РУКА ' + p.hand.length + '/6</span>') +
         '<section class="hand-section"><div class="hand-heading"><div><span class="panel-kicker">ТВОЙ РЕСУРС</span><h2>Карты в руке</h2></div><span class="hand-count">' + p.hand.length + ' / 6</span></div>' +
           '<div class="hand-grid">' + p.hand.map(handCard).join("") + '</div>' +
           '<div class="committed-row">' + (p.committed.length ? '<span>ЗАКРЫТЫЙ ВЫБОР</span>' + p.committed.map(c => '<button class="committed-chip" data-id="' + esc(c.uid) + '">◈ ' + esc(c.name) + ' · ' + c.cost + 'с <b>×</b></button>').join("") : '<span class="committed-empty">Карты ещё не выбраны</span>') + '</div>' +
@@ -160,53 +156,59 @@ function paint(): void {
     });
   });
   root.querySelectorAll<HTMLElement>(".hand-card[data-id]").forEach(cardEl => {
-    cardEl.addEventListener("pointerdown", event => {
-      if (event.button !== 0 || busy || p.locked || game.winner) return;
-      dragCardId = cardEl.dataset.id || null; dragOrigin = cardEl;
-      dragStartX = event.clientX; dragStartY = event.clientY; dragMoved = false;
+    cardEl.addEventListener("dragstart", event => {
+      if (busy || p.locked || game.winner) { event.preventDefault(); return; }
+      dragCardId = cardEl.dataset.id || null;
+      dragOrigin = cardEl;
+      dragMoved = true;
+      if (event.dataTransfer && dragCardId) {
+        event.dataTransfer.setData("text/plain", dragCardId);
+        event.dataTransfer.effectAllowed = "move";
+      }
+      cardEl.classList.add("is-dragging");
+    });
+    cardEl.addEventListener("dragend", () => {
+      cardEl.classList.remove("is-dragging");
+      root.querySelectorAll(".drop-target").forEach(slot => slot.classList.remove("drop-target"));
+      if (dragCardId && dragOrigin === cardEl && cardEl.isConnected) {
+        cardEl.animate([{ transform: "translateY(0) scale(1)" }, { transform: "translateY(-7px) scale(1.03)" }, { transform: "translateY(0) scale(1)" }], { duration: 280, easing: "cubic-bezier(.15,.8,.2,1)" });
+      }
+      dragCardId = null; dragOrigin = null;
+      window.setTimeout(() => { dragMoved = false; }, 120);
     });
   });
-  document.addEventListener("pointermove", event => {
-    if (!dragCardId || !dragOrigin) return;
-    if (!dragGhost && Math.hypot(event.clientX - dragStartX, event.clientY - dragStartY) > 8) {
-      dragMoved = true; dragGhost = dragOrigin.cloneNode(true) as HTMLElement;
-      dragGhost.classList.add("drag-ghost"); document.body.appendChild(dragGhost);
-    }
-    if (dragGhost) {
-      dragGhost.style.left = (event.clientX + 12) + "px"; dragGhost.style.top = (event.clientY + 12) + "px";
-      root.querySelectorAll(".own-empty").forEach(slot => slot.classList.remove("drop-target"));
-      document.elementFromPoint(event.clientX, event.clientY)?.closest(".own-empty")?.classList.add("drop-target");
-    }
+  root.querySelectorAll<HTMLElement>(".own-empty[data-slot-index]").forEach(slot => {
+    slot.addEventListener("dragenter", event => {
+      if (!dragCardId || busy || p.locked || game.winner) return;
+      event.preventDefault(); slot.classList.add("drop-target");
+    });
+    slot.addEventListener("dragover", event => {
+      if (!dragCardId || busy || p.locked || game.winner) return;
+      event.preventDefault();
+      if (event.dataTransfer) event.dataTransfer.dropEffect = "move";
+      slot.classList.add("drop-target");
+    });
+    slot.addEventListener("dragleave", event => {
+      if (!slot.contains(event.relatedTarget as Node | null)) slot.classList.remove("drop-target");
+    });
+    slot.addEventListener("drop", event => {
+      event.preventDefault(); slot.classList.remove("drop-target");
+      const id = event.dataTransfer?.getData("text/plain") || dragCardId;
+      const card = p.hand.find(item => item.uid === id);
+      if (!card || busy || p.locked || game.winner) { notice = "Сюда нельзя сыграть эту карту."; paint(); return; }
+      const slotIndex = Number(slot.dataset.slotIndex);
+      const result = selectCard(game, "player", id);
+      if (!result.ok) { notice = result.message; paint(); return; }
+      const committed = p.committed.find(item => item.uid === id);
+      if (committed) committed.targetSlot = slotIndex;
+      notice = result.message; selectedCard = null;
+      dragCardId = null; dragOrigin = null;
+      paint();
+      const landed = root.querySelector<HTMLElement>('.slot[data-card-id="' + CSS.escape(id) + '"]');
+      landed?.animate([{ transform: "translateY(-16px) scale(.76) rotate(-2deg)", filter: "brightness(2.2)" }, { transform: "translateY(2px) scale(1.08)", filter: "brightness(1.45)" }, { transform: "translateY(0) scale(1)", filter: "brightness(1)" }], { duration: 360, easing: "cubic-bezier(.15,.8,.2,1)" });
+      window.setTimeout(() => { dragMoved = false; }, 150);
+    });
   });
-  const finishDrag = (event: PointerEvent) => {
-    if (!dragCardId || !dragOrigin) return;
-    if (Math.hypot(event.clientX - dragStartX, event.clientY - dragStartY) > 8) {
-      dragMoved = true;
-      const target = document.elementFromPoint(event.clientX, event.clientY)?.closest<HTMLElement>(".own-empty[data-slot-index]");
-      const card = p.hand.find(item => item.uid === dragCardId);
-      if (target && card && !busy && !p.locked && !game.winner) {
-        const slotIndex = Number(target.dataset.slotIndex);
-        const result = selectCard(game, "player", dragCardId);
-        if (result.ok) {
-          const committed = p.committed.find(item => item.uid === dragCardId);
-          if (committed) committed.targetSlot = slotIndex;
-          notice = result.message; selectedCard = null;
-          paint();
-          const landed = root.querySelector<HTMLElement>('.slot[data-card-id="' + CSS.escape(dragCardId) + '"]');
-          landed?.animate([{ transform: "scale(.78) translateY(-10px)", filter: "brightness(2)" }, { transform: "scale(1.06)", filter: "brightness(1.35)" }, { transform: "scale(1)", filter: "brightness(1)" }], { duration: 330, easing: "cubic-bezier(.15,.8,.2,1)" });
-        } else {
-          notice = result.message; paint();
-        }
-      } else {
-        dragOrigin.animate([{ transform: "translate(0,0) scale(1)" }, { transform: "translate(0,-8px) scale(1.04)" }, { transform: "translate(0,0) scale(1)" }], { duration: 300, easing: "cubic-bezier(.2,.8,.2,1)" });
-      }
-      window.setTimeout(() => { dragMoved = false; }, 100);
-    }
-    dragGhost?.remove(); dragGhost = null;
-    root.querySelectorAll(".drop-target").forEach(slot => slot.classList.remove("drop-target"));
-    dragCardId = null; dragOrigin = null;
-  };
-  document.addEventListener("pointerup", finishDrag);
   root.querySelectorAll<HTMLElement>(".slot[data-card-id]").forEach(slot => {
     const update = () => {
       const id = slot.dataset.cardId;
