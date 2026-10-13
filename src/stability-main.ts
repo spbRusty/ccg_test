@@ -220,6 +220,7 @@ function paint(): void {
       event.preventDefault(); hand.classList.remove("hand-drop-target");
       const id = event.dataTransfer?.getData("text/plain") || dragCardId;
       const result = selectCard(game, "player", id);
+      if (result.ok) { const returned = p.hand.find(item => item.uid === id); if (returned) delete returned.targetSlot; }
       notice = result.message;
       selectedCard = null; dragCardId = null; dragOrigin = null; dragSource = null;
       paint();
