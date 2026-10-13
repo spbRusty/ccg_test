@@ -77,6 +77,20 @@ describe("Stability rules", () => {
     expect(game.enemy.committed.length).toBeGreaterThan(3);
     expect(game.enemy.locked).toBe(true);
   });
+  it("does not grant transferred Stability when an old guard blocks the hit", () => {
+    const game = createGame({}, () => 0.5);
+    const guard = card("barrier", "old-guard");
+    guard.playedRound = 0;
+    game.enemy.board[0] = guard;
+    game.player.hand = [card("mediator", "transfer-test")];
+    expect(selectCard(game, "player", "transfer-test").ok).toBe(true);
+    commit(game, "player");
+    commit(game, "enemy");
+    resolveRound(game, () => 0);
+    expect(game.enemy.stability).toBe(15);
+    expect(game.player.stability).toBe(11);
+    expect(game.enemy.board[0]).toBeNull();
+  });
   it("does not let a newly played guard absorb a hit in its entry round", () => {
     const game = createGame({}, () => 0.5);
     game.player.hand = [card("barrier", "fresh-guard")];
