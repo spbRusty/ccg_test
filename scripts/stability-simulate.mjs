@@ -54,7 +54,7 @@ const count = (winner) => results.filter((row) => row.winner === winner).length;
 const mean = (key) => results.reduce((sum, row) => sum + row[key], 0) / results.length;
 const pct = (value) => (value * 100 / matches).toFixed(1) + "%";
 const csv = [
-  "seed,winner,rounds,player_stability,enemy_stability,player_cards_seen,enemy_cards_seen",
+  "seed,winner,rounds,player_stability,enemy_stability,player_cards_on_field_or_discard,enemy_cards_on_field_or_discard",
   ...results.map((row) => [row.seed, row.winner, row.rounds, row.playerStability, row.enemyStability, row.playerCardsPlayed, row.enemyCardsPlayed].join(",")),
 ].join("\n") + "\n";
 const markdown = [
@@ -65,6 +65,7 @@ const markdown = [
   "- Матчей: **" + matches + "**",
   "- Начальный seed: **" + firstSeed + "**",
   "- Лимит матча: **" + maxRounds + " раундов**",
+  "- ИИ сохраняет резерв Стабильности: 35% текущего значения, минимум 3 и максимум 6.",
   "- Победы первого игрока: **" + count("player") + " (" + pct(count("player")) + ")**",
   "- Победы второго игрока: **" + count("enemy") + " (" + pct(count("enemy")) + ")**",
   "- Ничьи: **" + count("draw") + " (" + pct(count("draw")) + ")**",
