@@ -29,6 +29,8 @@ jobs:
           node-version: 22
       - name: Install dependencies
         run: npm install --no-audit --no-fund
+      - name: Install image converter
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - name: Build game
         run: npm run build
       - name: Generate balance audit report
