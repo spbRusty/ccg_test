@@ -17,7 +17,6 @@ describe("Stability rules", () => {
     expect(game.player.board).toHaveLength(6);
     expect(game.player.deck.length + game.player.hand.length).toBe(30);
   });
-
   it("charges Stability immediately and refunds a cancelled choice", () => {
     const game = createGame({}, () => 0.5);
     const chosen = game.player.hand[0];
@@ -29,7 +28,6 @@ describe("Stability rules", () => {
     expect(game.player.hand).toContain(chosen);
     expect(game.player.committed).toHaveLength(0);
   });
-
   it("does not allow a payment that would reduce Stability to zero", () => {
     const game = createGame({}, () => 0.5);
     const chosen = card("blackout", "blackout-test");
@@ -40,7 +38,6 @@ describe("Stability rules", () => {
     expect(game.player.stability).toBe(chosen.cost);
     expect(game.player.hand).toContain(chosen);
   });
-
   it("enforces the optional two-card round limit", () => {
     const game = createGame({ startStability: 20, maxPlays: 2 }, () => 0.5);
     game.player.hand = [card("map", "map-1"), card("map", "map-2"), card("map", "map-3")];
@@ -48,7 +45,6 @@ describe("Stability rules", () => {
     expect(selectCard(game, "player", "map-2").ok).toBe(true);
     expect(selectCard(game, "player", "map-3").ok).toBe(false);
   });
-
   it("keeps cards played this round immune to removal", () => {
     const game = createGame({}, () => 0.5);
     game.player.hand = [card("cleaner", "cleaner-test")];
@@ -60,7 +56,6 @@ describe("Stability rules", () => {
     resolveRound(game, () => 0);
     expect(game.enemy.board.some((item) => item?.uid === "new-enemy-card")).toBe(true);
   });
-
   it("ends the duel when a revealed effect reduces the opponent to zero", () => {
     const game = createGame({}, () => 0.5);
     game.player.hand = [card("raid", "raid-test")];
@@ -72,15 +67,11 @@ describe("Stability rules", () => {
     expect(game.enemy.stability).toBe(0);
     expect(game.winner).toBe("player");
   });
-
   it("lets the AI use more than three cards when no per-round limit is set", () => {
-    const game = createGame({ startStability: 60, maxPlays: 0 }, () => 0.5);
+    const game = createGame({ startStability: 20, maxPlays: 0 }, () => 0.5);
     game.enemy.hand = [
-      card("map", "ai-1"),
-      card("map", "ai-2"),
-      card("map", "ai-3"),
-      card("map", "ai-4"),
-      card("map", "ai-5"),
+      card("map", "ai-1"), card("map", "ai-2"), card("map", "ai-3"),
+      card("map", "ai-4"), card("map", "ai-5"),
     ];
     aiCommit(game, () => 0.99);
     expect(game.enemy.committed.length).toBeGreaterThan(3);
