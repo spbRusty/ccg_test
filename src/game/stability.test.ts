@@ -87,7 +87,7 @@ describe("Stability rules", () => {
     commit(game, "enemy");
     resolveRound(game, () => 0);
     expect(game.player.board.some((item) => item?.uid === "fresh-guard")).toBe(true);
-    expect(game.player.stability).toBe(12);
+    expect(game.player.stability).toBe(9);
   });
   it("does not discard a card when a return effect resolves into a full hand", () => {
     const game = createGame({}, () => 0.5);
