@@ -77,6 +77,40 @@ describe("Stability rules", () => {
     expect(game.enemy.committed.length).toBeGreaterThan(3);
     expect(game.enemy.locked).toBe(true);
   });
+  it("does not let a newly played guard absorb a hit in its entry round", () => {
+    const game = createGame({}, () => 0.5);
+    game.player.hand = [card("barrier", "fresh-guard")];
+    game.enemy.hand = [card("raid", "raid-into-guard")];
+    expect(selectCard(game, "player", "fresh-guard").ok).toBe(true);
+    expect(selectCard(game, "enemy", "raid-into-guard").ok).toBe(true);
+    commit(game, "player");
+    commit(game, "enemy");
+    resolveRound(game, () => 0);
+    expect(game.player.board.some((item) => item?.uid === "fresh-guard")).toBe(true);
+    expect(game.player.stability).toBe(12);
+  });
+  it("does not discard a card when a return effect resolves into a full hand", () => {
+    const game = createGame({}, () => 0.5);
+    const old = card("map", "old-card");
+    old.playedRound = 0;
+    game.player.board[0] = old;
+    game.player.hand = [
+      card("reserves", "draw-before-return"),
+      card("recycler", "return-while-full"),
+      card("map", "filler-1"),
+      card("map", "filler-2"),
+      card("map", "filler-3"),
+      card("map", "filler-4"),
+    ];
+    expect(selectCard(game, "player", "draw-before-return").ok).toBe(true);
+    expect(selectCard(game, "player", "return-while-full").ok).toBe(true);
+    commit(game, "player");
+    commit(game, "enemy");
+    resolveRound(game, () => 0);
+    expect(game.player.hand).toHaveLength(6);
+    expect(game.player.board.some((item) => item?.uid === "old-card")).toBe(true);
+    expect(game.player.discard.some((item) => item.uid === "old-card")).toBe(false);
+  });
   it("sacrifices the weakest old card when the AI has a better card and a full field", () => {
     const game = createGame({ startStability: 20, maxPlays: 0 }, () => 0.5);
     game.enemy.board = Array.from({ length: 6 }, (_, i) => card("map", "old-" + i));
