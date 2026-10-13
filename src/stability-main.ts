@@ -17,6 +17,8 @@ let dragCardId: string | null = null;
 let dragOrigin: HTMLElement | null = null;
 let dragMoved = false;
 let dragSource: "hand" | "committed" | null = null;
+let returnDragId: string | null = null;
+let returnDragGhost: HTMLElement | null = null;
 
 type Language="ru"|"en"; let language:Language=(localStorage.getItem("stability-language") as Language)||"ru";
 let startStability:15|20=localStorage.getItem("stability-start")==="20"?20:15; let maxPlaysSetting:0|2=localStorage.getItem("stability-max-two")==="1"?2:0;
@@ -224,6 +226,18 @@ function paint(): void {
     });
   });
   root.querySelectorAll<HTMLElement>(".slot.pending-slot[data-card-id]").forEach(cardEl => {
+    cardEl.addEventListener("pointerdown", event => {
+      const pointer = event as PointerEvent;
+      if (pointer.button !== 0 || busy || p.locked || game.winner) return;
+      const id = cardEl.dataset.cardId; if (!id) return;
+      pointer.preventDefault(); pointer.stopPropagation();
+      returnDragId = id; dragMoved = true;
+      returnDragGhost = cardEl.cloneNode(true) as HTMLElement;
+      returnDragGhost.classList.add("return-drag-ghost");
+      returnDragGhost.style.left = (pointer.clientX + 12) + "px";
+      returnDragGhost.style.top = (pointer.clientY + 12) + "px";
+      document.body.appendChild(returnDragGhost);
+    });
     cardEl.addEventListener("dragstart", event => {
       if (busy || p.locked || game.winner) { event.preventDefault(); return; }
       dragCardId = cardEl.dataset.cardId || null;
@@ -375,5 +389,22 @@ function start(): void {
   paint();
 }
 root.classList.add("menu-empty");
+document.addEventListener("pointermove", event => {
+  if (!returnDragId || !returnDragGhost) return;
+  returnDragGhost.style.left = (event.clientX + 12) + "px";
+  returnDragGhost.style.top = (event.clientY + 12) + "px";
+});
+document.addEventListener("pointerup", event => {
+  if (!returnDragId) return;
+  const id = returnDragId;
+  const target = document.elementFromPoint(event.clientX, event.clientY);
+  const hand = target?.closest(".hand-grid");
+  returnDragGhost?.remove(); returnDragGhost = null; returnDragId = null;
+  if (!hand || !game || busy || game.player.locked || game.winner) { window.setTimeout(() => { dragMoved = false; }, 100); return; }
+  const result = selectCard(game, "player", id);
+  if (result.ok) { const returned = game.player.hand.find(item => item.uid === id); if (returned) delete returned.targetSlot; }
+  notice = result.message; selectedCard = null; dragCardId = null; dragOrigin = null; dragSource = null;
+  paint(); window.setTimeout(() => { dragMoved = false; }, 150);
+});
 menu.addEventListener("pointerdown",()=>{if(musicVolume>0){audio();startMusic()}},{once:true});
 renderMenu("home");
