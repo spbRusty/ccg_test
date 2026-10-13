@@ -1,4 +1,5 @@
 import { createGame, selectCard, removeOwn, commit, aiCommit, resolveRound, type Game, type Settings, type Card } from "./game/stability";
+import { CARDS } from "./game/cards";
 import "./../style.css";
 
 const root = document.querySelector<HTMLDivElement>("#ui")!;
@@ -66,16 +67,15 @@ function art(card: Card, className = "card-art"): string {
 }
 function handCard(card: Card): string {
   const chosen = selectedCard === card.uid ? " chosen" : "";
-  return '<button type="button" draggable="true" class="hand-card' + chosen + '" data-id="' + esc(card.uid) + '" aria-label="' + esc(card.name) + '">' +
-    '<span class="hand-art-wrap">' + art(card) + '<b class="cost">' + card.cost + '</b></span>' +
-    '<span class="hand-copy"><strong>' + esc(card.name) + '</strong><span>' + esc(card.text) + '</span></span></button>';
+  return '<button type="button" draggable="true" class="hand-card' + chosen + '" data-id="' + esc(card.uid) + '" aria-label="' + esc(cardName(card)) + '">' +
+    '<span class="hand-art-wrap">' + art(card) + '</span>' +
+    '<span class="hand-copy"><header><b class="cost">' + card.cost + '</b><strong>' + esc(cardName(card)) + '</strong></header><span>' + esc(cardText(card)) + '</span></span></button>';
 }
 function boardSlot(card: Card | null, own: boolean, index: number, pending = false): string {
   if (!card) return '<div class="slot empty ' + (own ? 'own-empty' : '') + '" data-slot-index="' + index + '"><span class="slot-plus">＋</span><small>СВОБОДНО</small></div>';
   return '<button type="button" draggable="' + (own && pending ? "true" : "false") + '" class="slot filled ' + (own ? "own" : "enemy") + (pending ? " pending-slot" : "") + '" data-card-id="' + esc(card.uid) + '" data-side="' + (own ? "player" : "enemy") + '" data-slot-index="' + index + '" ' +
     (own && !pending ? 'data-r="' + esc(card.uid) + '"' : own ? "" : "disabled") + '>' +
-    art(card, "slot-art") + '<span class="slot-copy"><strong>' + esc(card.name) + '</strong><small>' + esc(card.text) + '</small></span>' +
-    '<b class="slot-cost">' + card.cost + '</b></button>';
+    art(card, "slot-art") + '<span class="slot-copy"><header><b class="slot-cost">' + card.cost + '</b><strong>' + esc(cardName(card)) + '</strong></header><small>' + esc(cardText(card)) + '</small></span></button>';
 }
 function statusPanel(label: string, value: number, own: boolean, tail: string): string {
   const width = Math.max(0, Math.min(100, value / 60 * 100));
@@ -92,6 +92,7 @@ function triggerResolutionEffects(beforePlayer: number, beforeEnemy: number, pla
   overlay.setAttribute("aria-hidden", "true");
   arena.appendChild(overlay);
 
+  played.forEach((item,index)=>playCardSound(index));
   played.forEach((item,index)=>playCardSound(index));
   const deltaPlayer = game.player.stability - beforePlayer;
   const deltaEnemy = game.enemy.stability - beforeEnemy;
@@ -139,7 +140,7 @@ function triggerResolutionEffects(beforePlayer: number, beforeEnemy: number, pla
 }
 
 function inspectorMarkup(card: Card): string {
-  return '<div class="inspector-card">' + art(card, "inspector-art") + '<div class="inspector-copy"><strong>' + esc(card.name) + '</strong><span>ЦЕНА ' + card.cost + ' СТАБИЛЬНОСТИ</span><p>' + esc(card.text) + '</p></div></div>';
+  return '<div class="inspector-card">' + art(card, "inspector-art") + '<div class="inspector-copy"><header><b class="cost">' + card.cost + '</b><strong>' + esc(cardName(card)) + '</strong></header><p>' + esc(cardText(card)) + '</p></div></div>';
 }
 function updateInspector(card: Card): void {
   const panel = root.querySelector<HTMLElement>("#card-inspector");
@@ -176,6 +177,7 @@ function paint(): void {
       '</aside>' +
     '</div>' +
     (game.winner ? '<div class="result-overlay"><div class="result-card"><span class="panel-kicker">ДУЭЛЬ ЗАВЕРШЕНА</span><h2>' + (game.winner === "draw" ? "НИЧЬЯ" : game.winner === "player" ? "ЛАГЕРЬ УСТОЯЛ" : "ЛАГЕРЬ ПАЛ") + '</h2><p>' + (game.winner === "player" ? "Твой лагерь сохранил стабильность." : game.winner === "draw" ? "Оба лагеря потеряли устойчивость." : "Стабильность твоего лагеря обнулилась.") + '</p><button id="restart" class="primary-button">НОВАЯ ДУЭЛЬ →</button></div></div>' : "");
+  root.innerHTML = localizeHTML(root.innerHTML);
   root.innerHTML = localizeHTML(root.innerHTML);
   root.querySelectorAll<HTMLImageElement>("img[data-art]").forEach(image => {
     image.addEventListener("error", () => {
