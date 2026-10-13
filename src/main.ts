@@ -1,586 +1,362 @@
-import { makeCardFace } from "./ui/card-face";
-import { createPlayer } from "./game/player";
-import { scoreCard } from "./ai/scoring";
-import { applyEffect } from "./effects/apply-effect";
-import { createCollectionUI } from "./ui/collection";
-import type { PlayerKey, PlayerState } from "./cards/types";
-import { getSavedDeckKeys, initAppShell } from "./ui/app-shell";
+import * as ex from "excalibur";
+import { CARD_TYPES } from "./cards/card-data";
+import type { CardDefinition } from "./cards/types";
+import "./../style.css";
 
-(() => {
-  "use strict";
+type Side = "player" | "enemy";
+type UnitCard = {
+  id: number;
+  source: CardDefinition;
+  name: string;
+  cost: number;
+  attack: number;
+  maxHealth: number;
+  health: number;
+  color: string;
+  effect: string;
+  effectAmount: number;
+};
+type Fighter = { hp: number; maxMana: number; mana: number; deck: UnitCard[]; hand: UnitCard[]; board: Array<UnitCard | null>; discard: UnitCard[] };
 
-  const START_TIME = 60;
-  const HAND_SIZE = 5;
-  const MAX_HAND = 7;
-  const MAX_TIME = 60;
-  const selectedCardIds = new Set<string>();
-  const selectedBoardSlots = new Set<number>();
-  let players: Record<PlayerKey, PlayerState>;
-  let turn: PlayerKey | null = null;
-  let selectedCardId: string | null = null;
-  let lastEffect = null;
-  let sequence = 0;
-  let aiTimer: ReturnType<typeof setTimeout> | null = null;
-  let animatedCardId = null;
-  let audioContext: AudioContext | null = null;
-  let musicOscillators: OscillatorNode[] = [];
-  let musicGain: GainNode | null = null;
-  let musicTimer: number | null = null;
-  let musicVolume = 0.75;
-  let gameFinished = false;
-  let logs: string[] = [];
-  let boardMoveSlot: number | null = null;
+const W = 600;
+const H = 900;
+const LANE_X = [120, 300, 480];
+const CARD_W = 142;
+const CARD_H = 154;
+const CARD_POOL = Object.values(CARD_TYPES);
+const PALETTE = ["#57d7c9", "#70a7ff", "#c18cff", "#f1b65e", "#f27691", "#9bc86e"];
+const FONT = "Arial, sans-serif";
 
-  const $ = (id) => document.getElementById(id);
-  const enemyOf = (key) => key === "player" ? "opponent" : "player";
-  const labelOf = (key) => key === "player" ? "Ты" : "Противник";
+let nextId = 1;
+let player: Fighter;
+let enemy: Fighter;
+let active: Side = "player";
+let selectedId: number | null = null;
+let gameOver = false;
+let round = 0;
+let statusText = "Выбери карту, затем нажми на свободную линию.";
+let actors: ex.Actor[] = [];
+let engine: ex.Engine;
 
-  const effectContext = {
-    getPlayers: () => players,
-    maxTime: MAX_TIME,
-    maxHand: MAX_HAND,
-    drawCard,
-    addLog,
-    transferTime,
-    labelOf,
-    nextSequence: () => ++sequence,
+function makeCard(source: CardDefinition): UnitCard {
+  const id = nextId++;
+  const cost = 1 + ((id * 7 + source.cost) % 5);
+  const attack = 1 + ((id * 3 + source.variant) % Math.max(2, cost + 2));
+  const maxHealth = Math.max(2, cost * 2 + 2 - attack + ((id + source.variant) % 3));
+  const effects: Record<string, string> = {
+    gain: "Восстановление", steal: "Урон герою", swap: "Перезарядка", discount: "Импульс",
+    slow: "Ослабление", copy: "Эхо", cancel: "Разрушение", delayed: "Отложенный урон",
+    conditional: "Усиление", percent: "Разряд", fieldGain: "Синергия", fieldDrain: "Охота",
+    fieldTax: "Подавление", mill: "Истощение", hijack: "Перехват", accumulate: "Заряд",
+    discharge: "Разряд", transferCharge: "Передача", massDestroy: "Зачистка", return: "Возврат",
+    move: "Манёвр", evolve: "Эволюция", combo: "Комбо", shield: "Щит", overheat: "Перегрев",
+    massPlay: "Подкрепление", trap: "Ловушка", ruleChange: "Аномалия", random: "Хаос",
+    duplicate: "Копирование", sacrifice: "Жертва"
   };
+  return {
+    id, source, name: source.name, cost, attack, maxHealth, health: maxHealth,
+    color: source.color || PALETTE[id % PALETTE.length],
+    effect: effects[source.type] || "Аномалия",
+    effectAmount: 1 + ((id + source.amount) % 3)
+  };
+}
 
-
-  function drawCard(key) {
-    const player = players[key];
-    if (player.hand.length >= MAX_HAND || player.deck.length === 0) return;
-    player.hand.push(player.deck.pop());
+function shuffle<T>(items: T[]): T[] {
+  const result = [...items];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
   }
+  return result;
+}
 
-  function addLog(message) {
-    logs.unshift(message);
-    $("event-log").replaceChildren();
-    logs.forEach((line) => {
-      const p = document.createElement("p");
-      p.textContent = line;
-      $("event-log").appendChild(p);
-    });
-    $("event-log").scrollTop = 0;
-  }
+function newFighter(): Fighter {
+  const deck = shuffle(CARD_POOL).slice(0, 30).map(makeCard);
+  return { hp: 25, maxMana: 0, mana: 0, deck, hand: [], board: [null, null, null], discard: [] };
+}
 
-  function setMessage(message) {
-    $("game-message").textContent = message;
-  }
+function draw(f: Fighter, count = 1): void {
+  for (let i = 0; i < count && f.hand.length < 7 && f.deck.length; i++) f.hand.push(f.deck.pop()!);
+}
 
-  function cardCost(key, card) {
-    const player = players[key];
-    return Math.max(1, card.cost + player.penalty - player.discount);
-  }
+function resetGame(): void {
+  nextId = 1;
+  player = newFighter();
+  enemy = newFighter();
+  draw(player, 4);
+  draw(enemy, 4);
+  active = "player";
+  selectedId = null;
+  gameOver = false;
+  round = 1;
+  player.maxMana = enemy.maxMana = 1;
+  player.mana = enemy.mana = 1;
+  statusText = "Твой ход. Сыграй карту и выбери линию.";
+  render();
+}
 
-  function setupSlots() {
-    const rows = [
-      ["opponent-row-1", "opponent"],
-      ["player-row-1", "player"]
-    ];
-    // Все шесть слотов находятся в одном контейнере: на десктопе это один ряд,
-    // на мобильном CSS переносит их в два ряда по три.
-    rows.forEach(([rowId, owner]) => {
-      const row = $(rowId);
-      row.replaceChildren();
-      for (let i = 0; i < 6; i++) {
-        const slot = document.createElement("button");
-        slot.type = "button";
-        slot.className = "slot " + (owner === "player" ? "player-slot" : "enemy-slot");
-        slot.dataset.owner = owner;
-        slot.dataset.slot = String(i);
-        slot.setAttribute("aria-label", (owner === "player" ? "Твой слот " : "Слот противника ") + (i + 1));
-        const placeholder = document.createElement("span");
-        placeholder.className = "slot-placeholder";
-        placeholder.textContent = "+";
-        slot.appendChild(placeholder);
-        row.appendChild(slot);
-      }
-    });
-    $("opponent-row-2").replaceChildren();
-    $("player-row-2").replaceChildren();
-  }
+function addActor(actor: ex.Actor): ex.Actor {
+  actors.push(actor);
+  engine.add(actor);
+  return actor;
+}
 
-  function renderBoard() {
-    document.querySelectorAll<HTMLElement>(".slot").forEach((slot) => {
-      const owner = slot.dataset.owner;
-      const index = Number(slot.dataset.slot);
-      const card = players[owner].board[index];
-      slot.replaceChildren();
-      slot.classList.remove("card-entering");
-      slot.classList.toggle("filled", Boolean(card));
-      slot.classList.toggle("board-selected",owner==="player"&&selectedBoardSlots.has(index));
-      if (card) {
-        slot.appendChild(makeCardFace(card, true));
-        if (card.id === animatedCardId) slot.classList.add("card-entering");
-        slot.title=card.name+" · стоимость "+card.cost+" сек. · зарядов: "+(card.charges||0)+" · "+card.description;
-      } else {
-        const placeholder = document.createElement("span");
-        placeholder.className = "slot-placeholder";
-        placeholder.textContent = "+";
-        slot.appendChild(placeholder);
-        slot.title = owner === "player" ? "Перетащи сюда карту" : "Пустой слот";
-      }
-    });
-    animatedCardId = null;
-  }
+function textActor(text: string, x: number, y: number, size: number, color = "#edf4ff", bold = false, width?: number): ex.Actor {
+  const actor = new ex.Actor({ pos: ex.vec(x, y), anchor: ex.vec(0.5, 0.5) });
+  actor.graphics.use(new ex.Text({
+    text,
+    font: new ex.Font({ family: FONT, size, bold, color, textAlign: ex.TextAlign.Center, baseAlign: ex.BaseAlign.Middle })
+  }));
+  addActor(actor);
+  return actor;
+}
 
-  function renderHand() {
-    const hand = $("player-hand");
-    hand.replaceChildren();
-    players.player.hand.forEach((card) => {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "hand-card" + (selectedCardIds.has(card.id) ? " selected" : "");
-      button.draggable = turn === "player" && !gameFinished;
-      button.dataset.cardId = card.id;
-      button.setAttribute("aria-label", card.name + ", стоимость " + card.cost + " секунд. " + card.description);
-      button.title = card.description + " Стоимость: " + cardCost("player", card) + " сек.";
-      button.appendChild(makeCardFace(card, true));
-      button.addEventListener("pointermove", (event) => {
-        if (event.pointerType === "touch" || button.classList.contains("dragging")) return;
-        const rect = button.getBoundingClientRect();
-        const x = (event.clientX - rect.left) / rect.width;
-        const y = (event.clientY - rect.top) / rect.height;
-        button.style.setProperty("--tilt-x", ((0.5 - y) * 12).toFixed(2) + "deg");
-        button.style.setProperty("--tilt-y", ((x - 0.5) * 12).toFixed(2) + "deg");
-        button.style.setProperty("--shine-x", (x * 100).toFixed(1) + "%");
-        button.style.setProperty("--shine-y", (y * 100).toFixed(1) + "%");
-      });
-      button.addEventListener("pointerleave", () => {
-        button.style.setProperty("--tilt-x", "0deg");
-        button.style.setProperty("--tilt-y", "0deg");
-      });
-      button.addEventListener("click", () => {
-        if (turn !== "player" || gameFinished) return;
-        if(selectedCardIds.has(card.id))selectedCardIds.delete(card.id);else selectedCardIds.add(card.id);
-        selectedCardId=selectedCardIds.size?Array.from(selectedCardIds).at(-1):null;renderHand();
-        const total=players.player.hand.filter(c=>selectedCardIds.has(c.id)).reduce((sum,c)=>sum+cardCost("player",c),0);
-        setMessage("Выбрано карт: "+selectedCardIds.size+". Общая стоимость: "+total+" сек.");
-      });
-      button.addEventListener("dragstart", (event) => {
-        if (turn !== "player" || gameFinished) {
-          event.preventDefault();
-          return;
-        }
-        selectedCardId = card.id;
-        event.dataTransfer.setData("text/plain", card.id);
-        event.dataTransfer.effectAllowed = "move";
-        button.classList.add("selected", "dragging");
-      });
-      button.addEventListener("dragend", () => {
-        button.classList.remove("dragging");
-        document.querySelectorAll(".slot.drop-target").forEach((slot) => slot.classList.remove("drop-target"));
-      });
-      hand.appendChild(button);
-    });
-    $("opponent-hand-count").textContent = String(players.opponent.hand.length);
-    const countLabel=$("selected-cards-count");if(countLabel)countLabel.textContent=selectedCardIds.size?"Выбрано: "+selectedCardIds.size:"";
-    const playButton=$("play-selected") as HTMLButtonElement | null;if(playButton)playButton.disabled=turn!=="player"||gameFinished||!selectedCardIds.size;
+function rect(x: number, y: number, w: number, h: number, color: string, radius = 12, stroke = "#334257", lineWidth = 1): ex.Actor {
+  const actor = new ex.Actor({ pos: ex.vec(x, y), width: w, height: h, anchor: ex.vec(0.5, 0.5) });
+  actor.graphics.use(new ex.Rectangle({ width: w, height: h, color: ex.Color.fromHex(color), strokeColor: ex.Color.fromHex(stroke), lineWidth, radius }));
+  addActor(actor);
+  return actor;
+}
 
-  }
-
-  function renderStats() {
-    $("player-time").textContent = String(players.player.time);
-    $("opponent-time").textContent = String(players.opponent.time);
-    $("player-time-bar").style.width = Math.max(0, players.player.time / START_TIME * 100) + "%";
-    $("opponent-time-bar").style.width = Math.max(0, players.opponent.time / START_TIME * 100) + "%";
-    const mobileOpponentTime = $("mobile-opponent-time");
-    const mobilePlayerTime = $("mobile-player-time");
-    const mobileOpponentFill = $("mobile-opponent-fill");
-    const mobilePlayerFill = $("mobile-player-fill");
-    if (mobileOpponentTime) mobileOpponentTime.textContent = String(players.opponent.time);
-    if (mobilePlayerTime) mobilePlayerTime.textContent = String(players.player.time);
-    if (mobileOpponentFill) mobileOpponentFill.style.width = Math.max(0, players.opponent.time / START_TIME * 100) + "%";
-    if (mobilePlayerFill) mobilePlayerFill.style.width = Math.max(0, players.player.time / START_TIME * 100) + "%";
-    $("player-status").textContent = gameFinished ? "Игра завершена" : turn === "player" ? "Твой ход" : "Ход противника";
-    $("opponent-status").textContent = gameFinished ? "Игра завершена" : turn === "opponent" ? "Ходит…" : "Ожидает ход";
-    ($("pass-turn") as HTMLButtonElement).disabled=turn!=="player"||gameFinished;
-    ["move-selected","return-selected","remove-selected","sacrifice-selected"].forEach(id=>{const b=$(id) as HTMLButtonElement | null;if(b)b.disabled=turn!=="player"||gameFinished||!selectedBoardSlots.size;});
-    const clearButton=$("clear-board-selection") as HTMLButtonElement | null;if(clearButton)clearButton.disabled=!selectedBoardSlots.size;
-    ($("new-game") as HTMLButtonElement).disabled = false;
-  }
-
-  let collectionMode: "player" | "opponent" = "player";
-  const collectionUI = createCollectionUI({
-    getPlayers: () => players,
-    getMode: () => collectionMode,
-    $,
+function clickableRect(x: number, y: number, w: number, h: number, color: string, onClick: () => void, stroke = "#536780"): ex.Actor {
+  const actor = rect(x, y, w, h, color, 12, stroke, 2);
+  actor.pointer.useGraphicsBounds = true;
+  actor.on("pointerdown", (event) => {
+    event.cancel();
+    onClick();
   });
-  const { renderCollection, showCardDetails } = collectionUI;
+  return actor;
+}
 
-  function render() {
-    renderStats();
-    renderBoard();
-    renderHand();
-    renderCollection();
-    $("battlefield").classList.toggle("game-over", gameFinished);
+function cardFace(card: UnitCard, x: number, y: number, width: number, height: number, small = false): void {
+  const chosen = selectedId === card.id;
+  rect(x, y, width, height, chosen ? "#253e55" : "#121d2b", 10, chosen ? "#f3c96b" : card.color, chosen ? 3 : 2);
+  rect(x, y - height * .28, width - 12, height * .36, card.color, 7, card.color, 1);
+  textActor(card.name.length > 17 ? card.name.slice(0, 16) + "…" : card.name, x, y - height * .37, small ? 10 : 12, "#08111d", true);
+  textActor(card.effect, x, y - height * .10, small ? 9 : 11, "#d8e4f4", true);
+  textActor(String(card.cost), x - width * .36, y - height * .42, small ? 12 : 15, "#ffe08a", true);
+  textActor(card.attack + " ATK", x - width * .22, y + height * .35, small ? 10 : 12, "#ff9b9b", true);
+  textActor(card.health + "/" + card.maxHealth, x + width * .22, y + height * .35, small ? 10 : 12, "#a6f3cb", true);
+}
+
+function unitFace(card: UnitCard, x: number, y: number, side: Side): void {
+  const bg = side === "player" ? "#142b36" : "#351e2a";
+  rect(x, y, 130, 88, bg, 10, card.color, 2);
+  rect(x, y - 18, 118, 28, card.color, 6, card.color);
+  textActor(card.name.length > 15 ? card.name.slice(0, 14) + "…" : card.name, x, y - 18, 11, "#0b1420", true);
+  textActor(card.attack + " ATK", x - 28, y + 22, 12, "#ffadad", true);
+  textActor(card.health + " HP", x + 29, y + 22, 12, "#b0f6cf", true);
+}
+
+function render(): void {
+  for (const actor of actors) actor.kill();
+  actors = [];
+  rect(W / 2, H / 2, W, H, "#0a101a", 0, "#0a101a", 0);
+  textActor("ВРЕМЕННОЙ РАЗЛОМ", W / 2, 27, 18, "#f0ca76", true);
+  textActor("РАУНД " + round, W / 2, 51, 11, "#91a6bd", true);
+
+  // Opponent status
+  rect(W / 2, 103, 550, 64, "#111c2a", 12, "#27394d");
+  textActor("ПРОТИВНИК", 95, 88, 11, "#ef9aa7", true);
+  textActor("♥ " + enemy.hp, 85, 116, 22, "#ff8c9d", true);
+  textActor("МАНА " + enemy.mana + "/" + enemy.maxMana, 205, 115, 13, "#f3ca79", true);
+  textActor("В руке: " + enemy.hand.length, 390, 115, 12, "#a9bbd0");
+  textActor("Колода: " + enemy.deck.length, 500, 115, 12, "#8295ad");
+
+  // Enemy field and lanes
+  for (let i = 0; i < 3; i++) {
+    rect(LANE_X[i], 245, 166, 130, "#101a27", 14, "#27384c");
+    textActor("ЛИНИЯ " + (i + 1), LANE_X[i], 197, 10, "#72869e", true);
+    if (enemy.board[i]) unitFace(enemy.board[i]!, LANE_X[i], 245, "enemy");
   }
+  rect(W / 2, 327, 550, 22, "#192a3b", 8, "#263b51");
+  textActor("ЗОНА СРАЖЕНИЯ", W / 2, 327, 10, "#91a9c2", true);
 
-  function transferTime(receiverKey, amount) {
-    const donorKey = enemyOf(receiverKey);
-    const receiver = players[receiverKey];
-    const donor = players[donorKey];
-    const transferable = Math.max(0, Math.min(amount, donor.time, MAX_TIME - receiver.time));
-    donor.time -= transferable;
-    receiver.time += transferable;
-    return transferable;
-  }
-
-  function playSound(kind) {
-    if (localStorage.getItem("rift.sound") === "off") return;
-    try {
-      const AudioContextClass = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-      if (!AudioContextClass) return;
-      if (!audioContext) audioContext = new AudioContextClass();
-      if (audioContext.state === "suspended") audioContext.resume();
-
-      const now = audioContext.currentTime;
-      const oscillator = audioContext.createOscillator();
-      const gain = audioContext.createGain();
-      oscillator.type = kind === "card" ? "triangle" : "sine";
-      oscillator.frequency.setValueAtTime(kind === "card" ? 520 : 330, now);
-      oscillator.frequency.exponentialRampToValueAtTime(kind === "card" ? 240 : 440, now + 0.09);
-      gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(0.075, now + 0.012);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
-      oscillator.connect(gain);
-      gain.connect(audioContext.destination);
-      oscillator.start(now);
-      oscillator.stop(now + 0.13);
-    } catch (_) {
-      // Sound is optional; never interrupt gameplay.
+  // Player field
+  for (let i = 0; i < 3; i++) {
+    const slot = clickableRect(LANE_X[i], 420, 166, 130, player.board[i] ? "#10212a" : "#101a27", () => playSelected(i), player.board[i] ? "#3d7d7b" : "#35465b");
+    if (player.board[i]) unitFace(player.board[i]!, LANE_X[i], 420, "player");
+    else {
+      textActor("＋", LANE_X[i], 405, 28, "#526982");
+      textActor("Нажми для", LANE_X[i], 430, 10, "#6e839a");
+      textActor("призыва", LANE_X[i], 443, 10, "#6e839a");
     }
   }
 
-  function setMusicEnabled(enabled: boolean): void {
-    try {
-      const AudioContextClass = window.AudioContext || (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
-      if (!AudioContextClass) return;
-      if (!audioContext) audioContext = new AudioContextClass();
-      if (audioContext.state === "suspended") void audioContext.resume();
-      const now = audioContext.currentTime;
+  // Player status
+  rect(W / 2, 513, 550, 58, "#111c2a", 12, "#27394d");
+  textActor("ТЫ", 63, 500, 11, "#8ee3d0", true);
+  textActor("♥ " + player.hp, 83, 527, 22, "#8de6d1", true);
+  textActor("МАНА " + player.mana + "/" + player.maxMana, 215, 527, 13, "#f3ca79", true);
+  textActor("Колода: " + player.deck.length, 385, 527, 12, "#8295ad");
+  textActor("Сброс: " + player.discard.length, 500, 527, 12, "#8295ad");
 
-      if (enabled) {
-        if (musicOscillators.length) return;
-        musicGain = audioContext.createGain();
-        musicGain.gain.setValueAtTime(0.0001, now);
-        musicGain.gain.exponentialRampToValueAtTime(Math.max(0.0001, 0.075 * musicVolume), now + 1.8);
-        musicGain.connect(audioContext.destination);
-
-        // Soft, sustained harmonic bed. The chord progression changes every four bars.
-        const chords = [
-          [110, 164.81, 220],
-          [87.31, 130.81, 196],
-          [98, 146.83, 196],
-          [82.41, 123.47, 164.81]
-        ];
-        const chordVoices: OscillatorNode[] = [];
-        chords[0].forEach((frequency, index) => {
-          const oscillator = audioContext!.createOscillator();
-          oscillator.type = index === 1 ? "triangle" : "sine";
-          oscillator.frequency.setValueAtTime(frequency, now);
-          const voice = audioContext!.createGain();
-          voice.gain.value = index === 0 ? 0.19 : 0.105;
-          oscillator.connect(voice);
-          voice.connect(musicGain!);
-          oscillator.start();
-          musicOscillators.push(oscillator);
-          chordVoices.push(oscillator);
-        });
-
-        // A slow, repeating bell-like melody; each note fades naturally into the next.
-        const melody = [440, 523.25, 659.25, 587.33, 523.25, 392, 440, 329.63,
-          392, 523.25, 493.88, 440, 392, 329.63, 392, 440,
-          349.23, 440, 523.25, 493.88, 440, 392, 349.23, 293.66,
-          329.63, 392, 440, 523.25, 493.88, 440, 392, 329.63];
-        let step = 0;
-        const playNote = () => {
-          if (!audioContext || !musicGain || !musicOscillators.length) return;
-          const time = audioContext.currentTime;
-          if (step % 8 === 0) {
-            const chord = chords[Math.floor(step / 8) % chords.length];
-            chordVoices.forEach((voice, index) => voice.frequency.setTargetAtTime(chord[index], time, 0.8));
-          }
-          // Leave a little space after each phrase for a calm, unhurried feel.
-          if (step % 8 !== 7) {
-            const oscillator = audioContext.createOscillator();
-            oscillator.type = "sine";
-            oscillator.frequency.setValueAtTime(melody[step % melody.length], time);
-            const envelope = audioContext.createGain();
-            envelope.gain.setValueAtTime(0.0001, time);
-            envelope.gain.exponentialRampToValueAtTime(0.18, time + 0.045);
-            envelope.gain.exponentialRampToValueAtTime(0.0001, time + 0.56);
-            oscillator.connect(envelope);
-            envelope.connect(musicGain);
-            oscillator.start(time);
-            oscillator.stop(time + 0.59);
-            oscillator.onended = () => { oscillator.disconnect(); envelope.disconnect(); };
-          }
-          step += 1;
-        };
-        playNote();
-        musicTimer = window.setInterval(playNote, 620);
-      } else if (musicGain) {
-        if (musicTimer) window.clearInterval(musicTimer);
-        musicTimer = null;
-        const gain = musicGain;
-        gain.gain.cancelScheduledValues(now);
-        gain.gain.setValueAtTime(Math.max(gain.gain.value, 0.0001), now);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
-        window.setTimeout(() => {
-          musicOscillators.forEach(oscillator => { try { oscillator.stop(); oscillator.disconnect(); } catch (_) {} });
-          musicOscillators = [];
-          gain.disconnect();
-          if (musicGain === gain) musicGain = null;
-        }, 300);
-      }
-    } catch (_) {
-      // Audio is optional; never interrupt gameplay.
-    }
-  }
-
-  function checkGameOver() {
-    const playerOut = players.player.time <= 0;
-    const opponentOut = players.opponent.time <= 0;
-    if (!playerOut && !opponentOut) return false;
-
-    gameFinished = true;
-    turn = null;
-    if (aiTimer) clearTimeout(aiTimer);
-    aiTimer = null;
-    const battlefield = $("battlefield");
-    battlefield.classList.add("game-over");
-
-    if (playerOut && opponentOut) {
-      setMessage("Ничья: время закончилось у обоих игроков.");
-      addLog("Игра завершилась вничью.");
-    } else if (playerOut) {
-      setMessage("Время закончилось. Победил противник.");
-      addLog("Победа противника.");
-    } else {
-      setMessage("У противника закончилось время. Ты победил.");
-      addLog("Твоя победа.");
-    }
-    render();
-    return true;
-  }
-
-  function resolveDelayed(key) {
-    const pending = players[key].delayed.splice(0);
-    pending.forEach((effect) => {
-      if (gameFinished) return;
-      const moved = transferTime(effect.from, effect.amount);
-      addLog("Отложенный эффект: " + labelOf(key) + " теряет " + moved + " сек.");
-    });
-  }
-
-  function startTurn(key) {
-    if (gameFinished) return;
-    turn = key;
-    selectedCardId=null;selectedCardIds.clear();selectedBoardSlots.clear();players[key].turnPlays=0;
-    players[key].board.forEach(card=>{if(card&&card.type==="accumulate"){card.charges=(card.charges||0)+card.amount;if(card.charges>=3){const bonus=Math.min(card.charges,5);players[key].time=Math.min(MAX_TIME,players[key].time+bonus);addLog("«"+card.name+"» накапливает заряды и возвращает "+bonus+" сек.");}}});
-    resolveDelayed(key);
-    if (checkGameOver()) return;
-    render();
-    if (key === "player") {
-      setMessage("Твой ход. Разыгрывай несколько карт, взаимодействуй с полем или заверши ход.");
-    } else {
-      setMessage("Противник выбирает карту…");
-      aiTimer = setTimeout(runAI, 1400 + Math.floor(Math.random() * 1001));
-    }
-  }
-
-  function playCard(cardId, slotIndex, actorKey) {
-    if (gameFinished || turn !== actorKey) return false;
-    const actor = players[actorKey];
-    const handIndex = actor.hand.findIndex((card) => card.id === cardId);
-    if (handIndex < 0) return false;
-    const card = actor.hand[handIndex];
-    const cost = cardCost(actorKey, card);
-    if (slotIndex < 0 || slotIndex > 5) slotIndex = actor.board.findIndex((item) => !item);
-    if (slotIndex < 0) {
-      if (actorKey === "player") setMessage("Твоё поле заполнено. Нажми на свою карту, чтобы снять её за 1 секунду.");
-      return false;
-    }
-    if (actor.board[slotIndex]) {
-      if (actorKey === "player") setMessage("Этот слот занят. Выбери пустой слот: карты не перекрывают друг друга.");
-      return false;
-    }
-    if (actor.time < cost) {
-      if (actorKey === "player") setMessage("Не хватает времени: нужно " + cost + " сек., у тебя " + actor.time + ".");
-      return false;
-    }
-
-    actor.time -= cost;
-    actor.discount = 0;
-    actor.penalty = 0;
-    actor.hand.splice(handIndex,1);selectedCardIds.delete(card.id);
-    actor.played.push(card);
-
-    card.playedAt = ++sequence;
-    actor.board[slotIndex] = card;
-
-    addLog(labelOf(actorKey) + " разыгрывает «" + card.name + "» за " + cost + " сек.");
-
-    const trapOwner=enemyOf(actorKey);let trapped=false;
-    if(players[trapOwner].hiddenTrap){players[trapOwner].hiddenTrap=0;const slot=actor.board.findIndex(c=>c&&c.id===card.id);if(slot>=0)actor.board[slot]=null;actor.discard.push(card);trapped=true;addLog("Скрытая ловушка останавливает карту «"+card.name+"»!");}
-    if(!trapped){if(card.type==="copy"){if(lastEffect)applyEffect(lastEffect,actorKey,true,effectContext);else addLog("Эхо не нашло предыдущего эффекта.");}
-    else{const resolved={...card,amount:card.amount+(actor.ruleBonus||0)};actor.ruleBonus=0;applyEffect(resolved,actorKey,false,effectContext);if(card.type!=="cancel")lastEffect={type:card.type,amount:card.amount,id:card.id};}}
-    actor.turnPlays++;if(checkGameOver())return true;drawCard(actorKey);animatedCardId=card.id;playSound("card");render();
-    if(actorKey==="player")setMessage("Карта разыграна. Можешь разыграть ещё или завершить ход.");return true;
-  }
-
-  function passTurn() {
-    if (turn !== "player" || gameFinished) return;
-    selectedCardIds.clear();drawCard("player");
-    addLog("Ты завершаешь ход.");
-    playSound("pass");
-    render();
-    startTurn("opponent");
-  }
-
-  function runAI() {
-    aiTimer = null;
-    if (turn !== "opponent" || gameFinished) return;
-    const actor = players.opponent;
-    const affordable = actor.hand.filter((card) => cardCost("opponent", card) <= actor.time);
-    if (affordable.length === 0) {
-      drawCard("opponent");
-      addLog("Противник пропускает ход: не хватает времени на карты.");
+  // Hand and action row
+  textActor("ТВОЯ РУКА", 88, 568, 12, "#a8bad0", true);
+  textActor(statusText.length > 52 ? statusText.slice(0, 51) + "…" : statusText, W / 2, 589, 11, "#d5e0ed");
+  const hand = player.hand;
+  const count = Math.max(1, hand.length);
+  const gap = Math.min(151, 552 / count);
+  const start = W / 2 - gap * (count - 1) / 2;
+  hand.forEach((card, i) => {
+    const x = start + gap * i;
+    const y = 690;
+    const actor = clickableRect(x, y, Math.min(CARD_W, gap - 5), CARD_H, selectedId === card.id ? "#243d54" : "#111b29", () => {
+      if (active !== "player" || gameOver) return;
+      selectedId = selectedId === card.id ? null : card.id;
+      statusText = selectedId === null ? "Карта не выбрана." : "Выбрана: " + card.name + ". Нажми на свободную линию.";
       render();
-      startTurn("player");
-      return;
-    }
-
-    affordable.sort((a, b) => scoreCard(b, "opponent", players, cardCost, lastEffect, START_TIME, MAX_HAND) - scoreCard(a, "opponent", players, cardCost, lastEffect, START_TIME, MAX_HAND));
-    let plays=0;
-    while(plays<3&&turn==="opponent"&&!gameFinished){
-      const choices=actor.hand.filter(c=>cardCost("opponent",c)<=actor.time).sort((a,b)=>scoreCard(b, "opponent", players, cardCost, lastEffect, START_TIME, MAX_HAND)-scoreCard(a, "opponent", players, cardCost, lastEffect, START_TIME, MAX_HAND));if(!choices.length)break;
-      let slotIndex=actor.board.findIndex(c=>!c);
-      if(slotIndex<0){const r=actor.board.findIndex(c=>c&&c.shield<=0);if(r<0)break;const removed=actor.board[r];actor.board[r]=null;actor.discard.push(removed);actor.time=Math.max(0,actor.time-1);addLog("Противник сбрасывает «"+removed.name+"» за 1 сек.");if(checkGameOver())return;slotIndex=r;}
-      if(!playCard(choices[0].id,slotIndex,"opponent"))break;plays++;
-    }
-    render();startTurn("player");
-  }
-
-  function resetGame() {
-    if (aiTimer) clearTimeout(aiTimer);
-    aiTimer = null;
-    sequence = 0;
-    logs = [];
-    selectedCardId=null;selectedCardIds.clear();selectedBoardSlots.clear();
-    lastEffect = null;
-    gameFinished = false;
-    players = {
-      player: createPlayer("Ты", START_TIME, () => "card-" + (++sequence), getSavedDeckKeys()),
-      opponent: createPlayer("Противник", START_TIME, () => "card-" + (++sequence))
-    };
-    for (let i = 0; i < HAND_SIZE; i++) {
-      drawCard("player");
-      drawCard("opponent");
-    }
-    setupSlots();
-    $("event-log").replaceChildren();
-    addLog("Новая партия. У каждого игрока по " + START_TIME + " секунд.");
-    startTurn("player");
-  }
-
-  function initEvents() {
-    $("tab-player-deck").addEventListener("click", () => { collectionMode = "player"; renderCollection(); });
-    $("tab-opponent-deck").addEventListener("click", () => { collectionMode = "opponent"; renderCollection(); });
-    document.addEventListener("mouseover", (event) => {
-      const face = (event.target as Element | null)?.closest<HTMLElement>(".card-face[data-card-key]");
-      if (face) showCardDetails(face.dataset.cardKey);
-    });
-    document.addEventListener("focusin", (event) => {
-      const face = (event.target as Element | null)?.closest<HTMLElement>(".card-face[data-card-key]");
-      if (face) showCardDetails(face.dataset.cardKey);
-    });
-    $("new-game").addEventListener("click", resetGame);
-    const fullscreenButton = $("fullscreen-toggle");
-    if (fullscreenButton) {
-      const updateFullscreenLabel = () => {
-        const active = Boolean(document.fullscreenElement);
-        fullscreenButton.textContent = active ? "⛶ Свернуть" : "⛶ На весь экран";
-        fullscreenButton.setAttribute("aria-label", active ? "Выйти из полноэкранного режима" : "Развернуть на весь экран");
-      };
-      fullscreenButton.addEventListener("click", async () => {
-        try {
-          if (document.fullscreenElement) {
-            await document.exitFullscreen();
-          } else if (document.documentElement.requestFullscreen) {
-            await document.documentElement.requestFullscreen();
-          } else {
-            setMessage("Полноэкранный режим не поддерживается этим браузером. На iPhone можно выбрать «На экран Домой» в меню браузера.");
-          }
-        } catch (_) {
-          setMessage("Браузер не разрешил полноэкранный режим. Попробуй открыть страницу в обычной вкладке браузера.");
-        }
-        updateFullscreenLabel();
-      });
-      document.addEventListener("fullscreenchange", updateFullscreenLabel);
-    }
-    $("pass-turn").addEventListener("click",passTurn);
-    $("play-selected").addEventListener("click",()=>{if(turn!=="player"||gameFinished||!selectedCardIds.size)return;let n=0;for(const id of Array.from(selectedCardIds)){const free=players.player.board.findIndex(c=>!c);if(free<0){setMessage("Поле заполнено. Сними карты.");break;}if(!playCard(id,free,"player"))break;selectedCardIds.delete(id);n++;}selectedCardId=null;render();setMessage("Разыграно карт: "+n+". Ход продолжается.");});
-    $("remove-selected").addEventListener("click",()=>{if(turn!=="player"||gameFinished||!selectedBoardSlots.size)return;let n=0;Array.from(selectedBoardSlots).forEach(i=>{const c=players.player.board[i];if(c){players.player.board[i]=null;players.player.discard.push(c);players.player.time=Math.max(0,players.player.time-1);n++;}});selectedBoardSlots.clear();addLog("Ты снимаешь "+n+" карт с поля (по 1 секунде за карту).");checkGameOver();render();});
-    $("sacrifice-selected").addEventListener("click",()=>{if(turn!=="player"||gameFinished||!selectedBoardSlots.size)return;let n=0,gain=0;Array.from(selectedBoardSlots).forEach(i=>{const c=players.player.board[i];if(c){gain+=(c.charges||0)+1;players.player.board[i]=null;players.player.discard.push(c);n++;}});players.player.time=Math.min(MAX_TIME,players.player.time+gain);selectedBoardSlots.clear();addLog("Ты жертвуешь "+n+" картами и получаешь "+gain+" сек.");render();});
-    $("clear-board-selection").addEventListener("click",()=>{selectedBoardSlots.clear();render();});
-    $("move-selected").addEventListener("click",()=>{if(turn!=="player"||gameFinished||selectedBoardSlots.size!==1){setMessage("Для перемещения выбери ровно одну карту.");return;}boardMoveSlot=Array.from(selectedBoardSlots)[0];setMessage("Нажми на пустой слот, куда переместить карту.");});
-    $("return-selected").addEventListener("click",()=>{if(turn!=="player"||gameFinished||!selectedBoardSlots.size)return;let n=0;Array.from(selectedBoardSlots).sort((a,b)=>a-b).forEach(i=>{const c=players.player.board[i];if(c&&players.player.hand.length<MAX_HAND){players.player.board[i]=null;players.player.hand.push(c);n++;}});selectedBoardSlots.clear();addLog("Ты возвращаешь в руку "+n+" карт.");render();setMessage("Возвращено в руку: "+n+".");});
-    $("card-search").addEventListener("input",renderCollection);
-
-    $("battlefield").addEventListener("click", (event) => {
-      const slot = (event.target as Element | null)?.closest<HTMLElement>(".slot");
-      if (!slot || slot.dataset.owner !== "player" || turn !== "player" || gameFinished) return;
-      const slotIndex = Number(slot.dataset.slot);
-      const boardCard=players.player.board[slotIndex];
-      if(selectedCardIds.size){if(boardCard){setMessage("Слот занят. Выбери пустой слот.");return;}let placed=0;for(const id of Array.from(selectedCardIds)){const free=players.player.board.findIndex(c=>!c);if(free<0||!playCard(id,free,"player"))break;selectedCardIds.delete(id);placed++;}selectedCardId=null;render();setMessage("Разыграно карт: "+placed+". Ход продолжается.");return;}
-      if(boardCard){if(selectedBoardSlots.has(slotIndex))selectedBoardSlots.delete(slotIndex);else selectedBoardSlots.add(slotIndex);render();setMessage("Выбрано карт на поле: "+selectedBoardSlots.size+".");return;}
-      if(boardMoveSlot!==null){const moving=players.player.board[boardMoveSlot];if(moving){players.player.board[slotIndex]=moving;players.player.board[boardMoveSlot]=null;selectedBoardSlots.clear();boardMoveSlot=null;render();setMessage("Карта перемещена.");return;}boardMoveSlot=null;}
-      if(selectedCardId)playCard(selectedCardId,slotIndex,"player");else setMessage("Выбери карты в руке или выдели карты на поле.");
-    });
-
-    $("battlefield").addEventListener("dragover", (event) => {
-      const slot = (event.target as Element | null)?.closest(".slot.player-slot");
-      if (!slot || turn !== "player" || gameFinished) return;
-      event.preventDefault();
-      event.dataTransfer.dropEffect = "move";
-      slot.classList.add("drop-target");
-    });
-
-    $("battlefield").addEventListener("dragleave", (event) => {
-      const slot = (event.target as Element | null)?.closest<HTMLElement>(".slot");
-      if (slot && !slot.contains(event.relatedTarget as Node | null)) slot.classList.remove("drop-target");
-    });
-
-    $("battlefield").addEventListener("drop", (event) => {
-      const slot = (event.target as Element | null)?.closest<HTMLElement>(".slot.player-slot");
-      if (!slot || turn !== "player" || gameFinished) return;
-      event.preventDefault();
-      slot.classList.remove("drop-target");
-      const id = event.dataTransfer.getData("text/plain") || selectedCardId;
-      if (id) playCard(id, Number(slot.dataset.slot), "player");
-    });
-  }
-
-  document.addEventListener("DOMContentLoaded", () => {
-    initEvents();
-    resetGame();
-    initAppShell(resetGame);
-    document.addEventListener("rift-music-change", (event) => setMusicEnabled(Boolean((event as CustomEvent<{enabled:boolean}>).detail?.enabled)));
-    const initialVolume = $("music-volume") as HTMLInputElement | null;
-    if (initialVolume) musicVolume = Math.max(0, Math.min(1, Number(initialVolume.value) / 100));
-    document.addEventListener("rift-music-volume-change", (event) => {
-      const detail = (event as CustomEvent<{volume:number}>).detail;
-      musicVolume = Math.max(0, Math.min(1, Number(detail?.volume ?? 0.75)));
-      if (musicGain && audioContext && musicOscillators.length) {
-        musicGain.gain.setTargetAtTime(0.075 * musicVolume, audioContext.currentTime, 0.08);
-      }
-    });
-    document.addEventListener("pointerdown", () => {
-      const musicToggle = $("music-toggle") as HTMLInputElement | null;
-      if (musicToggle?.checked && musicOscillators.length === 0) setMusicEnabled(true);
-    }, { passive: true });
+    }, selectedId === card.id ? "#f0c76f" : card.color);
+    cardFace(card, x, y, Math.min(CARD_W, gap - 5), CARD_H, true);
   });
-})();
+
+  const end = clickableRect(172, 824, 210, 48, active === "player" && !gameOver ? "#285b59" : "#202a37", endTurn, "#3f9187");
+  textActor("ЗАВЕРШИТЬ ХОД", 172, 824, 13, "#dffcf4", true);
+  clickableRect(418, 824, 210, 48, "#202a37", resetGame, "#526780");
+  textActor("НОВАЯ ИГРА", 418, 824, 13, "#dbe7f4", true);
+
+  if (gameOver) {
+    rect(W / 2, H / 2, 450, 150, "#101a27", 20, "#f0c76f", 3);
+    textActor(player.hp > 0 ? "ПОБЕДА" : "ПОРАЖЕНИЕ", W / 2, H / 2 - 24, 30, "#f0c76f", true);
+    textActor("Нажми «Новая игра»", W / 2, H / 2 + 24, 15, "#dbe7f4");
+  }
+}
+
+function activeFighter(): Fighter { return active === "player" ? player : enemy; }
+function otherFighter(): Fighter { return active === "player" ? enemy : player; }
+
+function applyBattlecry(card: UnitCard, owner: Side): void {
+  const own = owner === "player" ? player : enemy;
+  const foe = owner === "player" ? enemy : player;
+  const n = card.effectAmount;
+  switch (card.source.type) {
+    case "gain": own.hp = Math.min(30, own.hp + n + 1); break;
+    case "steal": case "percent": case "fieldDrain": foe.hp = Math.max(0, foe.hp - n - 1); own.hp = Math.min(30, own.hp + 1); break;
+    case "shield": case "evolve": card.health = Math.min(card.maxHealth + 3, card.health + n); card.maxHealth = Math.max(card.maxHealth, card.health); break;
+    case "massDestroy": case "cancel": {
+      const targets = foe.board.map((unit, i) => unit ? i : -1).filter(i => i >= 0);
+      if (targets.length) foe.discard.push(foe.board[targets[Math.floor(Math.random() * targets.length)]]!);
+      if (targets.length) foe.board[targets[Math.floor(Math.random() * targets.length)]] = null;
+      break;
+    }
+    case "fieldGain": case "combo": own.hp = Math.min(30, own.hp + own.board.filter(Boolean).length); break;
+    case "discount": own.mana = Math.min(own.maxMana, own.mana + 1); break;
+    case "slow": case "fieldTax": foe.mana = Math.max(0, foe.mana - 1); break;
+    case "massPlay": draw(own, 1); break;
+    case "return": {
+      const i = own.board.findIndex(Boolean);
+      if (i >= 0 && own.hand.length < 7) own.hand.push(own.board[i]!);
+      if (i >= 0) own.board[i] = null;
+      break;
+    }
+    default: break;
+  }
+}
+
+function playSelected(lane: number): void {
+  if (active !== "player" || gameOver) return;
+  if (player.board[lane]) {
+    statusText = "Эта линия занята. Выбери свободную.";
+    render();
+    return;
+  }
+  const index = player.hand.findIndex(c => c.id === selectedId);
+  if (index < 0) {
+    statusText = "Сначала выбери карту в руке.";
+    render();
+    return;
+  }
+  const card = player.hand[index];
+  if (card.cost > player.mana) {
+    statusText = "Не хватает маны: нужно " + card.cost + ", доступно " + player.mana + ".";
+    render();
+    return;
+  }
+  player.mana -= card.cost;
+  player.hand.splice(index, 1);
+  player.board[lane] = card;
+  applyBattlecry(card, "player");
+  selectedId = null;
+  statusText = card.name + " выходит на линию " + (lane + 1) + ".";
+  checkGameOver();
+  render();
+}
+
+function attackPhase(attacker: Fighter, defender: Fighter): void {
+  for (let i = 0; i < 3; i++) {
+    const unit = attacker.board[i];
+    if (!unit) continue;
+    const target = defender.board[i];
+    if (target) {
+      target.health -= unit.attack;
+      if (target.health <= 0) {
+        defender.discard.push(target);
+        defender.board[i] = null;
+      }
+    } else {
+      defender.hp -= unit.attack;
+    }
+  }
+}
+
+function endTurn(): void {
+  if (active !== "player" || gameOver) return;
+  attackPhase(player, enemy);
+  checkGameOver();
+  if (gameOver) { render(); return; }
+  active = "enemy";
+  statusText = "Противник выбирает ход…";
+  render();
+  window.setTimeout(enemyTurn, 550);
+}
+
+function enemyTurn(): void {
+  if (gameOver) return;
+  enemy.maxMana = Math.min(10, enemy.maxMana + 1);
+  enemy.mana = enemy.maxMana;
+  draw(enemy);
+  let safety = 0;
+  while (safety++ < 10) {
+    const lane = enemy.board.findIndex(unit => !unit);
+    const playable = enemy.hand.filter(card => card.cost <= enemy.mana).sort((a, b) => (b.attack + b.health - b.cost) - (a.attack + a.health - a.cost));
+    if (lane < 0 || !playable.length) break;
+    const card = playable[0];
+    enemy.hand.splice(enemy.hand.findIndex(c => c.id === card.id), 1);
+    enemy.mana -= card.cost;
+    enemy.board[lane] = card;
+    applyBattlecry(card, "enemy");
+  }
+  attackPhase(enemy, player);
+  checkGameOver();
+  if (gameOver) { render(); return; }
+  active = "player";
+  round++;
+  player.maxMana = Math.min(10, player.maxMana + 1);
+  player.mana = player.maxMana;
+  draw(player);
+  selectedId = null;
+  statusText = "Твой ход. Мана восстановлена; карты атакуют по линиям в конце хода.";
+  render();
+}
+
+function checkGameOver(): void {
+  if (player.hp <= 0 || enemy.hp <= 0) {
+    gameOver = true;
+    active = "player";
+    statusText = player.hp > 0 ? "Победа." : "Поражение.";
+  }
+}
+
+engine = new ex.Engine({
+  canvasElementId: "game",
+  width: W,
+  height: H,
+  displayMode: ex.DisplayMode.FitScreen,
+  backgroundColor: ex.Color.fromHex("#0a101a"),
+  antialiasing: true
+});
+
+engine.start().then(() => {
+  document.body.classList.add("ready");
+  resetGame();
+});

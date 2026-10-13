@@ -1,7 +1,7 @@
 {
   "name": "ccg-test",
   "private": true,
-  "version": "1.0.0",
+  "version": "2.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -11,6 +11,9 @@
     "balance:audit": "node --experimental-strip-types scripts/balance-audit.mjs",
     "preview": "vite preview",
     "balance:simulate": "node --experimental-strip-types scripts/balance-simulate.mjs"
+  },
+  "dependencies": {
+    "excalibur": "^0.31.0"
   },
   "devDependencies": {
     "@types/node": "^22.15.30",
