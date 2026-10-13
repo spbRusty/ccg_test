@@ -128,6 +128,7 @@ describe("Stability rules", () => {
   it("alternates effect resolution order to avoid fixed second-player advantage", () => {
     const playMirrorRound = (round: number) => {
       const game = createGame({}, () => 0.5);
+      game.firstResolver = "player";
       game.round = round;
       game.player.stability = 6;
       game.enemy.stability = 6;
