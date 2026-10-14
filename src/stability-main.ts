@@ -310,14 +310,6 @@ function paint(): void {
         paint();
         return;
       }
-      if (isTouch && previewTapId !== button.dataset.id) {
-        previewTapId = button.dataset.id!;
-        const previewed = p.hand.find(card => card.uid === previewTapId);
-        if (previewed) previewCard = previewed;
-        notice = "Нажми ещё раз, чтобы сыграть карту.";
-        paint();
-        return;
-      }
       previewTapId = null;
       const used = new Set(p.committed.map(card => card.targetSlot).filter((slot): slot is number => slot !== undefined));
       const slotIndex = p.board.findIndex((card, index) => !card && !used.has(index));
