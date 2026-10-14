@@ -685,3 +685,23 @@ input, select, textarea { -webkit-user-select: text; user-select: text; }
 @media (prefers-reduced-motion: reduce) {
   .hand-card { transition: none !important; }
 }
+
+
+/* Slightly taller battlefield slots and a more noticeable hand-card hover zoom. */
+@media (min-width: 721px) {
+  .slot { min-height: 118px !important; }
+  .hand-card:hover,
+  .hand-card:focus-visible {
+    transform: translateY(-22px) rotate(0deg) scale(1.14) !important;
+  }
+}
+@media (max-width: 720px) {
+  .slot { height: clamp(90px, 26vw, 136px) !important; }
+  .hand-card:hover,
+  .hand-card:focus-visible {
+    transform: translateY(-15px) rotate(0deg) scale(1.1) !important;
+  }
+}
+@media (max-width: 390px) {
+  .slot { height: 86px !important; }
+}
