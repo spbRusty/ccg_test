@@ -237,11 +237,32 @@ function updateInspector(card: Card): void {
   if (!panel) return;
   panel.innerHTML = inspectorMarkup(card);
 }
+function effectSummary(card: Card): string {
+  const amount = card.effect.amount;
+  const target = card.timing === "end" ? "в конце раунда" : "при розыгрыше";
+  const descriptions: Record<string, string> = {
+    damage: `снимает ${amount} стабильности противника`,
+    heal: `восстанавливает ${amount} стабильности`,
+    "own-heal": `восстанавливает стабильность за каждую свою карту`,
+    draw: `добирает ${amount} карту(ы)`,
+    remove: `убирает до ${amount} старых карт противника`,
+    return: `возвращает ${amount} карту(ы) с поля в руку`,
+    boost: `усиливает следующую карту на ${amount}`,
+    delay: `откладывает ${amount} урона на следующий раунд`,
+    "own-count": `наносит урон за каждую свою карту`,
+    "enemy-count": `наносит урон за каждую карту противника`,
+    transfer: `переносит ${amount} стабильности от противника к тебе`,
+    guard: "создаёт преграду, поглощающую следующий удар",
+    curse: "блокирует лечение противника на раунд",
+    payoff: `наносит ${amount} урона, удваивая его при низкой стабильности`
+  };
+  return (descriptions[card.effect.kind] || "активирует эффект") + (card.timing === "end" ? " (в конце раунда)" : "");
+}
+
 function paint(): void {
   if (!game) return;
   const p = game.player, q = game.enemy;
-  const logItems = [...game.log].reverse().slice(-8);
-  if (notice) logItems.push(notice);
+  const logItems = [...game.log].slice(-24).reverse();
   root.innerHTML =
     '<header class="topbar"><div class="brand-mark">S</div><div class="brand-copy"><strong>СТАБИЛЬНОСТЬ</strong><small>ДУЭЛЬ В ПУСТОШИ</small></div><div class="round-pill">РАУНД <b>' + game.round + '</b></div><div class="top-actions"><button id="menu-button" class="quiet-button">☰ МЕНЮ</button><button id="new-game" class="quiet-button">↻ НОВАЯ ДУЭЛЬ</button></div></header>' +
     '<div class="game-layout">' +
@@ -307,6 +328,8 @@ function paint(): void {
       const cardId = button.dataset.id!;
       const result = selectCard(game, "player", cardId);
       if (result.ok) {
+        const playedCard = p.committed.find(card => card.uid === cardId);
+        if (playedCard) game.log.push(`Ты разыгрываешь «${cardName(playedCard)}» (цена ${playedCard.cost} стабильности).`);
         const committed = p.committed.find(card => card.uid === cardId);
         if (committed) committed.targetSlot = slotIndex;
         playCardSound(slotIndex);
@@ -491,7 +514,12 @@ function paint(): void {
       ...game.enemy.committed.map(card => ({ side: "enemy" as const, card }))
     ];
     window.setTimeout(() => {
+      for (const item of played) game.log.push(`${item.side === "player" ? "Ты" : "Противник"} разыгрывает «${cardName(item.card)}»: ${effectSummary(item.card)}.`);
       resolveRound(game);
+      const playerDelta = game.player.stability - beforePlayer;
+      const enemyDelta = game.enemy.stability - beforeEnemy;
+      if (playerDelta) game.log.push(`Твоя стабильность ${playerDelta < 0 ? "уменьшилась на " + Math.abs(playerDelta) : "восстановилась на " + playerDelta} (${game.player.stability}).`);
+      if (enemyDelta) game.log.push(`Стабильность противника ${enemyDelta < 0 ? "уменьшилась на " + Math.abs(enemyDelta) : "восстановилась на " + enemyDelta} (${game.enemy.stability}).`);
       busy = false;
       notice = game.winner ? "Дуэль завершена." : "Раунд завершён. Выбери следующий ход.";
       selectedCard = null;
@@ -538,9 +566,28 @@ document.addEventListener("pointerup", event => {
   const target = document.elementFromPoint(event.clientX, event.clientY);
   const hand = target?.closest(".hand-grid");
   returnDragGhost?.remove(); returnDragGhost = null; returnDragId = null;
-  if (!hand || !game || busy || game.player.locked || game.winner) { window.setTimeout(() => { dragMoved = false; }, 100); return; }
+  if (!game || busy || game.player.locked || game.winner) { window.setTimeout(() => { dragMoved = false; }, 100); return; }
+  if (!hand) {
+    const releasedOnSource = target?.closest(".pending-slot[data-card-id]") as HTMLElement | null;
+    if (releasedOnSource?.dataset.cardId === id) {
+      const result = selectCard(game, "player", id);
+      if (result.ok) {
+        const returned = game.player.hand.find(item => item.uid === id);
+        if (returned) delete returned.targetSlot;
+        game.log.push(`Ты возвращаешь «${cardName(returned || ({name:id,id,cost:0,text:""} as Card))}» в руку; стоимость возвращена.`);
+      }
+      notice = result.message; selectedCard = null; dragCardId = null; dragOrigin = null; dragSource = null;
+      paint(); window.setTimeout(() => { dragMoved = false; }, 150); return;
+    }
+    window.setTimeout(() => { dragMoved = false; }, 100); return;
+  }
+  const returningCard = game.player.committed.find(item => item.uid === id);
   const result = selectCard(game, "player", id);
-  if (result.ok) { const returned = game.player.hand.find(item => item.uid === id); if (returned) delete returned.targetSlot; }
+  if (result.ok) {
+    const returned = game.player.hand.find(item => item.uid === id);
+    if (returned) delete returned.targetSlot;
+    if (returningCard) game.log.push(`Ты возвращаешь «${cardName(returningCard)}» в руку; стоимость возвращена.`);
+  }
   notice = result.message; selectedCard = null; dragCardId = null; dragOrigin = null; dragSource = null;
   paint(); window.setTimeout(() => { dragMoved = false; }, 150);
 });
