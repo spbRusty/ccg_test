@@ -269,7 +269,6 @@ function paint(): void {
       '<aside class="side-panel left-panel"><div class="panel-heading"><span class="panel-kicker">СВОДКА</span><h2>Журнал партии</h2></div>' +
         '<div class="side-score"><span>РАУНД</span><strong>' + game.round + '</strong></div>' +
         '<div class="log-list">' + logItems.map((line, i) => '<p class="' + (i === 0 ? "log-current" : "") + '">' + esc(line) + '</p>').join("") + '</div>' +
-        '<div class="side-rule"><span class="panel-kicker">ЦЕЛЬ</span><p>Обнули Стабильность чужого лагеря. Цена каждой карты списывается сразу при выборе.</p></div>' +
       '</aside>' +
       '<main class="center-column">' +
         '<section class="board enemy-board" aria-label="Поле противника">' + q.board.map((c, i) => boardSlot(c, false, i)).join("") + '</section>' +
