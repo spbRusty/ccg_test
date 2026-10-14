@@ -959,3 +959,39 @@ input, select, textarea { -webkit-user-select: text; user-select: text; }
   .slot-copy strong { font-size: 7px !important; }
   .hand-copy header strong { font-size: 7px !important; }
 }
+
+
+/* Mobile hotfix: restore the flex game shell; an older mobile rule changed #ui to display:block,
+   which collapses the zero-height game area and hides the entire battle. */
+@media (max-width: 720px) {
+  #ui {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .game-layout {
+    display: flex !important;
+    flex: 1 1 0% !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    height: 0 !important;
+  }
+  .center-column {
+    display: grid !important;
+    grid-template-rows: minmax(0, .95fr) auto minmax(0, .95fr) minmax(0, 1.1fr) auto !important;
+    flex: 1 1 0% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    height: 100% !important;
+  }
+  .center-column > .board,
+  .center-column > .stability-duelbar,
+  .center-column > .hand-section,
+  .center-column > .game-actions {
+    min-width: 0 !important;
+    min-height: 0 !important;
+  }
+  .center-column > .stability-duelbar { overflow: hidden !important; }
+  .center-column > .hand-section { height: auto !important; }
+}
