@@ -141,7 +141,7 @@ function triggerResolutionEffects(beforePlayer: number, beforeEnemy: number, pla
 }
 
 function animateCardReturn(from: DOMRect, source: HTMLElement, cardId: string): void {
-  const target = root.querySelector<HTMLElement>('.hand-card[data-id="' + CSS.escape(cardId) + '"]');
+  const target = root.querySelector<HTMLElement>('.hand-card[data-id="' + CSS.escape(cardId) + '"]') || root.querySelector<HTMLElement>('.pending-slot[data-card-id="' + CSS.escape(cardId) + '"]');
   if (!target) return;
   const to = target.getBoundingClientRect();
   const ghost = source.cloneNode(true) as HTMLElement;
