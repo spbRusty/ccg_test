@@ -760,14 +760,14 @@ input, select, textarea { -webkit-user-select: text; user-select: text; }
   border-color:#9df2c8 !important;
   box-shadow:0 10px 22px #000a,0 0 0 1px #8ce3bd66 !important;
 }
-.deck-art-wrap { position:absolute; inset:0; z-index:-2; overflow:hidden; display:block; }
+.deck-art-wrap { position:absolute; inset:0; z-index:0; overflow:hidden; display:block; }
 .deck-art-image { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center 24%; }
 .deck-card::after {
-  content:""; position:absolute; inset:0; z-index:-1; pointer-events:none;
+  content:""; position:absolute; inset:0; z-index:1; pointer-events:none;
   background:linear-gradient(180deg,#071016d9 0%,#07101618 34%,#07101620 48%,#071016f2 100%);
 }
 .deck-card-top {
-  position:absolute; z-index:1; top:0; left:0; right:0;
+  position:absolute; z-index:2; top:0; left:0; right:0;
   display:flex; align-items:flex-start; gap:5px; padding:7px;
 }
 .deck-card .deck-cost {
@@ -779,7 +779,7 @@ input, select, textarea { -webkit-user-select: text; user-select: text; }
   line-height:1.12; text-shadow:0 1px 4px #000; overflow-wrap:anywhere;
 }
 .deck-card .deck-description {
-  position:absolute; z-index:1; left:0; right:0; bottom:0;
+  position:absolute; z-index:2; left:0; right:0; bottom:0;
   display:-webkit-box; padding:8px 7px 9px; overflow:hidden;
   -webkit-line-clamp:4; -webkit-box-orient:vertical;
   color:#e3e8e1; font-size:clamp(8px,.65vw,10px); line-height:1.3;
