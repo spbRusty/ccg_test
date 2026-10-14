@@ -39,7 +39,7 @@ function saveDeck():void{localStorage.setItem("stability-deck",JSON.stringify(sa
 function mini(id:string,drag=true):string{const d=CARDS.find(x=>x.id===id);if(!d)return"";const x={...d,uid:d.id,playedRound:0} as Card;return '<button class="deck-card" type="button" data-deck-card="'+id+'" '+(drag?'draggable="true"':'')+'><b class="deck-cost">'+d.cost+'</b><strong class="deck-title">'+esc(cardName(x))+'</strong><span class="deck-description">'+esc(cardText(x))+'</span></button>'}
 function renderMenu(page=currentPage):void{
 currentPage=page;const ru=language==="ru",title=ru?"СТАБИЛЬНОСТЬ":"STABILITY";let body="";
-if(page==="home")body='<div class="menu-hero"><div class="menu-emblem">S</div><div class="menu-eyebrow">'+(ru?"КОЛЛЕКЦИОННАЯ КАРТОЧНАЯ ИГРА":"COLLECTIBLE CARD GAME")+'</div><h1>'+title+'</h1><p>'+(ru?"Постапокалиптическая карточная дуэль":"A post-apocalyptic card duel")+'</p></div><div class="menu-nav"><button data-page="pvp">PVP — '+(ru?"СЕТЕВАЯ ИГРА":"ONLINE")+'</button><button class="featured" data-page="single">'+(ru?"ОДИНОЧНАЯ ИГРА":"SINGLE PLAYER")+' →</button><button data-page="collection">'+(ru?"КОЛЛЕКЦИЯ":"COLLECTION")+'</button><button data-page="decks">'+(ru?"КОЛОДЫ":"DECKS")+'</button><button data-page="settings">'+(ru?"НАСТРОЙКИ":"SETTINGS")+'</button></div><div class="menu-foot">'+(ru?"Одна шкала. Шесть слотов. Ни шага назад.":"One meter. Six slots. No way back.")+'</div>';
+if(page==="home")body='<div class="menu-hero"><div class="menu-emblem">S</div><div class="menu-eyebrow">'+(ru?"КОЛЛЕКЦИОННАЯ КАРТОЧНАЯ ИГРА":"COLLECTIBLE CARD GAME")+'</div><h1>'+title+'</h1><p>'+(ru?"Постапокалиптическая карточная дуэль":"A post-apocalyptic card duel")+'</p></div><div class="menu-nav"><button data-page="pvp">PVP — '+(ru?"СЕТЕВАЯ ИГРА":"ONLINE")+'</button><button class="featured" data-page="single">'+(ru?"ОДИНОЧНАЯ ИГРА":"SINGLE PLAYER")+' →</button><button data-page="decks">'+(ru?"КОЛЛЕКЦИЯ И КОЛОДЫ":"COLLECTION & DECKS")+'</button><button data-page="settings">'+(ru?"НАСТРОЙКИ":"SETTINGS")+'</button></div><div class="menu-foot">'+(ru?"Одна шкала. Шесть слотов. Ни шага назад.":"One meter. Six slots. No way back.")+'</div>';
 if(page==="single")body='<button class="back-button" data-page="home">← '+(ru?"В ГЛАВНОЕ МЕНЮ":"MAIN MENU")+'</button><h2>'+(ru?"ОДИНОЧНАЯ ИГРА":"SINGLE PLAYER")+'</h2><div class="settings-panel"><label>'+(ru?"Начальная стабильность":"Starting Stability")+'<select id="start-stability"><option value="15" '+(startStability===15?"selected":"")+'>15 — '+(ru?"стандарт":"standard")+'</option><option value="20" '+(startStability===20?"selected":"")+'>20 — '+(ru?"длинная дуэль":"long duel")+'</option></select></label><label class="setting-check"><input id="max-two" type="checkbox" '+(maxPlaysSetting===2?"checked":"")+'> '+(ru?"Не больше двух карт за раунд":"Limit to two cards per round")+'</label><button id="start-game" class="menu-primary">'+(ru?"НАЧАТЬ ДУЭЛЬ":"START DUEL")+' →</button></div>';
 if(page==="pvp")body='<button class="back-button" data-page="home">← '+(ru?"В ГЛАВНОЕ МЕНЮ":"MAIN MENU")+'</button><h2>PVP</h2><div class="feature-panel"><p>'+(ru?"Сетевой режим пока не подключён.":"Online matchmaking is not connected yet.")+'</p></div>';
 if(page==="settings")body='<button class="back-button" data-page="home">← '+(ru?"В ГЛАВНОЕ МЕНЮ":"MAIN MENU")+'</button><h2>'+(ru?"НАСТРОЙКИ":"SETTINGS")+'</h2><div class="settings-panel"><label>'+(ru?"Язык":"Language")+'<select id="language-select"><option value="ru" '+(ru?"selected":"")+'>Русский</option><option value="en" '+(!ru?"selected":"")+'>English</option></select></label><label>'+(ru?"Громкость звуков":"Sound volume")+' <output id="sound-value">'+Math.round(soundVolume*100)+'%</output><input id="sound-volume" type="range" min="0" max="1" step=".01" value="'+soundVolume+'"></label><label>'+(ru?"Музыка":"Music")+' <output id="music-value">'+Math.round(musicVolume*100)+'%</output><input id="music-volume" type="range" min="0" max=".4" step=".01" value="'+musicVolume+'"></label><p class="settings-note">'+(ru?"Мелодичная тема пустоши. Настройки сохраняются автоматически.":"A melodic wasteland theme. Settings are saved automatically.")+'</p></div>';
@@ -94,8 +94,7 @@ function triggerResolutionEffects(beforePlayer: number, beforeEnemy: number, pla
   overlay.setAttribute("aria-hidden", "true");
   arena.appendChild(overlay);
 
-  played.forEach((item,index)=>playCardSound(index));
-  played.forEach((item,index)=>playCardSound(index));
+
   const deltaPlayer = game.player.stability - beforePlayer;
   const deltaEnemy = game.enemy.stability - beforeEnemy;
   const showNumber = (side: "player" | "enemy", delta: number) => {
@@ -141,6 +140,53 @@ function triggerResolutionEffects(beforePlayer: number, beforeEnemy: number, pla
   window.setTimeout(() => overlay.remove(), 1300);
 }
 
+function animateCardPlay(from: DOMRect, source: HTMLElement, cardId: string): void {
+  const target = root.querySelector<HTMLElement>('.player-board .slot[data-card-id="' + CSS.escape(cardId) + '"]');
+  if (!target) return;
+  const to = target.getBoundingClientRect();
+  const flight = source.cloneNode(true) as HTMLElement;
+  flight.classList.remove("chosen", "is-dragging");
+  Object.assign(flight.style, {
+    position: "fixed", zIndex: "10000", pointerEvents: "none", margin: "0",
+    left: from.left + "px", top: from.top + "px", width: from.width + "px", height: from.height + "px",
+    transform: "translate(0,0) scale(1)", transformOrigin: "top left", opacity: ".98",
+    boxShadow: "0 0 0 2px #a8ffe0, 0 18px 45px #000c, 0 0 30px #7fffd4aa",
+    borderRadius: "7px", overflow: "hidden"
+  });
+  document.body.appendChild(flight);
+  const dx = to.left - from.left + (to.width - from.width) / 2;
+  const dy = to.top - from.top + (to.height - from.height) / 2;
+  flight.animate([
+    { transform: "translate(0,0) scale(1) rotate(0deg)", filter: "brightness(1.15)" },
+    { transform: "translate(" + (dx * .48) + "px," + (dy * .48 - 28) + "px) scale(.88) rotate(-3deg)", filter: "brightness(1.8)", offset: .58 },
+    { transform: "translate(" + dx + "px," + dy + "px) scale(" + Math.max(.35, Math.min(1, to.width / Math.max(1, from.width))) + ") rotate(1deg)", filter: "brightness(2.2)" }
+  ], { duration: 440, easing: "cubic-bezier(.18,.78,.18,1)", fill: "forwards" });
+  window.setTimeout(() => flight.remove(), 470);
+  target.classList.add("card-reveal", "play-landed");
+  target.animate([
+    { transform: "translateY(-8px) scale(.94)", filter: "brightness(1.8)" },
+    { transform: "translateY(2px) scale(1.06)", filter: "brightness(1.5)" },
+    { transform: "translateY(0) scale(1)", filter: "brightness(1)" }
+  ], { duration: 470, delay: 300, easing: "cubic-bezier(.15,.8,.2,1)" });
+  window.setTimeout(() => target.classList.remove("card-reveal", "play-landed"), 1250);
+  const wave = document.createElement("span");
+  wave.className = "play-impact-wave";
+  Object.assign(wave.style, { position: "fixed", left: (to.left + to.width / 2) + "px", top: (to.top + to.height / 2) + "px" });
+  document.body.appendChild(wave);
+  window.setTimeout(() => wave.remove(), 850);
+  for (let i = 0; i < 16; i++) {
+    const particle = document.createElement("i");
+    particle.className = "play-impact-particle";
+    const angle = Math.PI * 2 * i / 16;
+    const distance = 30 + (i % 4) * 12;
+    particle.style.setProperty("--dx", Math.cos(angle) * distance + "px");
+    particle.style.setProperty("--dy", Math.sin(angle) * distance + "px");
+    Object.assign(particle.style, { position: "fixed", left: (to.left + to.width / 2) + "px", top: (to.top + to.height / 2) + "px" });
+    document.body.appendChild(particle);
+    window.setTimeout(() => particle.remove(), 780);
+  }
+}
+
 function inspectorMarkup(card: Card): string {
   return '<div class="inspector-card">' + art(card, "inspector-art") + '<div class="inspector-copy"><header><b class="cost">' + card.cost + '</b><strong>' + esc(cardName(card)) + '</strong></header><p>' + esc(cardText(card)) + '</p></div></div>';
 }
@@ -180,7 +226,6 @@ function paint(): void {
     '</div>' +
     (game.winner ? '<div class="result-overlay"><div class="result-card"><span class="panel-kicker">ДУЭЛЬ ЗАВЕРШЕНА</span><h2>' + (game.winner === "draw" ? "НИЧЬЯ" : game.winner === "player" ? "ЛАГЕРЬ УСТОЯЛ" : "ЛАГЕРЬ ПАЛ") + '</h2><p>' + (game.winner === "player" ? "Твой лагерь сохранил стабильность." : game.winner === "draw" ? "Оба лагеря потеряли устойчивость." : "Стабильность твоего лагеря обнулилась.") + '</p><button id="restart" class="primary-button">НОВАЯ ДУЭЛЬ →</button></div></div>' : "");
   root.innerHTML = localizeHTML(root.innerHTML);
-  root.innerHTML = localizeHTML(root.innerHTML);
   root.querySelectorAll<HTMLImageElement>("img[data-art]").forEach(image => {
     image.addEventListener("error", () => {
       const source = image.dataset.art || "";
@@ -199,11 +244,19 @@ function paint(): void {
       const used = new Set(p.committed.map(card => card.targetSlot).filter((slot): slot is number => slot !== undefined));
       const slotIndex = p.board.findIndex((card, index) => !card && !used.has(index));
       if (slotIndex < 0) { notice = "Сначала освободи слот."; paint(); return; }
-      const result = selectCard(game, "player", button.dataset.id!);
-      if (result.ok) { const committed = p.committed.find(card => card.uid === button.dataset.id); if (committed) committed.targetSlot = slotIndex; }
+      const sourceRect = button.getBoundingClientRect();
+      const sourceClone = button.cloneNode(true) as HTMLElement;
+      const cardId = button.dataset.id!;
+      const result = selectCard(game, "player", cardId);
+      if (result.ok) {
+        const committed = p.committed.find(card => card.uid === cardId);
+        if (committed) committed.targetSlot = slotIndex;
+        playCardSound(slotIndex);
+      }
       notice = result.message;
       selectedCard = null;
       paint();
+      if (result.ok) animateCardPlay(sourceRect, sourceClone, cardId);
     });
   });
   root.querySelectorAll<HTMLElement>(".hand-card[data-id]").forEach(cardEl => {
@@ -306,16 +359,19 @@ function paint(): void {
       if (dragSource !== "hand") { notice = "Перетащи карту обратно в руку, чтобы отменить выбор."; paint(); return; }
       const card = p.hand.find(item => item.uid === id);
       if (!card || busy || p.locked || game.winner) { notice = "Сюда нельзя сыграть эту карту."; paint(); return; }
+      const sourceElement = dragOrigin || root.querySelector<HTMLElement>('.hand-card[data-id="' + CSS.escape(id) + '"]');
+      const sourceRect = sourceElement?.getBoundingClientRect() || null;
+      const sourceClone = sourceElement?.cloneNode(true) as HTMLElement | undefined;
       const slotIndex = Number(slot.dataset.slotIndex);
       const result = selectCard(game, "player", id);
       if (!result.ok) { notice = result.message; paint(); return; }
       const committed = p.committed.find(item => item.uid === id);
       if (committed) committed.targetSlot = slotIndex;
+      playCardSound(slotIndex);
       notice = result.message; selectedCard = null;
       dragCardId = null; dragOrigin = null; dragSource = null;
       paint();
-      const landed = root.querySelector<HTMLElement>('.slot[data-card-id="' + CSS.escape(id) + '"]');
-      landed?.animate([{ transform: "translateY(-16px) scale(.76) rotate(-2deg)", filter: "brightness(2.2)" }, { transform: "translateY(2px) scale(1.08)", filter: "brightness(1.45)" }, { transform: "translateY(0) scale(1)", filter: "brightness(1)" }], { duration: 360, easing: "cubic-bezier(.15,.8,.2,1)" });
+      if (sourceRect && sourceClone) animateCardPlay(sourceRect, sourceClone, id);
       window.setTimeout(() => { dragMoved = false; }, 150);
     });
   });
@@ -344,7 +400,7 @@ function paint(): void {
     notice = "Карта отправлена в сброс.";
     paint();
   }));
-  root.querySelector<HTMLButtonElement>("#menu-button")!.onclick = () => menu.classList.remove("hidden");
+  root.querySelector<HTMLButtonElement>("#menu-button")!.onclick = () => { root.classList.add("menu-empty"); renderMenu("home"); menu.classList.remove("hidden"); window.scrollTo(0, 0); };
   root.querySelector<HTMLButtonElement>("#new-game")!.onclick = start;
   root.querySelector<HTMLButtonElement>("#restart")?.addEventListener("click", start);
   root.querySelector<HTMLButtonElement>("#lock")!.onclick = () => {
