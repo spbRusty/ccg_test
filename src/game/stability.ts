@@ -18,7 +18,7 @@ export interface Player {
   swapUsed: boolean;
 }
 
-export interface Settings { startStability: 15 | 20; maxPlays: 0 | 2; handLimit: number; deckSize: number }
+export interface Settings { startStability: 15 | 20 | 30; maxPlays: 0 | 2; handLimit: number; deckSize: number }
 
 export interface Game {
   round: number;
