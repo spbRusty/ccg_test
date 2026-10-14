@@ -496,3 +496,17 @@ input, select, textarea { -webkit-user-select: text; user-select: text; }
 .inspector-art{z-index:0!important}
 .inspector-card::after{z-index:1!important}
 .inspector-copy{position:absolute!important;z-index:2!important}
+
+
+/* Give the hand a real vertical lane; keep the card art and text legible. */
+@media (min-width: 721px) {
+  .center-column { grid-template-rows: minmax(0,.78fr) auto minmax(0,.78fr) minmax(170px,1.35fr) auto !important; }
+  .hand-section { display:flex; flex-direction:column; min-height:0; }
+  .hand-grid { flex:1 1 auto; min-height:0; grid-auto-rows:minmax(0,1fr); align-items:stretch; }
+  .hand-card { height:100%; min-height:0; }
+  .hand-copy>span { -webkit-line-clamp:4; }
+}
+.menu-nav button,.menu-nav button.featured,.menu-primary { display:flex; align-items:center; justify-content:center; text-align:center; }
+.menu-nav button { text-align:center; }
+.menu-nav button.featured { grid-column:1/-1; }
+.menu-primary { gap:8px; }
