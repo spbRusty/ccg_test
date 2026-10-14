@@ -22,6 +22,8 @@ let dragMoved = false;
 let dragSource: "hand" | "committed" | null = null;
 let returnDragId: string | null = null;
 let returnDragGhost: HTMLElement | null = null;
+let returnDragOffsetX = 0;
+let returnDragOffsetY = 0;
 
 type Language="ru"|"en"; let language:Language=(localStorage.getItem("stability-language") as Language)||"ru";
 let startStability:15|20|30=30; let maxPlaysSetting:0|2=0;
@@ -39,7 +41,7 @@ function playCardSound(i=0):void{if(!soundVolume)return;const f=[392,494,587,440
 function startMusic():void{if(musicTimer)return;const melody=[392,440,523,587,523,440,392,330,349,392,440,523,587,523,440,392,330,349,392,440,392,330,294,330,392,440,523,659,587,523,440,392];const bass=[196,196,174.61,174.61,146.83,146.83,164.81,164.81];musicTimer=window.setInterval(()=>{if(!musicVolume)return;const step=musicStep++%melody.length;const n=melody[step];tone(n,.31,musicVolume*.09,"triangle");tone(n*2,.2,musicVolume*.022,"sine",.035);if(step%4===0){const root=bass[Math.floor(step/4)%bass.length];tone(root,.62,musicVolume*.075,"sine");tone(root*1.5,.42,musicVolume*.028,"triangle",.04);tone(root*2,.36,musicVolume*.025,"sine",.08)}if(step%8===4)tone(melody[(step+2)%melody.length],.38,musicVolume*.045,"triangle",.11)},300)}
 function saveSettings():void{localStorage.setItem("stability-language",language);localStorage.setItem("stability-start",String(startStability));localStorage.setItem("stability-max-two",maxPlaysSetting?"1":"0");localStorage.setItem("stability-sound-volume",String(soundVolume));localStorage.setItem("stability-music-volume",String(musicVolume))}
 function saveDeck():void{localStorage.setItem("stability-deck",JSON.stringify(savedDeck))}
-function mini(id:string,drag=true):string{const d=CARDS.find(x=>x.id===id);if(!d)return"";const x={...d,uid:d.id,playedRound:0} as Card;return '<button class="deck-card" type="button" data-deck-card="'+id+'" '+(drag?'draggable="true"':'')+'><b class="deck-cost">'+d.cost+'</b><strong class="deck-title">'+esc(cardName(x))+'</strong><span class="deck-description">'+esc(cardText(x))+'</span></button>'}
+function mini(id:string,drag=true):string{const d=CARDS.find(x=>x.id===id);if(!d)return"";const x={...d,uid:d.id,playedRound:0} as Card;return '<button class="deck-card" type="button" data-deck-card="'+id+'" '+(drag?'draggable="true"':'')+'><span class="deck-art-wrap">'+art(x,"deck-art-image")+'</span><span class="deck-card-top"><b class="deck-cost">'+d.cost+'</b><strong class="deck-title">'+esc(cardName(x))+'</strong></span><span class="deck-description">'+esc(cardText(x))+'</span></button>'}
 function renderMenu(page=currentPage):void{
 currentPage=page;const ru=language==="ru",title=ru?"СТАБИЛЬНОСТЬ":"STABILITY";let body="";
 if(page==="home")body='<div class="menu-hero"><div class="menu-emblem">S</div><div class="menu-eyebrow">'+(ru?"КОЛЛЕКЦИОННАЯ КАРТОЧНАЯ ИГРА":"COLLECTIBLE CARD GAME")+'</div><h1>'+title+'</h1><p>'+(ru?"Постапокалиптическая карточная дуэль":"A post-apocalyptic card duel")+'</p></div><div class="menu-nav"><button class="featured" data-page="single">'+(ru?"ОДИНОЧНАЯ ИГРА":"SINGLE PLAYER")+' →</button><button data-page="decks">'+(ru?"КОЛЛЕКЦИЯ И КОЛОДЫ":"COLLECTION & DECKS")+'</button><button data-page="pvp">PVP — '+(ru?"СЕТЕВАЯ ИГРА":"ONLINE")+'</button><button data-page="settings">'+(ru?"НАСТРОЙКИ":"SETTINGS")+'</button></div><div class="menu-foot">'+(ru?"Одна шкала. Шесть слотов. Ни шага назад.":"One meter. Six slots. No way back.")+'</div>';
@@ -47,7 +49,7 @@ if(page==="home")body='<div class="menu-hero"><div class="menu-emblem">S</div><d
 if(page==="pvp")body='<button class="back-button" data-page="home">← '+(ru?"В ГЛАВНОЕ МЕНЮ":"MAIN MENU")+'</button><h2>PVP</h2><div class="feature-panel"><p>'+(ru?"Сетевой режим пока не подключён.":"Online matchmaking is not connected yet.")+'</p></div>';
 if(page==="settings")body='<button class="back-button" data-page="home">← '+(ru?"В ГЛАВНОЕ МЕНЮ":"MAIN MENU")+'</button><h2>'+(ru?"НАСТРОЙКИ":"SETTINGS")+'</h2><div class="settings-panel"><label>'+(ru?"Язык":"Language")+'<select id="language-select"><option value="ru" '+(ru?"selected":"")+'>Русский</option><option value="en" '+(!ru?"selected":"")+'>English</option></select></label><label>'+(ru?"Громкость звуков":"Sound volume")+' <output id="sound-value">'+Math.round(soundVolume*100)+'%</output><input id="sound-volume" type="range" min="0" max="1" step=".01" value="'+soundVolume+'"></label><label>'+(ru?"Музыка":"Music")+' <output id="music-value">'+Math.round(musicVolume*100)+'%</output><input id="music-volume" type="range" min="0" max=".4" step=".01" value="'+musicVolume+'"></label><p class="settings-note">'+(ru?"Мелодичная тема пустоши. Настройки сохраняются автоматически.":"A melodic wasteland theme. Settings are saved automatically.")+'</p></div>';
 if(page==="collection")body='<button class="back-button" data-page="home">← '+(ru?"В ГЛАВНОЕ МЕНЮ":"MAIN MENU")+'</button><h2>'+(ru?"КОЛЛЕКЦИЯ":"COLLECTION")+'</h2><p>'+(ru?"Все карты игры":"All game cards")+' · '+CARDS.length+'</p><div class="collection-grid">'+CARDS.map(d=>mini(d.id,false)).join("")+'</div>';
-if(page==="decks")body='<button class="back-button" data-page="home">← '+(ru?"В ГЛАВНОЕ МЕНЮ":"MAIN MENU")+'</button><div class="deck-page-heading"><div><h2>'+(ru?"КОЛЛЕКЦИЯ И КОЛОДЫ":"COLLECTION & DECKS")+'</h2><p>'+(ru?"Перетаскивай карты из коллекции в колоду или нажимай на них.":"Drag or click cards to add them to your deck.")+'</p></div><button id="clear-deck" class="back-button">'+(ru?"ОЧИСТИТЬ":"CLEAR")+'</button></div><div class="deck-builder"><section><h3>'+(ru?"КОЛЛЕКЦИЯ":"COLLECTION")+'</h3><div class="collection-grid">'+CARDS.map(d=>mini(d.id,true)).join("")+'</div></section><section><h3>'+(ru?"ТВОЯ КОЛОДА":"YOUR DECK")+' <span>'+savedDeck.length+'/30</span></h3><div class="deck-grid">'+Array.from({length:30},(_,n)=>savedDeck[n]?'<div class="deck-cell filled" data-deck-slot="'+n+'">'+mini(savedDeck[n],false)+'</div>':'<div class="deck-cell" data-deck-slot="'+n+'">＋</div>').join("")+'</div></section></div>';
+if(page==="decks")body='<button class="back-button" data-page="home">← '+(ru?"В ГЛАВНОЕ МЕНЮ":"MAIN MENU")+'</button><div class="deck-page-heading"><div><h2>'+(ru?"КОЛЛЕКЦИЯ И КОЛОДЫ":"COLLECTION & DECKS")+'</h2><p>'+(ru?"Перетаскивай карты из коллекции в колоду или нажимай на них.":"Drag or click cards to add them to your deck.")+'</p></div><button id="clear-deck" class="back-button">'+(ru?"ОЧИСТИТЬ":"CLEAR")+'</button></div><div class="deck-builder"><section class="deck-section"><h3>'+(ru?"ТВОЯ КОЛОДА":"YOUR DECK")+' <span>'+savedDeck.length+'/30</span></h3><div class="deck-grid">'+Array.from({length:30},(_,n)=>savedDeck[n]?'<div class="deck-cell filled" data-deck-slot="'+n+'">'+mini(savedDeck[n],false)+'</div>':'<div class="deck-cell" data-deck-slot="'+n+'">＋</div>').join("")+'</div></section><section class="collection-section"><h3>'+(ru?"КОЛЛЕКЦИЯ":"COLLECTION")+'</h3><div class="collection-grid">'+CARDS.map(d=>mini(d.id,true)).join("")+'</div></section></div>';
 menu.innerHTML='<div class="menu-shell"><header class="menu-top"><button class="menu-brand" data-page="home"><span>S</span>'+title+'</button><button class="language-shortcut" data-page="settings">'+(ru?"RU / EN":"EN / RU")+'</button></header><main class="menu-content">'+body+'</main></div>';document.documentElement.lang=language;document.title=ru?"Стабильность — карточная дуэль":"Stability — card duel";
 menu.querySelectorAll<HTMLElement>("[data-page]").forEach(el=>el.addEventListener("click",()=>{if(el.dataset.page==="single"){startStability=30;maxPlaysSetting=0;saveSettings();start();return;}renderMenu(el.dataset.page!);}));
 menu.querySelector<HTMLSelectElement>("#language-select")?.addEventListener("change",e=>{language=(e.target as HTMLSelectElement).value as Language;saveSettings();renderMenu("settings")});
@@ -345,10 +347,15 @@ function paint(): void {
       const id = cardEl.dataset.cardId; if (!id) return;
       pointer.preventDefault(); pointer.stopPropagation();
       returnDragId = id; dragMoved = true;
+      const sourceRect = cardEl.getBoundingClientRect();
+      returnDragOffsetX = pointer.clientX - sourceRect.left;
+      returnDragOffsetY = pointer.clientY - sourceRect.top;
       returnDragGhost = cardEl.cloneNode(true) as HTMLElement;
       returnDragGhost.classList.add("return-drag-ghost");
-      returnDragGhost.style.left = (pointer.clientX + 12) + "px";
-      returnDragGhost.style.top = (pointer.clientY + 12) + "px";
+      returnDragGhost.style.width = sourceRect.width + "px";
+      returnDragGhost.style.height = sourceRect.height + "px";
+      returnDragGhost.style.left = (pointer.clientX - returnDragOffsetX) + "px";
+      returnDragGhost.style.top = (pointer.clientY - returnDragOffsetY) + "px";
       document.body.appendChild(returnDragGhost);
     });
     cardEl.addEventListener("dragstart", event => {
@@ -522,8 +529,8 @@ function start(): void {
 root.classList.add("menu-empty");
 document.addEventListener("pointermove", event => {
   if (!returnDragId || !returnDragGhost) return;
-  returnDragGhost.style.left = (event.clientX + 12) + "px";
-  returnDragGhost.style.top = (event.clientY + 12) + "px";
+  returnDragGhost.style.left = (event.clientX - returnDragOffsetX) + "px";
+  returnDragGhost.style.top = (event.clientY - returnDragOffsetY) + "px";
 });
 document.addEventListener("pointerup", event => {
   if (!returnDragId) return;
