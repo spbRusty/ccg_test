@@ -93,7 +93,7 @@ function triggerResolutionEffects(beforePlayer: number, beforeEnemy: number, pla
   overlay.className = "resolution-effects";
   overlay.setAttribute("aria-hidden", "true");
   arena.appendChild(overlay);
-
+  played.filter(item => item.side === "enemy").forEach((item, index) => playCardSound(index + 2));
 
   const deltaPlayer = game.player.stability - beforePlayer;
   const deltaEnemy = game.enemy.stability - beforeEnemy;
@@ -138,6 +138,31 @@ function triggerResolutionEffects(beforePlayer: number, beforeEnemy: number, pla
     }
   });
   window.setTimeout(() => overlay.remove(), 1300);
+}
+
+function animateCardReturn(from: DOMRect, source: HTMLElement, cardId: string): void {
+  const target = root.querySelector<HTMLElement>('.hand-card[data-id="' + CSS.escape(cardId) + '"]');
+  if (!target) return;
+  const to = target.getBoundingClientRect();
+  const ghost = source.cloneNode(true) as HTMLElement;
+  Object.assign(ghost.style, {
+    position: "fixed", zIndex: "10000", pointerEvents: "none", margin: "0",
+    left: from.left + "px", top: from.top + "px", width: from.width + "px", height: from.height + "px",
+    transformOrigin: "top left", boxShadow: "0 0 0 2px #a8ffe0, 0 12px 30px #000b",
+    borderRadius: "7px", overflow: "hidden"
+  });
+  document.body.appendChild(ghost);
+  const dx = to.left - from.left + (to.width - from.width) / 2;
+  const dy = to.top - from.top + (to.height - from.height) / 2;
+  ghost.animate([
+    { transform: "translate(0,0) scale(1) rotate(0deg)", filter: "brightness(1.3)" },
+    { transform: "translate(" + (dx * .6) + "px," + (dy * .6 - 16) + "px) scale(.9) rotate(3deg)", filter: "brightness(1.6)", offset: .62 },
+    { transform: "translate(" + dx + "px," + dy + "px) scale(" + Math.max(.35, Math.min(1, to.width / Math.max(1, from.width))) + ") rotate(0deg)", filter: "brightness(1)" }
+  ], { duration: 360, easing: "cubic-bezier(.2,.7,.2,1)", fill: "forwards" });
+  window.setTimeout(() => {
+    ghost.remove();
+    target.animate([{ transform: "translateY(0) scale(1)" }, { transform: "translateY(-7px) scale(1.035)" }, { transform: "translateY(0) scale(1)" }], { duration: 240, easing: "ease-out" });
+  }, 390);
 }
 
 function animateCardPlay(from: DOMRect, source: HTMLElement, cardId: string): void {
@@ -356,15 +381,27 @@ function paint(): void {
     slot.addEventListener("drop", event => {
       event.preventDefault(); slot.classList.remove("drop-target");
       const id = event.dataTransfer?.getData("text/plain") || dragCardId;
-      if (dragSource !== "hand") { notice = "Перетащи карту обратно в руку, чтобы отменить выбор."; paint(); return; }
-      const card = p.hand.find(item => item.uid === id);
-      if (!card || busy || p.locked || game.winner) { notice = "Сюда нельзя сыграть эту карту."; paint(); return; }
-      const sourceElement = dragOrigin || root.querySelector<HTMLElement>('.hand-card[data-id="' + CSS.escape(id) + '"]');
+      const sourceElement = dragOrigin || (id ? root.querySelector<HTMLElement>('.hand-card[data-id="' + CSS.escape(id) + '"]') : null) || (id ? root.querySelector<HTMLElement>('.pending-slot[data-card-id="' + CSS.escape(id) + '"]') : null);
       const sourceRect = sourceElement?.getBoundingClientRect() || null;
       const sourceClone = sourceElement?.cloneNode(true) as HTMLElement | undefined;
+      if (dragSource !== "hand") {
+        notice = "Перетащи карту обратно в руку, чтобы отменить выбор."; paint();
+        if (sourceRect && sourceClone && id) animateCardReturn(sourceRect, sourceClone, id);
+        return;
+      }
+      const card = p.hand.find(item => item.uid === id);
+      if (!card || busy || p.locked || game.winner) {
+        notice = "Сюда нельзя сыграть эту карту."; paint();
+        if (sourceRect && sourceClone && id) animateCardReturn(sourceRect, sourceClone, id);
+        return;
+      }
       const slotIndex = Number(slot.dataset.slotIndex);
       const result = selectCard(game, "player", id);
-      if (!result.ok) { notice = result.message; paint(); return; }
+      if (!result.ok) {
+        notice = result.message; paint();
+        if (sourceRect && sourceClone) animateCardReturn(sourceRect, sourceClone, id);
+        return;
+      }
       const committed = p.committed.find(item => item.uid === id);
       if (committed) committed.targetSlot = slotIndex;
       playCardSound(slotIndex);
