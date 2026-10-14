@@ -605,3 +605,8 @@ input, select, textarea { -webkit-user-select: text; user-select: text; }
 @media (max-width: 390px) {
   .slot-copy small { display: -webkit-box; font-size: 7px; -webkit-line-clamp: 2; }
 }
+
+.hand-card.unaffordable { opacity: .5; filter: grayscale(.45); }
+.hand-card.unaffordable:hover { transform: none; border-color: #384a55; }
+.hand-card[draggable="true"].unaffordable { cursor: not-allowed; }
+.hand-card.previewing { border-color: #91b5b1; box-shadow: 0 0 0 2px #91b5b155; }
