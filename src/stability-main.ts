@@ -266,7 +266,7 @@ function paint(): void {
   root.innerHTML =
     '<header class="topbar"><div class="brand-mark">S</div><div class="brand-copy"><strong>СТАБИЛЬНОСТЬ</strong><small>ДУЭЛЬ В ПУСТОШИ</small></div><div class="round-pill">РАУНД <b>' + game.round + '</b></div><div class="top-actions"><button id="menu-button" class="quiet-button">☰ МЕНЮ</button><button id="new-game" class="quiet-button">↻ НОВАЯ ДУЭЛЬ</button></div></header>' +
     '<div class="game-layout">' +
-      '<aside class="side-panel left-panel"><div class="panel-heading"><span class="panel-kicker">СВОДКА</span><h2>Журнал боя</h2></div>' +
+      '<aside class="side-panel left-panel"><div class="panel-heading"><span class="panel-kicker">СВОДКА</span><h2>Журнал партии</h2></div>' +
         '<div class="side-score"><span>РАУНД</span><strong>' + game.round + '</strong></div>' +
         '<div class="log-list">' + logItems.map((line, i) => '<p class="' + (i === logItems.length - 1 ? "log-current" : "") + '">' + esc(line) + '</p>').join("") + '</div>' +
         '<div class="side-rule"><span class="panel-kicker">ЦЕЛЬ</span><p>Обнули Стабильность чужого лагеря. Цена каждой карты списывается сразу при выборе.</p></div>' +
