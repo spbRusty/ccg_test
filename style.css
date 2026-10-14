@@ -562,3 +562,46 @@ input, select, textarea { -webkit-user-select: text; user-select: text; }
 .menu-nav button[data-page="settings"] {
   margin-top: 12px;
 }
+
+/* Swap button active state. */
+.quiet-button.active-swap {
+  border-color: #7fffd4;
+  background: #16332a;
+  color: #caffdf;
+  box-shadow: inset 0 0 0 1px #7fffd455;
+}
+
+/* Per-side markers for boost, delayed damage, curse, and guard. */
+.duelbar-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+.duel-badge {
+  padding: 2px 6px;
+  border: 1px solid #3a4a53;
+  border-radius: 3px;
+  background: #101922;
+  color: #b9c6cb;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .03em;
+  white-space: nowrap;
+}
+.badge-boost { color: #cfe9ff; background: #17303f; border-color: #3c6d86; }
+.badge-delay { color: #ffe6b8; background: #33280f; border-color: #7a6230; }
+.badge-curse { color: #ffd0d0; background: #3a1a1c; border-color: #8a4348; }
+.badge-guard { color: #d4ffe8; background: #16332a; border-color: #3f7d63; }
+
+/* Two rows of three slots on phones instead of one cramped six-wide row. */
+@media (max-width: 720px) {
+  .board { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .slot-copy small { font-size: 8px; -webkit-line-clamp: 3; }
+  .hand-copy > span { font-size: 9px; }
+  .archive-card small { font-size: 8px; }
+  .log-list p, .side-rule p { font-size: 11px; }
+}
+@media (max-width: 390px) {
+  .slot-copy small { display: -webkit-box; font-size: 7px; -webkit-line-clamp: 2; }
+}

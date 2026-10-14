@@ -1,4 +1,4 @@
-import { createGame, selectCard, removeOwn, commit, aiCommit, resolveRound, type Game, type Settings, type Card } from "./game/stability";
+import { createGame, selectCard, removeOwn, commit, aiCommit, resolveRound, swapCard, type Game, type Settings, type Card, type Player } from "./game/stability";
 import { CARDS } from "./game/cards";
 import "./../style.css";
 
@@ -11,6 +11,7 @@ let game: Game;
 let busy = false;
 let notice = "Выбери карты и закрой выбор.";
 let selectedCard: string | null = null;
+let swapMode = false;
 let archiveTab: "deck" | "enemy" = "deck";
 let previewCard: Card | null = null;
 let dragCardId: string | null = null;
@@ -25,8 +26,8 @@ let startStability:15|20=localStorage.getItem("stability-start")==="20"?20:15; l
 let currentPage="home"; let savedDeck:string[]=JSON.parse(localStorage.getItem("stability-deck")||"[]");
 let soundVolume=Number(localStorage.getItem("stability-sound-volume")??".55"),musicVolume=Number(localStorage.getItem("stability-music-volume")??".16"); let soundEnabled=soundVolume>0;
 let audioContext:AudioContext|null=null,musicTimer=0,musicStep=0;
-const EN_CARDS:Record<string,[string,string]>={camp:["Camp Keeper","End of turn: restore 2 Stability."],dog:["Frost Hound","End of turn: enemy loses 2 Stability."],raid:["Raid","On play: enemy loses 3 Stability."],recall:["Recall","On play: return an old card from your field to your hand."],medic:["Field Medic","On play: restore 3 Stability."],sniper:["Sniper","On play: enemy loses 4 Stability."],scavenger:["Scavenger","On play: draw 1 card."],tower:["Watchtower","End of turn: enemy loses 1 Stability for each card on your field."],hunger:["Hunger","End of turn: enemy loses 1 Stability for each card on their field."],quiet:["Quiet Hour","End of turn: restore 1 Stability."],saboteur:["Saboteur","On play: remove an old enemy card."],recycler:["Recycler","On play: return an old card from your field to your hand."],signal:["Signalman","On play: empower your next card by +2."],charge:["Delayed Charge","On play: enemy loses 4 Stability next round."],battery:["Old Battery","End of turn: restore 2 Stability."],ambush:["Ambush","On play: enemy loses 2 Stability."],convoy:["Convoy","End of turn: enemy loses 3 Stability."],ration:["Dry Rations","On play: restore 2 Stability."],mediator:["Mediator","On play: transfer 2 Stability from enemy to you."],barrier:["Living Barrier","From next round: absorbs the next hit, then leaves."],map:["Old Map","On play: draw 1 card."],blackout:["Blackout","On play: enemy loses 5 Stability."],watch:["Long Watch","End of turn: enemy loses 2 Stability and you restore 2."],kitchen:["Field Kitchen","End of turn: restore 1 Stability for each of your cards."],toll:["Toll Gate","On play: enemy loses 1 Stability for each of their cards."],sleeper:["Sleeper Agent","End of turn: enemy loses 1 Stability."],reserves:["Reserves","On play: draw 2 cards."],cleaner:["Cleaner","On play: remove up to 2 old enemy cards."],hope:["Last Hope","On play: restore 5 Stability."],pulse:["Pulse Generator","End of turn: enemy loses 1 Stability for each of your cards."]};
-const EN_UI:Record<string,string>={"СТАБИЛЬНОСТЬ":"STABILITY","ДУЭЛЬ В ПУСТОШИ":"WASTELAND DUEL","☰ МЕНЮ":"☰ MENU","↻ НОВАЯ ДУЭЛЬ":"↻ NEW DUEL","РАУНД":"ROUND","СВОДКА":"SUMMARY","Журнал боя":"Battle log","ЦЕЛЬ":"OBJECTIVE","Обнули Стабильность чужого лагеря. Цена каждой карты списывается сразу при выборе.":"Reduce the enemy camp's Stability to zero. Card costs are paid when selected.","ТВОЯ СТАБИЛЬНОСТЬ":"YOUR STABILITY","СТАБИЛЬНОСТЬ ПРОТИВНИКА":"ENEMY STABILITY","ТВОЙ РЕСУРС":"YOUR RESOURCES","Карты в руке":"Cards in hand","СВОБОДНО":"EMPTY SLOT","Арсенал":"Arsenal","Поле противника":"Enemy field","Твоё игровое поле":"Your field","Сюда нельзя сыграть эту карту.":"This card cannot be played here.","Перетащи карту обратно в руку, чтобы отменить выбор.":"Drag the card back to your hand to undo the selection.","АРСЕНАЛ":"ARSENAL","КАРТЫ":"CARDS","МОЯ КОЛОДА":"MY DECK","КАРТЫ ПРОТИВНИКА":"ENEMY CARDS","Наведи курсор на карту, чтобы посмотреть её.":"Hover over a card to inspect it.","Противник ещё не сыграл ни одной карты.":"The opponent has not played any cards yet.","КЛАПАН":"VALVE","ЗАВЕРШИТЬ ХОД":"END TURN","Дуэль завершена.":"Duel finished.","Раунд завершён. Выбери следующий ход.":"Round finished. Choose your next move.","Ход завершён. Карты вскрываются…":"Turn submitted. Revealing cards…","Выбери карты и закрой выбор.":"Choose cards, then end your turn.","Карта отправлена в сброс.":"Card sent to discard.","Клапан: карта взята за 2 Стабильности.":"Valve: drew a card for 2 Stability.","Колода и сброс пусты: оплата возвращена.":"Deck and discard are empty; cost refunded.","ДУЭЛЬ ЗАВЕРШЕНА":"DUEL OVER","НИЧЬЯ":"DRAW","ЛАГЕРЬ УСТОЯЛ":"CAMP SURVIVED","ЛАГЕРЬ ПАЛ":"CAMP FELL","Твой лагерь сохранил стабильность.":"Your camp held its ground.","Оба лагеря потеряли устойчивость.":"Both camps lost stability.","Карта убрана из выбора.":"Card returned to hand.","Карта выбрана закрыто; цена списана.":"Card committed; cost paid.","Лимит карт за раунд.":"Round card limit reached.","Сначала освободи слот.":"Free up a slot first.","Нельзя уйти ниже 1 Стабильности.":"Stability cannot fall below 1.","Карты нет в руке.":"Card is not in your hand.","Выбор закрыт.":"Your turn is locked.","Живая преграда поглотила удар.":"Living Barrier absorbed the hit.","Карта разыграна.":"Card played.", "Раунд ":"Round "," завершён.":" finished.","Стабильность твоего лагеря обнулилась.":"Your camp's Stability reached zero."};
+const EN_CARDS:Record<string,[string,string]>={camp:["Camp Keeper","End of turn: restore 3 Stability."],dog:["Frost Hound","End of turn: enemy loses 2 Stability."],raid:["Raid","On play: enemy loses 3 Stability."],recall:["Recall","On play: return an old card from your field to your hand."],medic:["Field Medic","On play: restore 3 Stability."],sniper:["Sniper","On play: enemy loses 4 Stability."],scavenger:["Scavenger","On play: draw 1 card."],tower:["Watchtower","End of turn: enemy loses 1 Stability for each card on your field."],hunger:["Hunger","End of turn: enemy loses 1 Stability for each card on their field."],quiet:["Quiet Hour","End of turn: restore 1 Stability."],saboteur:["Saboteur","On play: remove an old enemy card."],signal:["Signalman","On play: empower your next card by +2."],charge:["Delayed Charge","On play: enemy loses 4 Stability next round."],battery:["Old Battery","End of turn: restore 2 Stability."],ambush:["Ambush","On play: enemy loses 2 Stability."],convoy:["Convoy","End of turn: enemy loses 3 Stability."],ration:["Dry Rations","On play: restore 2 Stability."],mediator:["Mediator","On play: transfer 2 Stability from enemy to you."],barrier:["Living Barrier","From next round: absorbs the next hit, then leaves."],map:["Old Map","On play: draw 1 card."],blackout:["Blackout","On play: enemy loses 5 Stability."],watch:["Long Watch","End of turn: enemy loses 2 Stability and you restore 2."],kitchen:["Field Kitchen","End of turn: restore 1 Stability for each of your cards."],toll:["Toll Gate","On play: enemy loses 1 Stability for each of their cards."],sleeper:["Sleeper Agent","End of turn: enemy loses 1 Stability."],reserves:["Reserves","On play: draw 2 cards."],cleaner:["Cleaner","On play: remove up to 2 old enemy cards."],hope:["Last Hope","On play: restore 5 Stability."],curse:["Curse","On play: the enemy cannot restore Stability this round."],payoff:["Desperate Gamble","On play: enemy loses 3. If your Stability is below 8, it loses 6."],surge:["Onslaught","On play: enemy loses 1 for each of your cards."]};
+const EN_UI:Record<string,string>={"СТАБИЛЬНОСТЬ":"STABILITY","ДУЭЛЬ В ПУСТОШИ":"WASTELAND DUEL","☰ МЕНЮ":"☰ MENU","↻ НОВАЯ ДУЭЛЬ":"↻ NEW DUEL","РАУНД":"ROUND","СВОДКА":"SUMMARY","Журнал боя":"Battle log","ЦЕЛЬ":"OBJECTIVE","Обнули Стабильность чужого лагеря. Цена каждой карты списывается сразу при выборе.":"Reduce the enemy camp's Stability to zero. Card costs are paid when selected.","ТВОЯ СТАБИЛЬНОСТЬ":"YOUR STABILITY","СТАБИЛЬНОСТЬ ПРОТИВНИКА":"ENEMY STABILITY","ТВОЙ РЕСУРС":"YOUR RESOURCES","Карты в руке":"Cards in hand","СВОБОДНО":"EMPTY SLOT","Арсенал":"Arsenal","Поле противника":"Enemy field","Твоё игровое поле":"Your field","Сюда нельзя сыграть эту карту.":"This card cannot be played here.","Перетащи карту обратно в руку, чтобы отменить выбор.":"Drag the card back to your hand to undo the selection.","АРСЕНАЛ":"ARSENAL","КАРТЫ":"CARDS","МОЯ КОЛОДА":"MY DECK","КАРТЫ ПРОТИВНИКА":"ENEMY CARDS","Наведи курсор на карту, чтобы посмотреть её.":"Hover over a card to inspect it.","Противник ещё не сыграл ни одной карты.":"The opponent has not played any cards yet.","ЗАМЕНА":"SWAP","ЗАВЕРШИТЬ ХОД":"END TURN","Дуэль завершена.":"Duel finished.","Раунд завершён. Выбери следующий ход.":"Round finished. Choose your next move.","Ход завершён. Карты вскрываются…":"Turn submitted. Revealing cards…","Выбери карты и закрой выбор.":"Choose cards, then end your turn.","Карта отправлена в сброс.":"Card sent to discard.","Выбери карту в руке для замены.":"Pick a card in your hand to swap.","Карта заменена.":"Card swapped.","Замена уже использована в этом раунде.":"Swap already used this round.","ДУЭЛЬ ЗАВЕРШЕНА":"DUEL OVER","НИЧЬЯ":"DRAW","ЛАГЕРЬ УСТОЯЛ":"CAMP SURVIVED","ЛАГЕРЬ ПАЛ":"CAMP FELL","Твой лагерь сохранил стабильность.":"Your camp held its ground.","Оба лагеря потеряли устойчивость.":"Both camps lost stability.","Карта убрана из выбора.":"Card returned to hand.","Карта выбрана закрыто; цена списана.":"Card committed; cost paid.","Лимит карт за раунд.":"Round card limit reached.","Сначала освободи слот.":"Free up a slot first.","Нельзя уйти ниже 1 Стабильности.":"Stability cannot fall below 1.","Карты нет в руке.":"Card is not in your hand.","Выбор закрыт.":"Your turn is locked.","Живая преграда поглотила удар.":"Living Barrier absorbed the hit.","Карта разыграна.":"Card played.", "Раунд ":"Round "," завершён.":" finished.","Стабильность твоего лагеря обнулилась.":"Your camp's Stability reached zero."};
 function cardName(card:Card):string{return language==="en"?(EN_CARDS[card.id]?.[0]||card.name):card.name}
 function cardText(card:Card):string{return language==="en"?(EN_CARDS[card.id]?.[1]||card.text):card.text}
 function localizeHTML(s:string):string{if(language!=="en")return s;for(const [a,b] of Object.entries(EN_UI).sort((x,y)=>y[0].length-x[0].length))s=s.split(a).join(b);return s}
@@ -46,8 +47,10 @@ if(page==="settings")body='<button class="back-button" data-page="home">← '+(r
 if(page==="collection")body='<button class="back-button" data-page="home">← '+(ru?"В ГЛАВНОЕ МЕНЮ":"MAIN MENU")+'</button><h2>'+(ru?"КОЛЛЕКЦИЯ":"COLLECTION")+'</h2><p>'+(ru?"Все карты игры":"All game cards")+' · '+CARDS.length+'</p><div class="collection-grid">'+CARDS.map(d=>mini(d.id,false)).join("")+'</div>';
 if(page==="decks")body='<button class="back-button" data-page="home">← '+(ru?"В ГЛАВНОЕ МЕНЮ":"MAIN MENU")+'</button><div class="deck-page-heading"><div><h2>'+(ru?"КОЛЛЕКЦИЯ И КОЛОДЫ":"COLLECTION & DECKS")+'</h2><p>'+(ru?"Перетаскивай карты из коллекции в колоду или нажимай на них.":"Drag or click cards to add them to your deck.")+'</p></div><button id="clear-deck" class="back-button">'+(ru?"ОЧИСТИТЬ":"CLEAR")+'</button></div><div class="deck-builder"><section><h3>'+(ru?"КОЛЛЕКЦИЯ":"COLLECTION")+'</h3><div class="collection-grid">'+CARDS.map(d=>mini(d.id,true)).join("")+'</div></section><section><h3>'+(ru?"ТВОЯ КОЛОДА":"YOUR DECK")+' <span>'+savedDeck.length+'/30</span></h3><div class="deck-grid">'+Array.from({length:30},(_,n)=>savedDeck[n]?'<div class="deck-cell filled" data-deck-slot="'+n+'">'+mini(savedDeck[n],false)+'</div>':'<div class="deck-cell" data-deck-slot="'+n+'">＋</div>').join("")+'</div></section></div>';
 menu.innerHTML='<div class="menu-shell"><header class="menu-top"><button class="menu-brand" data-page="home"><span>S</span>'+title+'</button><button class="language-shortcut" data-page="settings">'+(ru?"RU / EN":"EN / RU")+'</button></header><main class="menu-content">'+body+'</main></div>';document.documentElement.lang=language;document.title=ru?"Стабильность — карточная дуэль":"Stability — card duel";
-menu.querySelectorAll<HTMLElement>("[data-page]").forEach(el=>el.addEventListener("click",()=>{if(el.dataset.page==="single"){startStability=20;maxPlaysSetting=0;saveSettings();start();return;}renderMenu(el.dataset.page!);}));
-menu.querySelector<HTMLButtonElement>("#start-game")?.addEventListener("click",()=>{startStability=20;maxPlaysSetting=0;saveSettings();start()});
+menu.querySelectorAll<HTMLElement>("[data-page]").forEach(el=>el.addEventListener("click",()=>{if(el.dataset.page==="single"){renderMenu("single");return;}renderMenu(el.dataset.page!);}));
+menu.querySelector<HTMLButtonElement>("#start-game")?.addEventListener("click",()=>{saveSettings();start()});
+menu.querySelector<HTMLSelectElement>("#start-stability")?.addEventListener("change",e=>{startStability=(e.target as HTMLSelectElement).value==="20"?20:15;saveSettings()});
+menu.querySelector<HTMLInputElement>("#max-two")?.addEventListener("change",e=>{maxPlaysSetting=(e.target as HTMLInputElement).checked?2:0;saveSettings()});
 menu.querySelector<HTMLSelectElement>("#language-select")?.addEventListener("change",e=>{language=(e.target as HTMLSelectElement).value as Language;saveSettings();renderMenu("settings")});
 
 menu.querySelector<HTMLInputElement>("#sound-volume")?.addEventListener("input",e=>{soundVolume=Number((e.target as HTMLInputElement).value);soundEnabled=soundVolume>0;const o=menu.querySelector<HTMLOutputElement>("#sound-value");if(o)o.value=Math.round(soundVolume*100)+"%";saveSettings();if(soundVolume)playCardSound()});
@@ -58,12 +61,7 @@ if(page==="decks"){menu.querySelectorAll<HTMLElement>("[data-deck-card]").forEac
 
 
 const esc = (value: string) => value.replace(/[&<>"]/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[char]!));
-const artFor = (card: Card) => base + "cards/card-art-" + String(((Number(card.uid) || 1) - 1) % 3 + 1).padStart(2, "0") + ".avif";
-function shuffle<T>(items: T[]): T[] {
-  const result = [...items];
-  for (let i = result.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [result[i], result[j]] = [result[j], result[i]]; }
-  return result;
-}
+const artFor = (card: Card) => { let h = 0; for (let i = 0; i < card.id.length; i++) h = (h * 31 + card.id.charCodeAt(i)) >>> 0; return base + "cards/card-art-" + String(h % 3 + 1).padStart(2, "0") + ".avif"; };
 function art(card: Card, className = "card-art"): string {
   return '<img class="' + className + '" src="' + esc(artFor(card)) + '" data-art="' + esc(artFor(card)) + '" alt="" loading="eager" decoding="async">';
 }
@@ -84,6 +82,15 @@ function statusPanel(label: string, value: number, own: boolean, tail: string): 
   return '<section class="status-panel ' + (own ? "own-status" : "enemy-status") + '">' +
     '<div class="status-top"><span class="status-dot"></span><span class="status-label">' + label + '</span><strong>' + value + '</strong><small>СТАБИЛЬНОСТЬ</small></div>' +
     '<div class="stability-track"><span style="width:' + width + '%"></span></div><div class="status-tail">' + tail + '</div></section>';
+}
+
+function duelBadges(p: Player): string {
+  const badges: string[] = [];
+  if (p.boost) badges.push('<span class="duel-badge badge-boost">следующая карта +' + p.boost + '</span>');
+  if (p.delayed) badges.push('<span class="duel-badge badge-delay">отложенный урон ' + p.delayed + '</span>');
+  if (p.cursed) badges.push('<span class="duel-badge badge-curse">без лечения раунд</span>');
+  if (p.board.some(card => card?.effect.kind === "guard")) badges.push('<span class="duel-badge badge-guard">преграда готова</span>');
+  return '<div class="duelbar-badges">' + badges.join("") + '</div>';
 }
 
 function triggerResolutionEffects(beforePlayer: number, beforeEnemy: number, played: Array<{ side: "player" | "enemy"; card: Card }>): void {
@@ -235,13 +242,13 @@ function paint(): void {
       '</aside>' +
       '<main class="center-column">' +
         '<section class="board enemy-board" aria-label="Поле противника">' + q.board.map((c, i) => boardSlot(c, false, i)).join("") + '</section>' +
-        '<div class="stability-duelbar"><div class="duelbar-side duelbar-player"><div class="duelbar-label"><span>ТВОЯ СТАБИЛЬНОСТЬ</span><strong>' + p.stability + '</strong></div><div class="duelbar-track"><span style="width:' + Math.max(0, Math.min(100, p.stability / 60 * 100)) + '%"></span></div></div><div class="duelbar-divider"></div><div class="duelbar-side duelbar-enemy"><div class="duelbar-label"><span>СТАБИЛЬНОСТЬ ПРОТИВНИКА</span><strong>' + q.stability + '</strong></div><div class="duelbar-track"><span style="width:' + Math.max(0, Math.min(100, q.stability / 60 * 100)) + '%"></span></div></div></div>' +
+        '<div class="stability-duelbar"><div class="duelbar-side duelbar-player"><div class="duelbar-label"><span>ТВОЯ СТАБИЛЬНОСТЬ</span><strong>' + p.stability + '</strong></div><div class="duelbar-track"><span style="width:' + Math.max(0, Math.min(100, p.stability / 60 * 100)) + '%"></span></div>' + duelBadges(p) + '</div><div class="duelbar-divider"></div><div class="duelbar-side duelbar-enemy"><div class="duelbar-label"><span>СТАБИЛЬНОСТЬ ПРОТИВНИКА</span><strong>' + q.stability + '</strong></div><div class="duelbar-track"><span style="width:' + Math.max(0, Math.min(100, q.stability / 60 * 100)) + '%"></span></div>' + duelBadges(q) + '</div></div>' +
         '<section class="board player-board" aria-label="Твоё игровое поле">' + p.board.map((c, i) => { const pending = !c ? p.committed.find(item => item.targetSlot === i) : undefined; return boardSlot(c || pending || null, true, i, !!pending); }).join("") + '</section>' +
         '<section class="hand-section"><div class="hand-heading"><div><span class="panel-kicker">ТВОЙ РЕСУРС</span><h2>Карты в руке</h2></div><span class="hand-count">' + p.hand.length + ' / 6</span></div>' +
           '<div class="hand-grid">' + p.hand.map(handCard).join("") + '</div>' +
           
         '</section>' +
-        '<footer class="game-actions"><p class="notice" role="status">' + esc(notice) + '</p><button id="valve" class="quiet-button" ' + (p.locked || p.stability < 3 || p.hand.length >= 6 || game.winner ? "disabled" : "") + '>КЛАПАН <b>−2</b></button><button id="lock" class="primary-button" ' + (p.locked || game.winner || busy ? "disabled" : "") + '>ЗАВЕРШИТЬ ХОД <span>→</span></button></footer>' +
+        '<footer class="game-actions"><p class="notice" role="status">' + esc(notice) + '</p><button id="swap" class="quiet-button' + (swapMode ? " active-swap" : "") + '" ' + (p.locked || p.swapUsed || !p.hand.length || game.winner ? "disabled" : "") + '>ЗАМЕНА <b>' + (p.swapUsed ? "0" : "1") + '</b></button><button id="lock" class="primary-button" ' + (p.locked || game.winner || busy ? "disabled" : "") + '>ЗАВЕРШИТЬ ХОД <span>→</span></button></footer>' +
       '</main>' +
       '<aside class="side-panel right-panel"><div class="panel-heading"><span class="panel-kicker">КАРТЫ</span><h2>Арсенал</h2></div>' +
         '<div class="archive-tabs"><button type="button" class="' + (archiveTab === "deck" ? "active" : "") + '" data-archive-tab="deck">МОЯ КОЛОДА</button><button type="button" class="' + (archiveTab === "enemy" ? "active" : "") + '" data-archive-tab="enemy">КАРТЫ ПРОТИВНИКА</button></div>' +
@@ -266,6 +273,13 @@ function paint(): void {
     button.addEventListener("click", () => {
       if (dragMoved) { dragMoved = false; return; }
       if (busy || p.locked || game.winner) return;
+      if (swapMode) {
+        const swapResult = swapCard(game, "player", button.dataset.id!);
+        notice = swapResult.message;
+        if (swapResult.ok) swapMode = false;
+        paint();
+        return;
+      }
       const used = new Set(p.committed.map(card => card.targetSlot).filter((slot): slot is number => slot !== undefined));
       const slotIndex = p.board.findIndex((card, index) => !card && !used.has(index));
       if (slotIndex < 0) { notice = "Сначала освободи слот."; paint(); return; }
@@ -438,7 +452,7 @@ function paint(): void {
     paint();
   }));
   root.querySelector<HTMLButtonElement>("#menu-button")!.onclick = () => { root.classList.add("menu-empty"); renderMenu("home"); menu.classList.remove("hidden"); window.scrollTo(0, 0); };
-  root.querySelector<HTMLButtonElement>("#new-game")!.onclick = start;
+  root.querySelector<HTMLButtonElement>("#new-game")!.onclick = () => { if (!game || game.winner || window.confirm("Начать новую дуэль? Текущий прогресс будет потерян.")) start(); };
   root.querySelector<HTMLButtonElement>("#restart")?.addEventListener("click", start);
   root.querySelector<HTMLButtonElement>("#lock")!.onclick = () => {
     commit(game, "player");
@@ -461,13 +475,10 @@ function paint(): void {
       triggerResolutionEffects(beforePlayer, beforeEnemy, played);
     }, 420);
   };
-  root.querySelector<HTMLButtonElement>("#valve")!.onclick = () => {
-    if (p.locked || p.stability < 3 || p.hand.length >= settings.handLimit || game.winner) return;
-    p.stability -= 2;
-    let card = p.deck.pop();
-    if (!card && p.discard.length) { p.deck = shuffle(p.discard.splice(0)); card = p.deck.pop(); }
-    if (card) { p.hand.push(card); notice = "Клапан: карта взята за 2 Стабильности."; }
-    else { p.stability += 2; notice = "Колода и сброс пусты: оплата возвращена."; }
+  root.querySelector<HTMLButtonElement>("#swap")!.onclick = () => {
+    if (p.locked || p.swapUsed || !p.hand.length || game.winner) return;
+    swapMode = !swapMode;
+    notice = swapMode ? "Выбери карту в руке для замены." : "Выбери карты и закрой выбор.";
     paint();
   };
 }
@@ -478,6 +489,7 @@ function start(): void {
   game = createGame(settings);
   busy = false;
   selectedCard = null;
+  swapMode = false;
   notice = "Выбери карты и закрой выбор.";
   menu.classList.add("hidden");
   root.classList.remove("menu-empty");
