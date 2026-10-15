@@ -979,7 +979,8 @@ input, select, textarea { -webkit-user-select: text; user-select: text; }
   }
   .center-column {
     display: grid !important;
-    grid-template-rows: minmax(0, .95fr) auto minmax(0, .95fr) minmax(0, 1.1fr) auto !important;
+    /* Reserve more vertical space for the hand while keeping both battle rows tall. */
+    grid-template-rows: minmax(112px, 1fr) auto minmax(112px, 1fr) minmax(168px, 1.5fr) auto !important;
     flex: 1 1 0% !important;
     min-width: 0 !important;
     min-height: 0 !important;
@@ -994,4 +995,78 @@ input, select, textarea { -webkit-user-select: text; user-select: text; }
   }
   .center-column > .stability-duelbar { overflow: hidden !important; }
   .center-column > .hand-section { height: auto !important; }
+}
+
+
+/* Mobile sizing: taller battlefield slots and larger, readable cards in hand. */
+@media (max-width: 720px) {
+  .center-column > .board {
+    gap: 5px !important;
+  }
+  .center-column > .board .slot {
+    min-height: 0 !important;
+    height: 100% !important;
+    border-radius: 7px !important;
+  }
+  .slot-art {
+    height: 64% !important;
+    min-height: 0 !important;
+  }
+  .slot-copy {
+    padding: 4px !important;
+    gap: 2px !important;
+  }
+  .slot-copy strong {
+    font-size: clamp(8px, 2.4vw, 11px) !important;
+    line-height: 1.15 !important;
+  }
+  .slot-copy small {
+    font-size: clamp(6px, 1.8vw, 8px) !important;
+    line-height: 1.2 !important;
+    -webkit-line-clamp: 3 !important;
+  }
+  .hand-section {
+    min-height: 168px !important;
+  }
+  .hand-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    grid-template-rows: repeat(2, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+    padding: 5px 4px 7px !important;
+  }
+  .hand-card {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    height: 100% !important;
+    margin-left: 0 !important;
+    border-radius: 7px !important;
+  }
+  .hand-copy {
+    padding: 5px !important;
+    gap: 4px !important;
+  }
+  .hand-copy .cost {
+    width: 19px !important;
+    height: 19px !important;
+    flex-basis: 19px !important;
+    font-size: 9px !important;
+  }
+  .hand-copy header strong {
+    font-size: clamp(8px, 2.4vw, 11px) !important;
+    line-height: 1.15 !important;
+  }
+  .hand-copy > span {
+    font-size: clamp(7px, 1.9vw, 9px) !important;
+    line-height: 1.25 !important;
+    -webkit-line-clamp: 3 !important;
+  }
+}
+@media (max-width: 390px) {
+  .center-column {
+    grid-template-rows: minmax(104px, 1fr) auto minmax(104px, 1fr) minmax(158px, 1.45fr) auto !important;
+  }
+  .hand-section { min-height: 158px !important; }
+  .hand-grid { gap: 4px !important; }
+  .hand-copy { padding: 4px !important; }
 }
