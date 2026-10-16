@@ -2,7 +2,7 @@ import { CARDS, type CardDef } from "./cards.ts";
 
 export type Side = "player" | "enemy";
 
-export interface Card extends CardDef { uid: string; playedRound: number; targetSlot?: number }
+export interface Card extends CardDef { uid: string; playedRound: number; targetSlot?: number; costDelta?: number }
 
 export interface Player {
   stability: number;
@@ -58,7 +58,7 @@ function newPlayer(settings: Settings, random: () => number): Player {
   return {
     stability: settings.startStability,
     hand: [],
-    deck: shuffle(Array.from({ length: settings.deckSize }, (_, i) => clone(CARDS[i % CARDS.length])), random),
+    deck: shuffle(CARDS, random).slice(0, settings.deckSize).map(clone),
     discard: [],
     board: Array(6).fill(null),
     committed: [],
@@ -68,6 +68,36 @@ function newPlayer(settings: Settings, random: () => number): Player {
     cursed: false,
     swapUsed: false,
   };
+}
+
+/** Resolve "at game start" cards from the deck once, then refill the opening hand. */
+export function applyOpeningEffects(game: Game, random: () => number = Math.random): void {
+  const clamp=(v:number)=>Math.max(0,Math.min(MAX_STABILITY,v));
+  for(const side of ["player","enemy"] as Side[]){
+    const p=game[side], foe=game[side==="player"?"enemy":"player"];
+    const opening=[...p.hand,...p.deck].filter(card=>card.timing==="start");
+    if(!opening.length)continue;
+    const ids=new Set(opening.map(card=>card.uid));
+    p.hand=p.hand.filter(card=>!ids.has(card.uid));
+    p.deck=p.deck.filter(card=>!ids.has(card.uid));
+    for(const card of opening){
+      const a=card.effect.amount;
+      switch(card.effect.kind){
+        case "damage":foe.stability=clamp(foe.stability-a);break;
+        case "heal":p.stability=clamp(p.stability+a);break;
+        case "transfer":{const moved=Math.min(a,foe.stability,MAX_STABILITY-p.stability);foe.stability=clamp(foe.stability-moved);p.stability=clamp(p.stability+moved);break;}
+        case "draw":draw(p,a,game.settings,random);break;
+        case "boost":p.boost+=a;break;
+        case "delay":p.delayed+=a;break;
+        case "hand-count":p.stability=clamp(p.stability+p.hand.length*a);break;
+        case "enemy-hand-count":foe.stability=clamp(foe.stability-foe.hand.length*a);break;
+      }
+      game.log.push("Начало игры: «"+card.name+"» срабатывает.");
+    }
+    draw(p,Math.max(0,5-p.hand.length),game.settings,random);
+  }
+  const pd=game.player.stability===0,ed=game.enemy.stability===0;
+  if(pd&&ed)game.winner="draw";else if(pd)game.winner="enemy";else if(ed)game.winner="player";
 }
 
 export function createGame(options: Partial<Settings> = {}, random: () => number = Math.random): Game {
@@ -94,7 +124,8 @@ export function selectCard(game: Game, side: Side, id: string): { ok: boolean; m
   const committedIndex = p.committed.findIndex(c => c.uid === id);
   if (committedIndex >= 0) {
     const c = p.committed.splice(committedIndex, 1)[0];
-    p.stability = Math.min(MAX_STABILITY, p.stability + c.cost);
+    p.stability = Math.max(1, Math.min(MAX_STABILITY, p.stability - (c.costDelta ?? -c.cost)));
+    delete c.costDelta;
     p.hand.push(c);
     return { ok: true, message: "Карта убрана из выбора." };
   }
@@ -104,7 +135,9 @@ export function selectCard(game: Game, side: Side, id: string): { ok: boolean; m
   if (game.settings.maxPlays && p.committed.length >= game.settings.maxPlays) return { ok: false, message: "Лимит карт за раунд." };
   if (p.board.every(Boolean) || p.committed.length >= p.board.filter(card => card === null).length) return { ok: false, message: "Сначала освободи слот." };
   if (p.stability - c.cost < 1) return { ok: false, message: "Нельзя уйти ниже 1 Стабильности." };
-  p.stability -= c.cost;
+  const beforeCost = p.stability;
+  p.stability = Math.max(1, Math.min(MAX_STABILITY, p.stability - c.cost));
+  c.costDelta = p.stability - beforeCost;
   p.hand.splice(handIndex, 1);
   p.committed.push(c);
   return { ok: true, message: "Карта выбрана закрыто; цена списана." };
@@ -190,6 +223,17 @@ function accumulate(out: Outcome, game: Game, side: Side, c: Card, timing: "play
     case "guard": break;
     case "curse": out.curse = true; break;
     case "payoff": out.hits.push({ value: amount * (p.stability < (e.min ?? LOW_STABILITY) ? 2 : 1), transfer: false }); break;
+    case "total-count": out.hits.push({ value: (fieldCount(p, dead) + fieldCount(foe, dead)) * amount, transfer: false }); break;
+    case "hand-count": out.heal += p.hand.length * amount; break;
+    case "enemy-hand-count": out.hits.push({ value: foe.hand.length * amount, transfer: false }); break;
+    case "if-own-more": if (fieldCount(p, dead) > fieldCount(foe, dead)) out.hits.push({ value: amount, transfer: false }); break;
+    case "if-own-less": if (fieldCount(p, dead) < fieldCount(foe, dead)) out.hits.push({ value: amount, transfer: false }); break;
+    case "enemy-played-more": if (foe.committed.length > (e.threshold ?? 1)) out.hits.push({ value: amount, transfer: false }); break;
+    case "enemy-played-less": if (foe.committed.length < (e.threshold ?? 2)) out.hits.push({ value: amount, transfer: false }); break;
+    case "own-played-more": if (p.committed.length > (e.threshold ?? 1)) out.hits.push({ value: amount, transfer: false }); break;
+    case "own-played-less": if (p.committed.length < (e.threshold ?? 2)) out.hits.push({ value: amount, transfer: false }); break;
+    case "if-enemy-stability-low": if (foe.stability <= (e.threshold ?? 10)) out.hits.push({ value: amount, transfer: false }); break;
+    case "if-own-stability-low": if (p.stability <= (e.threshold ?? 10)) out.heal += amount; break;
   }
 }
 
@@ -207,6 +251,7 @@ export function resolveRound(game: Game, random: () => number = Math.random): vo
       if (i < 0) { p.discard.push(c); continue; }
       delete c.targetSlot;
       c.playedRound = game.round;
+      delete c.costDelta;
       p.board[i] = c;
       if (side === "enemy" && !game.playedByEnemy.some(item => item.uid === c.uid)) game.playedByEnemy.push(c);
     }
@@ -329,6 +374,9 @@ function cardValue(c: Card): number {
     case "guard": v = 3.2; break;
     case "curse": v = 3.5; break;
     case "payoff": v = a * 1.6; break;
+    case "total-count": case "hand-count": case "enemy-hand-count": v = a * 5; break;
+    case "if-own-more": case "if-own-less": case "enemy-played-more": case "enemy-played-less": case "own-played-more": case "own-played-less": v = a * 2; break;
+    case "if-enemy-stability-low": case "if-own-stability-low": v = a * 1.8; break;
   }
   return v - c.cost * 0.7;
 }
