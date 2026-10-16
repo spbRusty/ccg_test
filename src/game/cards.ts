@@ -68,11 +68,30 @@ export const CARDS: CardDef[] = [
 
 ];
 
-// Deterministic collection expansion: 30 original + 470 unique cards.
+// Deterministic collection expansion: 31 curated + 469 generated = 500 unique cards.
+// The generated pool is tuned so a random 30-card deck always carries enough raw
+// offense to close a duel in ~5-6 rounds: direct damage dominates with amount 3-5
+// (cost ≈ damage), pressure/scaling cards replace dead conditionals, and heals or
+// guards stay a minority so they cannot offset the damage density.
 const adjectives = ["Пыльный","Стальной","Соляной","Ржавый","Сумеречный","Бункерный","Заражённый","Кочевой","Искристый","Забытый","Подземный","Пепельный","Северный","Радиоактивный","Теневой","Механический","Бродячий","Закалённый","Сломанный","Последний"];
 const nouns = ["Мародёр","Хранитель","Механик","Следопыт","Синоптик","Диверсант","Сборщик","Проводник","Сапёр","Курьер","Шаман","Картограф","Снайпер","Разведчик","Ремонтник","Техник","Контрабандист","Страж","Охотник","Архивариус","Паразит","Смотритель","Дрон","Киборг","Рейдер","Сталкер","Доктор","Фанатик","Переговорщик","Инженер"];
 type GeneratedKind = Effect["kind"];
-const kinds: GeneratedKind[] = ["damage","heal","transfer","draw","remove","return","boost","delay","own-count","enemy-count","own-heal","guard","curse","payoff","total-count","hand-count","enemy-hand-count","if-own-more","if-own-less","enemy-played-more","enemy-played-less","own-played-more","own-played-less","if-enemy-stability-low","if-own-stability-low"];
+
+// Weighted kind table (weights sum to 101): offense dominates, pure conditionals
+// are a rare garnish so they never crowd a random hand.
+const kindWeights: Array<[GeneratedKind, number]> = [
+  ["damage", 37], ["transfer", 6], ["delay", 5], ["payoff", 4],
+  ["own-count", 3], ["enemy-count", 3], ["enemy-hand-count", 2], ["total-count", 2],
+  ["heal", 11], ["own-heal", 1], ["guard", 2],
+  ["draw", 5], ["remove", 2], ["return", 2], ["boost", 5], ["curse", 2],
+  ["hand-count", 1], ["if-own-more", 1], ["if-own-less", 1],
+  ["enemy-played-more", 1], ["enemy-played-less", 1],
+  ["own-played-more", 1], ["own-played-less", 1],
+  ["if-enemy-stability-low", 1], ["if-own-stability-low", 1],
+];
+const kindPattern: GeneratedKind[] = kindWeights.flatMap(([kind, weight]) =>
+  Array.from({ length: weight }, () => kind),
+);
 const describeGenerated = (kind: GeneratedKind, a: number, n: number): string => ({
   damage: `При розыгрыше: враг теряет ${a} Стабильности.`,
   heal: `При розыгрыше: восстанови ${a} Стабильности.`,
@@ -100,20 +119,79 @@ const describeGenerated = (kind: GeneratedKind, a: number, n: number): string =>
   "if-enemy-stability-low": `Если у врага не больше ${n * 5} Стабильности, он теряет ещё ${a}.`,
   "if-own-stability-low": `Если у тебя не больше ${n * 5} Стабильности, восстанови ${a}.`
 } as Record<GeneratedKind,string>)[kind];
-for (let i=0;i<469;i++) {
-  const baseCost=i%37===0?-2:i%17===0?-1:1+(i%6);
-  const kind: GeneratedKind = baseCost<0 ? (["heal","damage","draw","boost"][i%4] as GeneratedKind) : kinds[i%kinds.length];
-  const threshold=1+(i%3);
-  const openingKind=["damage","heal","transfer","draw","boost","delay","hand-count","enemy-hand-count"].includes(kind);
-  const repeatKind=["damage","heal","own-count","enemy-count","own-heal","guard"].includes(kind);
-  const timing: CardDef["timing"]=baseCost>=0&&i%13===0&&openingKind?"start":baseCost<0||!repeatKind?"play":i%4===0?"end":"play";
-  const cost=baseCost<0?baseCost:timing==="end"?Math.max(baseCost,["own-count","enemy-count","own-heal"].includes(kind)?5:4):kind==="total-count"?Math.max(baseCost,5):["hand-count","enemy-hand-count"].includes(kind)?Math.max(baseCost,4):["own-count","enemy-count","own-heal"].includes(kind)?Math.max(baseCost,3):baseCost;
-  const amount=baseCost<0||timing==="end"||["own-count","enemy-count","own-heal","total-count","hand-count","enemy-hand-count"].includes(kind)?1:(["damage","heal","transfer","payoff","if-own-more","if-own-less","enemy-played-more","enemy-played-less","own-played-more","own-played-less","if-enemy-stability-low","if-own-stability-low"].includes(kind)?1+(i%3):(["draw","remove","return"].includes(kind)?1:(kind==="delay"?2+(i%3):1+(i%2))));
-  const name=adjectives[i%adjectives.length]+" "+nouns[Math.floor(i/adjectives.length)%nouns.length];
-  const id="gen_"+String(i+1).padStart(3,"0");
-  const description=describeGenerated(kind,amount,threshold);
-  const text=timing==="start"?"В начале игры: "+description.replace(/^При розыгрыше: /,""):description;
-  const effect: Effect={kind,amount,...(kind==="payoff"?{min:threshold*5}:{}),...(kind.includes("more")||kind.includes("less")||kind.endsWith("low")?{threshold:kind.endsWith("low")?threshold*5:threshold}:{})};
-  CARDS.push({id,name,cost,text,timing,effect});
+
+const genValue = (kind: GeneratedKind, amount: number, timing: CardDef["timing"]): number => {
+  const a = amount;
+  const end = timing === "end";
+  switch (kind) {
+    case "damage": return end ? a * 2.5 : a;
+    case "heal": return end ? a * 2.5 : a * 0.9;
+    case "transfer": return end ? a * 3 : a * 2;
+    case "own-count": case "enemy-count": return a * 1.5;
+    case "own-heal": return end ? a * 3 : a * 1.6;
+    case "total-count": case "enemy-hand-count": return a * 2;
+    case "hand-count": return a * 1.6;
+    case "draw": return a * 2.2;
+    case "remove": return a * 3.5;
+    case "return": return a * 1.6;
+    case "boost": return a * 1.4;
+    case "delay": return a * 0.8;
+    case "guard": return 3.2;
+    case "curse": return 3.5;
+    case "payoff": return a * 1.5;
+    default: return a * 1.5;
+  }
+};
+
+const openingKinds: GeneratedKind[] = ["damage","heal","transfer","draw","boost","delay","hand-count","enemy-hand-count"];
+const repeatKinds: GeneratedKind[] = ["damage","heal","own-count","enemy-count","own-heal","guard"];
+
+const generatedAmount = (kind: GeneratedKind, i: number, timing: CardDef["timing"]): number => {
+  switch (kind) {
+    case "damage": return timing === "end" ? 2 + (i % 2) : 3 + (i % 3);
+    case "heal": return timing === "end" ? 1 + (i % 3) : 2 + (i % 3);
+    case "transfer": return 2 + (i % 2);
+    case "delay": return 3 + (i % 3);
+    case "payoff": return 3 + (i % 2);
+    case "boost": return 2 + (i % 2);
+    case "draw": case "remove": case "return": return 1 + (i % 2);
+    case "guard": case "curse": return 1;
+    case "own-count": case "enemy-count": case "own-heal":
+    case "total-count": case "enemy-hand-count": case "hand-count":
+      return 1 + (i % 2);
+    default: return 2 + (i % 2);
+  }
+};
+
+for (let i = 0; i < 469; i++) {
+  const negative = i % 37 === 0 || i % 17 === 0;
+  const kind: GeneratedKind = negative
+    ? (["heal","damage","draw","boost"][i % 4] as GeneratedKind)
+    : kindPattern[i % kindPattern.length];
+  const opening = openingKinds.includes(kind);
+  const repeating = repeatKinds.includes(kind);
+  let timing: CardDef["timing"] = "play";
+  if (negative) timing = "play";
+  else if (kind === "guard") timing = "end";
+  else if (opening && i % 31 === 7) timing = "start";
+  else if (repeating && i % 4 === 0) timing = "end";
+  const amount = negative ? 1 : generatedAmount(kind, i, timing);
+  const cost = negative ? (i % 37 === 0 ? -2 : -1) : Math.max(1, Math.round(genValue(kind, amount, timing)));
+  const baseThreshold = 1 + (i % 3);
+  const isLow = kind.endsWith("low");
+  const isLess = kind.includes("less");
+  const isMore = kind.includes("more");
+  const threshold = isLow ? baseThreshold * 5 : isLess ? 2 : isMore ? 1 : baseThreshold;
+  const name = adjectives[i % adjectives.length] + " " + nouns[Math.floor(i / adjectives.length) % nouns.length];
+  const id = "gen_" + String(i + 1).padStart(3, "0");
+  const description = describeGenerated(kind, amount, isMore || isLess ? threshold : baseThreshold);
+  const text = timing === "start" ? "В начале игры: " + description.replace(/^При розыгрыше: /, "") : description;
+  const effect: Effect = {
+    kind,
+    amount,
+    ...(kind === "payoff" ? { min: baseThreshold * 5 } : {}),
+    ...(isMore || isLess || isLow ? { threshold } : {}),
+  };
+  CARDS.push({ id, name, cost, text, timing, effect });
 }
 

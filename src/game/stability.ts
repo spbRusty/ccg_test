@@ -37,11 +37,8 @@ let uid = 1;
 
 const clone = (d: CardDef): Card => ({ ...d, effect: { ...d.effect }, uid: String(uid++), playedRound: 0 });
 
-/** The duel is played with the hand-curated cards only; the generated cards stay a collection. */
-const CURATED = CARDS.filter(card => !card.id.startsWith("gen_"));
-
 function buildDeck(settings: Settings, random: () => number): Card[] {
-  const pool = shuffle(CURATED, random);
+  const pool = shuffle(CARDS, random);
   const deck: Card[] = [];
   for (let i = 0; i < settings.deckSize; i++) deck.push(clone(pool[i % pool.length]));
   return deck;

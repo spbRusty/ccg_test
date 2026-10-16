@@ -542,7 +542,6 @@ function start(): void {
   notice = "Выбери карты и закрой выбор.";
   menu.classList.add("hidden");
   root.classList.remove("menu-empty");
-  if (savedDeck.length) { const cards = savedDeck.slice(0,30).map((id,n) => { const d = CARDS.find(x=>x.id===id) || CARDS[n%CARDS.length]; return {...d,effect:{...d.effect},uid:"custom-"+n+"-"+d.id,playedRound:0} as Card; }); while(cards.length<30) { const d=CARDS[cards.length%CARDS.length]; cards.push({...d,effect:{...d.effect},uid:"custom-"+cards.length+"-"+d.id,playedRound:0} as Card); } game.player.hand=cards.splice(0,5); game.player.deck=cards; }
   applyOpeningEffects(game);
   if (musicVolume>0) { audio(); startMusic(); }
   paint();
