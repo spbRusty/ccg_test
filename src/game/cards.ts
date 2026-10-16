@@ -3,11 +3,14 @@ export type Effect = {
   kind:
     | "damage" | "heal" | "draw" | "remove" | "return" | "boost" | "delay"
     | "own-count" | "enemy-count" | "transfer" | "guard" | "own-heal"
-    | "curse" | "payoff";
+    | "curse" | "payoff" | "total-count" | "hand-count" | "enemy-hand-count"
+    | "if-own-more" | "if-own-less" | "enemy-played-more" | "enemy-played-less"
+    | "own-played-more" | "own-played-less" | "if-enemy-stability-low" | "if-own-stability-low";
   amount: number;
   min?: number;
+  threshold?: number;
 };
-export interface CardDef { id: string; name: string; cost: number; text: string; timing: "play" | "end"; effect: Effect }
+export interface CardDef { id: string; name: string; cost: number; text: string; timing: "start" | "play" | "end"; effect: Effect }
 
 const c = (
   id: string,
@@ -62,4 +65,52 @@ export const CARDS: CardDef[] = [
   c("curse", "Проклятие", 3, "При розыгрыше: враг не восстанавливает Стабильность в этом раунде.", "play", "curse", 1),
   c("payoff", "Отчаянный бросок", 3, "При розыгрыше: −3 врагу. Если твоя Стабильность ниже 8, то −6.", "play", "payoff", 3),
   c("surge", "Натиск", 4, "При розыгрыше: −1 врагу за каждую твою карту на поле.", "play", "own-count", 1),
+
 ];
+
+// Deterministic collection expansion: 30 original + 470 unique cards.
+const adjectives = ["Пыльный","Стальной","Соляной","Ржавый","Сумеречный","Бункерный","Заражённый","Кочевой","Искристый","Забытый","Подземный","Пепельный","Северный","Радиоактивный","Теневой","Механический","Бродячий","Закалённый","Сломанный","Последний"];
+const nouns = ["Мародёр","Хранитель","Механик","Следопыт","Синоптик","Диверсант","Сборщик","Проводник","Сапёр","Курьер","Шаман","Картограф","Снайпер","Разведчик","Ремонтник","Техник","Контрабандист","Страж","Охотник","Архивариус","Паразит","Смотритель","Дрон","Киборг","Рейдер","Сталкер","Доктор","Фанатик","Переговорщик","Инженер"];
+type GeneratedKind = Effect["kind"];
+const kinds: GeneratedKind[] = ["damage","heal","transfer","draw","remove","return","boost","delay","own-count","enemy-count","own-heal","guard","curse","payoff","total-count","hand-count","enemy-hand-count","if-own-more","if-own-less","enemy-played-more","enemy-played-less","own-played-more","own-played-less","if-enemy-stability-low","if-own-stability-low"];
+const describeGenerated = (kind: GeneratedKind, a: number, n: number): string => ({
+  damage: `При розыгрыше: враг теряет ${a} Стабильности.`,
+  heal: `При розыгрыше: восстанови ${a} Стабильности.`,
+  transfer: `При розыгрыше: перенеси ${a} Стабильности от врага к себе.`,
+  draw: `При розыгрыше: возьми ${a} карту(ы).`,
+  remove: `При розыгрыше: уничтожь ${a} старую карту противника.`,
+  return: `При розыгрыше: верни ${a} старую карту с поля в руку.`,
+  boost: `Следующая карта в этом раунде получает +${a} к эффекту.`,
+  delay: `В начале следующего раунда враг теряет ${a} Стабильности.`,
+  "own-count": `Враг теряет ${a} Стабильности за каждую твою карту на поле.`,
+  "enemy-count": `Враг теряет ${a} Стабильности за каждую свою карту на поле.`,
+  "own-heal": `Восстанови ${a} Стабильности за каждую свою карту на поле.`,
+  guard: "Поглощает первый входящий удар в следующем раунде.",
+  curse: "В этом раунде противник не может восстановить Стабильность.",
+  payoff: `Враг теряет ${a}; если твоя Стабильность ниже ${n * 5}, урон удваивается.`,
+  "total-count": `Враг теряет ${a} за каждую карту на обоих полях.`,
+  "hand-count": `Восстанови ${a} Стабильности за каждую карту в твоей руке.`,
+  "enemy-hand-count": `Враг теряет ${a} за каждую карту в его руке.`,
+  "if-own-more": `Если на твоём поле больше карт, враг теряет ${a} Стабильности.`,
+  "if-own-less": `Если на твоём поле меньше карт, враг теряет ${a} Стабильности.`,
+  "enemy-played-more": `Если в этом раунде противник разыграл больше ${n} карт, он теряет ${a} Стабильности.`,
+  "enemy-played-less": `Если в этом раунде противник разыграл меньше ${n} карт, он теряет ${a} Стабильности.`,
+  "own-played-more": `Если ты разыграл больше ${n} карт в этом раунде, враг теряет ${a} Стабильности.`,
+  "own-played-less": `Если ты разыграл меньше ${n} карт в этом раунде, враг теряет ${a} Стабильности.`,
+  "if-enemy-stability-low": `Если у врага не больше ${n * 5} Стабильности, он теряет ещё ${a}.`,
+  "if-own-stability-low": `Если у тебя не больше ${n * 5} Стабильности, восстанови ${a}.`
+} as Record<GeneratedKind,string>)[kind];
+for (let i=0;i<470;i++) {
+  const kind=kinds[i%kinds.length], threshold=1+(i%3);
+  const cost=i%37===0?-2:i%17===0?-1:1+(i%6);
+  const amount=cost<0?1:(["damage","heal","transfer","payoff","if-own-more","if-own-less","enemy-played-more","enemy-played-less","own-played-more","own-played-less","if-enemy-stability-low","if-own-stability-low"].includes(kind)?1+(i%3):(["draw","remove","return"].includes(kind)?1:(kind==="delay"?2+(i%3):1+(i%2))));
+  const openingKind=["damage","heal","transfer","draw","boost","delay","hand-count","enemy-hand-count"].includes(kind);
+  const timing: CardDef["timing"]=cost>=0&&i%13===0&&openingKind?"start":cost<0?"play":i%4===0?"end":"play";
+  const name=adjectives[i%adjectives.length]+" "+nouns[Math.floor(i/adjectives.length)%nouns.length];
+  const id="gen_"+String(i+1).padStart(3,"0");
+  const description=describeGenerated(kind,amount,threshold);
+  const text=timing==="start"?"В начале игры: "+description.replace(/^При розыгрыше: /,""):description;
+  const effect: Effect={kind,amount,...(kind==="payoff"?{min:threshold*5}:{}),...(kind.includes("more")||kind.includes("less")||kind.endsWith("low")?{threshold:kind.endsWith("low")?threshold*5:threshold}:{})};
+  CARDS.push({id,name,cost,text,timing,effect});
+}
+
