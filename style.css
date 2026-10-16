@@ -1070,3 +1070,58 @@ input, select, textarea { -webkit-user-select: text; user-select: text; }
   .hand-grid { gap: 4px !important; }
   .hand-copy { padding: 4px !important; }
 }
+
+
+/* Mobile: fan-shaped hand, taller cards, and a scrollable deck builder. */
+@media (max-width: 720px) {
+  .center-column { grid-template-rows: minmax(112px, .95fr) auto minmax(112px, .95fr) minmax(190px, 1.75fr) auto !important; }
+  .center-column > .board { min-height: 112px !important; }
+  .hand-section { min-height: 190px !important; overflow: visible !important; }
+  .hand-grid {
+    display:flex !important; align-items:flex-end !important; flex-wrap:nowrap !important;
+    justify-content:flex-start !important; gap:0 !important;
+    min-height:clamp(190px,31dvh,270px) !important; height:clamp(190px,31dvh,270px) !important;
+    overflow-x:auto !important; overflow-y:hidden !important; overscroll-behavior-x:contain;
+    -webkit-overflow-scrolling:touch; padding:24px 18px 8px !important; scroll-snap-type:x proximity;
+  }
+  .hand-card {
+    position:relative !important; flex:0 0 clamp(112px,29vw,145px) !important;
+    width:clamp(112px,29vw,145px) !important; height:clamp(165px,26dvh,225px) !important;
+    min-height:clamp(165px,26dvh,225px) !important; margin-left:clamp(-38px,-8vw,-24px) !important;
+    transform:rotate(var(--fan-angle,0deg)) translateY(var(--fan-lift,0px)) !important;
+    transform-origin:bottom center !important; scroll-snap-align:center; z-index:var(--fan-order,0); touch-action:pan-x;
+  }
+  .hand-card:first-child { margin-left:0 !important; }
+  .hand-card.previewing,.hand-card.chosen,.hand-card:focus-visible { z-index:100 !important; transform:translateY(-20px) scale(1.12) !important; border-color:#e8c17c !important; }
+  .hand-art-wrap { display:block !important; flex:0 0 46% !important; height:46% !important; }
+  .hand-art-wrap .card-art { width:100% !important; height:100% !important; object-fit:cover !important; }
+  .hand-copy { flex:1 1 auto !important; min-height:0 !important; padding:6px !important; gap:5px !important; }
+  .hand-copy header { align-items:flex-start !important; gap:4px !important; }
+  .hand-copy .cost { width:20px !important; height:20px !important; flex-basis:20px !important; }
+  .hand-copy header strong { font-size:clamp(9px,2.6vw,12px) !important; line-height:1.15 !important; }
+  .hand-copy > span { font-size:clamp(7px,2vw,9px) !important; line-height:1.25 !important; -webkit-line-clamp:4 !important; }
+  .menu-shell { height:100dvh !important; min-height:0 !important; overflow:hidden !important; display:flex !important; flex-direction:column !important; }
+  .menu-content { flex:1 1 auto !important; min-height:0 !important; overflow-y:auto !important; overflow-x:hidden !important; -webkit-overflow-scrolling:touch; padding:12px 0 28px !important; }
+  .deck-builder { display:flex !important; flex-direction:column !important; min-height:0 !important; gap:12px !important; }
+  .deck-builder .deck-section { flex:0 0 auto !important; }
+  .deck-grid { grid-template-columns:repeat(5,minmax(0,1fr)) !important; grid-auto-rows:112px !important; max-height:36dvh !important; overflow-y:auto !important; overflow-x:hidden !important; touch-action:pan-y !important; }
+  .deck-cell { height:112px !important; min-height:0 !important; }
+  .deck-builder .collection-section { min-height:0 !important; }
+  .deck-builder .collection-grid {
+    display:grid !important; grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+    grid-auto-rows:172px !important; max-height:none !important; height:auto !important;
+    overflow-x:hidden !important; overflow-y:visible !important; gap:7px !important;
+    padding:4px 2px 24px !important; touch-action:pan-y !important;
+  }
+  .deck-builder .collection-grid .deck-card { width:100% !important; height:172px !important; min-height:172px !important; flex:initial !important; cursor:pointer !important; touch-action:manipulation !important; }
+  .deck-card { touch-action:manipulation !important; }
+  .deck-page-heading { align-items:flex-start !important; }
+}
+@media (max-width: 390px) {
+  .center-column { grid-template-rows:minmax(104px,.9fr) auto minmax(104px,.9fr) minmax(184px,1.7fr) auto !important; }
+  .hand-section { min-height:184px !important; }
+  .hand-grid { min-height:184px !important; height:184px !important; padding-left:13px !important; padding-right:13px !important; }
+  .hand-card { flex-basis:116px !important; width:116px !important; height:160px !important; min-height:160px !important; }
+  .deck-builder .collection-grid { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
+  .deck-grid { grid-template-columns:repeat(4,minmax(0,1fr)) !important; }
+}
