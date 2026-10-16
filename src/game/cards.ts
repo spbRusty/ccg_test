@@ -102,10 +102,12 @@ const describeGenerated = (kind: GeneratedKind, a: number, n: number): string =>
 } as Record<GeneratedKind,string>)[kind];
 for (let i=0;i<470;i++) {
   const kind=kinds[i%kinds.length], threshold=1+(i%3);
-  const cost=i%37===0?-2:i%17===0?-1:1+(i%6);
-  const amount=cost<0?1:(["damage","heal","transfer","payoff","if-own-more","if-own-less","enemy-played-more","enemy-played-less","own-played-more","own-played-less","if-enemy-stability-low","if-own-stability-low"].includes(kind)?1+(i%3):(["draw","remove","return"].includes(kind)?1:(kind==="delay"?2+(i%3):1+(i%2))));
+  const baseCost=i%37===0?-2:i%17===0?-1:1+(i%6);
   const openingKind=["damage","heal","transfer","draw","boost","delay","hand-count","enemy-hand-count"].includes(kind);
-  const timing: CardDef["timing"]=cost>=0&&i%13===0&&openingKind?"start":cost<0?"play":i%4===0?"end":"play";
+  const repeatKind=["damage","heal","own-count","enemy-count","own-heal","guard"].includes(kind);
+  const timing: CardDef["timing"]=baseCost>=0&&i%13===0&&openingKind?"start":baseCost<0||!repeatKind?"play":i%4===0?"end":"play";
+  const cost=baseCost<0?baseCost:timing==="end"?Math.max(baseCost,["own-count","enemy-count","own-heal"].includes(kind)?5:4):kind==="total-count"?Math.max(baseCost,5):["hand-count","enemy-hand-count"].includes(kind)?Math.max(baseCost,4):["own-count","enemy-count","own-heal"].includes(kind)?Math.max(baseCost,3):baseCost;
+  const amount=baseCost<0||timing==="end"||["own-count","enemy-count","own-heal","total-count","hand-count","enemy-hand-count"].includes(kind)?1:(["damage","heal","transfer","payoff","if-own-more","if-own-less","enemy-played-more","enemy-played-less","own-played-more","own-played-less","if-enemy-stability-low","if-own-stability-low"].includes(kind)?1+(i%3):(["draw","remove","return"].includes(kind)?1:(kind==="delay"?2+(i%3):1+(i%2))));
   const name=adjectives[i%adjectives.length]+" "+nouns[Math.floor(i/adjectives.length)%nouns.length];
   const id="gen_"+String(i+1).padStart(3,"0");
   const description=describeGenerated(kind,amount,threshold);
