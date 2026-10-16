@@ -33,19 +33,13 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - name: Build game
         run: npm run build
-      - name: Generate legacy card balance audit
-        run: npm run balance:audit
-      - name: Run legacy card simulation smoke test
-        run: npm run balance:simulate -- 1000 1
       - name: Run Stability simulation smoke test
         run: npm run stability:simulate -- 1000 1
-      - name: Upload balance reports
+      - name: Upload Stability report
         uses: actions/upload-artifact@v4
         with:
-          name: card-balance-reports
-          path: |
-            reports/card-balance-*.*
-            reports/stability-simulation.*
+          name: stability-report
+          path: reports/stability-simulation.*
           if-no-files-found: error
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
