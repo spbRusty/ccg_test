@@ -28,8 +28,8 @@ describe("Expanded collection and mechanics", () => {
   });
 
   it("calculates damage from the total number of cards on both fields", () => {
-    const game = createGame({}, () => 0.5);
-    const def = CARDS.find(item => item.effect.kind === "total-count" && item.timing === "play")!;
+    const game = createGame({ startStability: 30 }, () => 0.5);
+    const def = CARDS.find(item => item.effect.kind === "total-count" && item.timing === "play")!
     const attacker = { ...def, effect: { ...def.effect }, uid: "total-count-test", playedRound: 0 } as Card;
     game.player.hand = [attacker];
     game.enemy.hand = [card("map", "total-count-target")];
@@ -38,12 +38,12 @@ describe("Expanded collection and mechanics", () => {
     commit(game, "player");
     commit(game, "enemy");
     resolveRound(game, () => 0.5);
-    expect(game.enemy.stability).toBe(30 - 2 * attacker.effect.amount);
+    expect(game.enemy.stability).toBe(30 - 1 - 2 * attacker.effect.amount);
   });
 
   it("checks how many cards the opponent committed this round", () => {
-    const game = createGame({}, () => 0.5);
-    const def = CARDS.find(item => item.effect.kind === "enemy-played-more" && item.effect.threshold === 1 && item.timing === "play")!;
+    const game = createGame({ startStability: 30 }, () => 0.5);
+    const def = CARDS.find(item => item.effect.kind === "enemy-played-more" && item.effect.threshold === 1 && item.timing === "play")!
     const attacker = { ...def, effect: { ...def.effect }, uid: "enemy-play-count-test", playedRound: 0 } as Card;
     game.player.hand = [attacker];
     game.enemy.hand = [card("map", "enemy-map-1"), card("map", "enemy-map-2")];
@@ -53,12 +53,12 @@ describe("Expanded collection and mechanics", () => {
     commit(game, "player");
     commit(game, "enemy");
     resolveRound(game, () => 0.5);
-    expect(game.enemy.stability).toBe(30 - attacker.effect.amount);
+    expect(game.enemy.stability).toBe(30 - 2 - attacker.effect.amount);
   });
 
   it("resolves cards marked for the start of the game", () => {
-    const game = createGame({}, () => 0.5);
-    const def = CARDS.find(item => item.timing === "start" && item.effect.kind === "damage")!;
+    const game = createGame({ startStability: 30 }, () => 0.5);
+    const def = CARDS.find(item => item.timing === "start" && item.effect.kind === "damage")!
     const opening = { ...def, effect: { ...def.effect }, uid: "opening-test", playedRound: 0 } as Card;
     game.player.hand = [opening];
     game.player.deck = [];
