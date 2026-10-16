@@ -785,34 +785,36 @@ input, select, textarea { -webkit-user-select: text; user-select: text; }
   color:#e3e8e1; font-size:clamp(8px,.65vw,10px); line-height:1.3;
   text-shadow:0 1px 4px #000;
 }
+/* Collection below the deck: a normal vertical-scrolling grid (was a horizontal strip). */
 .deck-builder .collection-grid {
-  display:flex !important;
-  flex-wrap:nowrap !important;
+  display:grid !important;
+  grid-template-columns:repeat(6,minmax(0,1fr)) !important;
+  grid-auto-rows:196px !important;
   gap:10px !important;
-  max-height:none !important;
-  overflow-x:auto !important;
-  overflow-y:hidden !important;
+  max-height:56vh !important;
+  overflow-x:hidden !important;
+  overflow-y:auto !important;
   padding:8px 5px 16px !important;
-  align-content:stretch !important;
-  scroll-snap-type:x proximity;
+  align-content:start !important;
   scrollbar-width:thin;
 }
 .deck-builder .collection-grid .deck-card {
-  flex:0 0 142px !important;
-  width:142px !important;
+  flex:initial !important;
+  width:100% !important;
+  min-width:0 !important;
   height:196px !important;
-  scroll-snap-align:start;
 }
 .deck-drop-target { border-color:#a2f4cb !important; background:#214a3a !important; box-shadow:0 0 0 2px #a2f4cb55; }
 @media (max-width:800px) {
   .deck-grid { grid-template-columns:repeat(4,minmax(0,1fr)) !important; max-height:38vh !important; grid-auto-rows:158px !important; }
   .deck-cell { height:158px !important; }
-  .deck-builder .collection-grid .deck-card { flex-basis:126px !important; width:126px !important; height:178px !important; }
+  .deck-builder .collection-grid { grid-template-columns:repeat(4,minmax(0,1fr)) !important; grid-auto-rows:178px !important; max-height:48vh !important; }
+  .deck-builder .collection-grid .deck-card { height:178px !important; }
 }
 @media (max-width:480px) {
   .deck-grid { grid-template-columns:repeat(3,minmax(0,1fr)) !important; grid-auto-rows:150px !important; }
   .deck-cell { height:150px !important; }
-  .deck-builder .collection-grid .deck-card { flex-basis:116px !important; width:116px !important; height:166px !important; }
+  .deck-builder .collection-grid .deck-card { height:166px !important; }
 }
 
 
