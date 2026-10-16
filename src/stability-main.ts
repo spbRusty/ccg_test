@@ -80,13 +80,13 @@ function handCard(card: Card, unplayable = false, fanIndex = 0, fanCount = 1): s
   const fanStyle = `--fan-angle:${(offset * 4.2).toFixed(1)}deg;--fan-lift:${(Math.abs(offset) * 3).toFixed(1)}px;--fan-order:${fanIndex};`;
   return '<button type="button" draggable="true" class="hand-card' + chosen + '" data-id="' + esc(card.uid) + '" style="' + fanStyle + '" aria-label="' + esc(cardName(card)) + '">' +
     '<span class="hand-art-wrap">' + art(card) + '</span>' +
-    '<span class="hand-copy"><header><b class="cost">' + card.cost + '</b><strong>' + esc(cardName(card)) + '</strong></header><span>' + esc(cardText(card)) + '</span></span></button>';
+    '<span class="hand-copy"><header><b class="cost">' + costLabel(card.cost) + '</b><strong>' + esc(cardName(card)) + '</strong></header><span>' + esc(cardText(card)) + '</span></span></button>';
 }
 function boardSlot(card: Card | null, own: boolean, index: number, pending = false): string {
   if (!card) return '<div class="slot empty ' + (own ? 'own-empty' : '') + '" data-slot-index="' + index + '"><span class="slot-plus">＋</span><small>СВОБОДНО</small></div>';
   return '<button type="button" draggable="false" class="slot filled ' + (own ? "own" : "enemy") + (pending ? " pending-slot" : "") + '" data-card-id="' + esc(card.uid) + '" data-side="' + (own ? "player" : "enemy") + '" data-slot-index="' + index + '" ' +
     (own && !pending ? 'data-r="' + esc(card.uid) + '"' : own ? "" : "disabled") + '>' +
-    art(card, "slot-art") + '<span class="slot-copy"><header><b class="slot-cost">' + card.cost + '</b><strong>' + esc(cardName(card)) + '</strong></header><small>' + esc(cardText(card)) + '</small></span></button>';
+    art(card, "slot-art") + '<span class="slot-copy"><header><b class="slot-cost">' + costLabel(card.cost) + '</b><strong>' + esc(cardName(card)) + '</strong></header><small>' + esc(cardText(card)) + '</small></span></button>';
 }
 function statusPanel(label: string, value: number, own: boolean, tail: string): string {
   const width = Math.max(0, Math.min(100, value / 60 * 100));
