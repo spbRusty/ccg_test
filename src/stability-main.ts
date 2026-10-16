@@ -26,7 +26,7 @@ let returnDragOffsetX = 0;
 let returnDragOffsetY = 0;
 
 type Language="ru"|"en"; let language:Language=(localStorage.getItem("stability-language") as Language)||"ru";
-let startStability:15|20|30=30; let maxPlaysSetting:0|2=0;
+let startStability:15|20|30|40=40; let maxPlaysSetting:0|2=0;
 let currentPage="home"; let savedDeck:string[]=JSON.parse(localStorage.getItem("stability-deck")||"[]");
 let soundVolume=Number(localStorage.getItem("stability-sound-volume")??".55"),musicVolume=Number(localStorage.getItem("stability-music-volume")??".16"); let soundEnabled=soundVolume>0;
 let audioContext:AudioContext|null=null,musicTimer=0,musicStep=0;
@@ -51,7 +51,7 @@ if(page==="settings")body='<button class="back-button" data-page="home">← '+(r
 if(page==="collection")body='<button class="back-button" data-page="home">← '+(ru?"В ГЛАВНОЕ МЕНЮ":"MAIN MENU")+'</button><h2>'+(ru?"КОЛЛЕКЦИЯ":"COLLECTION")+'</h2><p>'+(ru?"Все карты игры":"All game cards")+' · '+CARDS.length+'</p><div class="collection-grid">'+CARDS.map(d=>mini(d.id,false)).join("")+'</div>';
 if(page==="decks")body='<button class="back-button" data-page="home">← '+(ru?"В ГЛАВНОЕ МЕНЮ":"MAIN MENU")+'</button><div class="deck-page-heading"><div><h2>'+(ru?"КОЛЛЕКЦИЯ И КОЛОДЫ":"COLLECTION & DECKS")+'</h2><p>'+(ru?"Перетаскивай карты из коллекции в колоду или нажимай на них.":"Drag or click cards to add them to your deck.")+'</p></div><button id="clear-deck" class="back-button">'+(ru?"ОЧИСТИТЬ":"CLEAR")+'</button></div><div class="deck-builder"><section class="deck-section"><h3>'+(ru?"ТВОЯ КОЛОДА":"YOUR DECK")+' <span>'+savedDeck.length+'/30</span></h3><div class="deck-grid">'+Array.from({length:30},(_,n)=>savedDeck[n]?'<div class="deck-cell filled" data-deck-slot="'+n+'">'+mini(savedDeck[n],false)+'</div>':'<div class="deck-cell" data-deck-slot="'+n+'">＋</div>').join("")+'</div></section><section class="collection-section"><h3>'+(ru?"КОЛЛЕКЦИЯ":"COLLECTION")+'</h3><div class="collection-grid">'+CARDS.map(d=>mini(d.id,!isTouch)).join("")+'</div></section></div>';
 menu.innerHTML='<div class="menu-shell"><header class="menu-top"><button class="menu-brand" data-page="home"><span>S</span>'+title+'</button><button class="language-shortcut" data-page="settings">'+(ru?"RU / EN":"EN / RU")+'</button></header><main class="menu-content">'+body+'</main></div>';document.documentElement.lang=language;document.title=ru?"Стабильность — карточная дуэль":"Stability — card duel";
-menu.querySelectorAll<HTMLElement>("[data-page]").forEach(el=>el.addEventListener("click",()=>{if(el.dataset.page==="single"){startStability=30;maxPlaysSetting=0;saveSettings();start();return;}renderMenu(el.dataset.page!);}));
+menu.querySelectorAll<HTMLElement>("[data-page]").forEach(el=>el.addEventListener("click",()=>{if(el.dataset.page==="single"){startStability=40;maxPlaysSetting=0;saveSettings();start();return;}renderMenu(el.dataset.page!);}));
 menu.querySelector<HTMLSelectElement>("#language-select")?.addEventListener("change",e=>{language=(e.target as HTMLSelectElement).value as Language;saveSettings();renderMenu("settings")});
 
 menu.querySelector<HTMLInputElement>("#sound-volume")?.addEventListener("input",e=>{soundVolume=Number((e.target as HTMLInputElement).value);soundEnabled=soundVolume>0;const o=menu.querySelector<HTMLOutputElement>("#sound-value");if(o)o.value=Math.round(soundVolume*100)+"%";saveSettings();if(soundVolume)playCardSound()});
@@ -529,9 +529,9 @@ function paint(): void {
   };
 }
 function start(): void {
-  const stability = 30;
+  const stability = 40;
   const maxPlays = 0;
-  startStability = 30;
+  startStability = 40;
   maxPlaysSetting = 0;
   settings = { startStability: stability, maxPlays, handLimit: 6, deckSize: 30 };
   game = createGame(settings);

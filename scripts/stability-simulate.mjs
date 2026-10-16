@@ -7,6 +7,8 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const reportDir = resolve(root, "reports");
 const matches = Math.max(1, Math.min(100000, Number.parseInt(process.argv[2] || "1000", 10) || 1000));
 const firstSeed = Number.parseInt(process.argv[3] || "1", 10) || 1;
+const startStability = Number.parseInt(process.argv[4] || "40", 10) || 40;
+const maxPlays = Number.parseInt(process.argv[5] || "0", 10) === 2 ? 2 : 0;
 const maxRounds = 100;
 
 function makeRandom(seed) {
@@ -41,7 +43,7 @@ for (let i = 0; i < matches; i++) {
     player: makeRandom(seed ^ 0x9e3779b9),
     enemy: makeRandom(seed ^ 0x85ebca6b),
   };
-  const game = createGame({}, random);
+  const game = createGame({ startStability, maxPlays }, random);
   while (!game.winner && game.round <= maxRounds) {
     const otherResolver = game.firstResolver === "player" ? "enemy" : "player";
     const order = game.round % 2 === 1 ? [game.firstResolver, otherResolver] : [otherResolver, game.firstResolver];
@@ -81,6 +83,8 @@ const markdown = [
   "",
   "- Матчей: **" + matches + "**",
   "- Начальный seed: **" + firstSeed + "**",
+  "- Стартовая Стабильность: **" + startStability + "**",
+  "- Лимит карт за раунд: **" + (maxPlays || "нет") + "**",
   "- Лимит матча: **" + maxRounds + " раундов**",
   "- При Стабильности выше 8 ИИ сохраняет резерв 35% (от 3 до 6); при 8 и ниже оставляет минимум 1.",
   "- Победы первого игрока: **" + count("player") + " (" + pct(count("player")) + ")**",

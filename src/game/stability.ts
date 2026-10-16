@@ -18,7 +18,7 @@ export interface Player {
   swapUsed: boolean;
 }
 
-export interface Settings { startStability: 15 | 20 | 30; maxPlays: 0 | 2; handLimit: number; deckSize: number }
+export interface Settings { startStability: 15 | 20 | 30 | 40; maxPlays: 0 | 2; handLimit: number; deckSize: number }
 
 export interface Game {
   round: number;
@@ -36,6 +36,16 @@ const LOW_STABILITY = 8;
 let uid = 1;
 
 const clone = (d: CardDef): Card => ({ ...d, effect: { ...d.effect }, uid: String(uid++), playedRound: 0 });
+
+/** The duel is played with the hand-curated cards only; the generated cards stay a collection. */
+const CURATED = CARDS.filter(card => !card.id.startsWith("gen_"));
+
+function buildDeck(settings: Settings, random: () => number): Card[] {
+  const pool = shuffle(CURATED, random);
+  const deck: Card[] = [];
+  for (let i = 0; i < settings.deckSize; i++) deck.push(clone(pool[i % pool.length]));
+  return deck;
+}
 
 function shuffle<T>(items: T[], random: () => number): T[] {
   const a = [...items];
@@ -58,7 +68,7 @@ function newPlayer(settings: Settings, random: () => number): Player {
   return {
     stability: settings.startStability,
     hand: [],
-    deck: shuffle(CARDS, random).slice(0, settings.deckSize).map(clone),
+    deck: buildDeck(settings, random),
     discard: [],
     board: Array(6).fill(null),
     committed: [],
