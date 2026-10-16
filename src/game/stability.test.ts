@@ -1,12 +1,75 @@
 import { describe, expect, it } from "vitest";
 import { CARDS } from "./cards";
-import { aiCommit, commit, createGame, resolveRound, selectCard, swapCard, type Card } from "./stability";
+import { aiCommit, applyOpeningEffects, commit, createGame, resolveRound, selectCard, swapCard, type Card } from "./stability";
 
 function card(id: string, uid: string): Card {
   const def = CARDS.find((item) => item.id === id);
   if (!def) throw new Error("Unknown test card: " + id);
   return { ...def, effect: { ...def.effect }, uid, playedRound: 0 };
 }
+
+describe("Expanded collection and mechanics", () => {
+  it("contains exactly 500 cards with unique IDs", () => {
+    expect(CARDS).toHaveLength(500);
+    expect(new Set(CARDS.map(item => item.id)).size).toBe(500);
+  });
+
+  it("supports negative costs and refunds the exact amount when a choice is cancelled", () => {
+    const game = createGame({}, () => 0.5);
+    const def = CARDS.find(item => item.cost < 0 && item.timing === "play");
+    if (!def) throw new Error("No negative-cost card in collection");
+    const chosen = { ...def, effect: { ...def.effect }, uid: "negative-cost-test", playedRound: 0 } as Card;
+    game.player.hand = [chosen];
+    game.player.stability = 20;
+    expect(selectCard(game, "player", chosen.uid).ok).toBe(true);
+    expect(game.player.stability).toBe(20 - chosen.cost);
+    expect(selectCard(game, "player", chosen.uid).ok).toBe(true);
+    expect(game.player.stability).toBe(20);
+  });
+
+  it("calculates damage from the total number of cards on both fields", () => {
+    const game = createGame({}, () => 0.5);
+    const def = CARDS.find(item => item.effect.kind === "total-count" && item.timing === "play")!;
+    const attacker = { ...def, effect: { ...def.effect }, uid: "total-count-test", playedRound: 0 } as Card;
+    game.player.hand = [attacker];
+    game.enemy.hand = [card("map", "total-count-target")];
+    expect(selectCard(game, "player", attacker.uid).ok).toBe(true);
+    expect(selectCard(game, "enemy", "total-count-target").ok).toBe(true);
+    commit(game, "player");
+    commit(game, "enemy");
+    resolveRound(game, () => 0.5);
+    expect(game.enemy.stability).toBe(30 - 2 * attacker.effect.amount);
+  });
+
+  it("checks how many cards the opponent committed this round", () => {
+    const game = createGame({}, () => 0.5);
+    const def = CARDS.find(item => item.effect.kind === "enemy-played-more" && item.effect.threshold === 1 && item.timing === "play")!;
+    const attacker = { ...def, effect: { ...def.effect }, uid: "enemy-play-count-test", playedRound: 0 } as Card;
+    game.player.hand = [attacker];
+    game.enemy.hand = [card("map", "enemy-map-1"), card("map", "enemy-map-2")];
+    expect(selectCard(game, "player", attacker.uid).ok).toBe(true);
+    expect(selectCard(game, "enemy", "enemy-map-1").ok).toBe(true);
+    expect(selectCard(game, "enemy", "enemy-map-2").ok).toBe(true);
+    commit(game, "player");
+    commit(game, "enemy");
+    resolveRound(game, () => 0.5);
+    expect(game.enemy.stability).toBe(30 - attacker.effect.amount);
+  });
+
+  it("resolves cards marked for the start of the game", () => {
+    const game = createGame({}, () => 0.5);
+    const def = CARDS.find(item => item.timing === "start" && item.effect.kind === "damage")!;
+    const opening = { ...def, effect: { ...def.effect }, uid: "opening-test", playedRound: 0 } as Card;
+    game.player.hand = [opening];
+    game.player.deck = [];
+    game.enemy.hand = [];
+    game.enemy.deck = [];
+    applyOpeningEffects(game, () => 0.5);
+    expect(game.enemy.stability).toBe(30 - opening.effect.amount);
+    expect(game.player.hand).not.toContain(opening);
+    expect(game.log.some(line => line.includes("Начало игры"))).toBe(true);
+  });
+});
 
 describe("Stability rules", () => {
   it("starts with five cards, six slots, and configured Stability", () => {
