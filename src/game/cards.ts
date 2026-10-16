@@ -101,8 +101,9 @@ const describeGenerated = (kind: GeneratedKind, a: number, n: number): string =>
   "if-own-stability-low": `Если у тебя не больше ${n * 5} Стабильности, восстанови ${a}.`
 } as Record<GeneratedKind,string>)[kind];
 for (let i=0;i<469;i++) {
-  const kind=kinds[i%kinds.length], threshold=1+(i%3);
   const baseCost=i%37===0?-2:i%17===0?-1:1+(i%6);
+  const kind: GeneratedKind = baseCost<0 ? (["heal","damage","draw","boost"][i%4] as GeneratedKind) : kinds[i%kinds.length];
+  const threshold=1+(i%3);
   const openingKind=["damage","heal","transfer","draw","boost","delay","hand-count","enemy-hand-count"].includes(kind);
   const repeatKind=["damage","heal","own-count","enemy-count","own-heal","guard"].includes(kind);
   const timing: CardDef["timing"]=baseCost>=0&&i%13===0&&openingKind?"start":baseCost<0||!repeatKind?"play":i%4===0?"end":"play";
