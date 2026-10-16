@@ -100,7 +100,7 @@ const describeGenerated = (kind: GeneratedKind, a: number, n: number): string =>
   "if-enemy-stability-low": `Если у врага не больше ${n * 5} Стабильности, он теряет ещё ${a}.`,
   "if-own-stability-low": `Если у тебя не больше ${n * 5} Стабильности, восстанови ${a}.`
 } as Record<GeneratedKind,string>)[kind];
-for (let i=0;i<470;i++) {
+for (let i=0;i<469;i++) {
   const kind=kinds[i%kinds.length], threshold=1+(i%3);
   const baseCost=i%37===0?-2:i%17===0?-1:1+(i%6);
   const openingKind=["damage","heal","transfer","draw","boost","delay","hand-count","enemy-hand-count"].includes(kind);
