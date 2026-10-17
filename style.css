@@ -1463,3 +1463,13 @@ button:focus-visible {
   .menu-nav button, .menu-nav button.featured { min-height: 52px; padding: 12px 14px; }
   .menu-foot { padding: 0; }
 }
+
+
+/* Keep every start-menu action in one vertical column on desktop and mobile. */
+.menu-nav {
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 12px !important;
+}
+.menu-nav button.featured {
+  grid-column: auto !important;
+}
