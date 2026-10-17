@@ -1386,3 +1386,80 @@ button:focus-visible {
   .hand-card::after, .slot::before { animation: none !important; }
   .slot, .hand-card, .quiet-button, .primary-button, .archive-card { transition: none !important; }
 }
+
+
+/* Start menu spacing: one consistent rhythm across the featured and secondary actions. */
+.menu-content {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: clamp(20px, 3vh, 32px);
+}
+.menu-hero {
+  padding: clamp(18px, 4vh, 44px) 0 0;
+  margin: 0;
+}
+.menu-hero h1 { margin: 12px 0 10px; }
+.menu-hero p { margin: 8px 0 0; line-height: 1.55; }
+.menu-nav {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  align-items: stretch;
+}
+.menu-nav button,
+.menu-nav button.featured {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 62px;
+  margin: 0 !important;
+  padding: 16px 18px;
+  border-radius: 6px;
+  line-height: 1.35;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  transition: transform .18s cubic-bezier(.2,.8,.2,1), border-color .18s, background .18s, box-shadow .18s;
+}
+.menu-nav button.featured {
+  min-height: 68px;
+  grid-column: 1 / -1;
+}
+.menu-nav button:not(.featured):hover {
+  transform: translateY(-2px);
+  border-color: #83dfff;
+  background: linear-gradient(135deg,#203541,#14212b);
+  box-shadow: 0 8px 20px #0005, 0 0 0 1px #83dfff18;
+}
+.menu-nav button.featured:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px #70f2b233, 0 0 0 1px #baffd955;
+}
+.menu-foot {
+  margin: 0;
+  padding: 0 0 8px;
+  line-height: 1.5;
+}
+@media (max-width: 480px) {
+  .menu-content { gap: 20px; padding: 18px 0 12px; }
+  .menu-hero { padding-top: 12px; }
+  .menu-nav { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .menu-nav button, .menu-nav button.featured {
+    grid-column: auto;
+    min-height: 56px;
+    padding: 14px 16px;
+  }
+  .menu-nav button.featured { min-height: 62px; }
+  .menu-foot { padding-bottom: 4px; }
+}
+@media (max-height: 700px) {
+  .menu-content { gap: 14px; padding-top: 12px; padding-bottom: 10px; }
+  .menu-hero { padding-top: 6px; }
+  .menu-emblem { width: 58px; height: 58px; margin-bottom: 12px; font-size: 34px; }
+  .menu-hero h1 { font-size: clamp(30px, 5vw, 52px); margin: 8px 0; }
+  .menu-nav { gap: 10px; }
+  .menu-nav button, .menu-nav button.featured { min-height: 52px; padding: 12px 14px; }
+  .menu-foot { padding: 0; }
+}
