@@ -596,19 +596,9 @@ body {
 }
 
 
-/* Battlefield card sizing: fill each row without oversized cards or dead space. */
-.battle-screen,
-.battle-columns,
-.arena,
-.side-row,
-.field-row,
-.hand-panel,
-.hand-cards { min-width: 0; }
-.arena {
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
+/* Final battlefield sizing: readable cards, with no oversized empty slots. */
+.battle-screen, .battle-columns, .arena, .side-row, .field-row, .hand-panel, .hand-cards { min-width: 0; }
+.arena { min-height: 0; display: flex; flex-direction: column; }
 .side-row {
   display: flex !important;
   flex: 1 1 0;
@@ -624,18 +614,18 @@ body {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: center;
   justify-items: center;
-  gap: clamp(4px, .7vw, 10px);
+  gap: clamp(4px, .6vw, 9px);
 }
 .field-slot {
   box-sizing: border-box;
   justify-self: center;
   align-self: center;
   width: auto !important;
-  height: min(100%, 24vh);
-  aspect-ratio: 2 / 3 !important;
-  min-height: 0;
-  max-width: 100%;
+  height: clamp(150px, 23vh, 220px);
   max-height: 100%;
+  max-width: 100%;
+  min-height: 0;
+  aspect-ratio: 2 / 3 !important;
   padding: 0;
   overflow: visible;
   border-radius: 9px;
@@ -673,8 +663,8 @@ body {
   aspect-ratio: 2 / 3 !important;
 }
 @media (max-width: 1080px) {
+  .field-slot { height: clamp(135px, 21vh, 190px); }
   .field-row { gap: 5px; }
-  .field-slot { height: min(100%, 22vh); }
 }
 @media (max-width: 680px) {
   .arena { gap: 4px; }
@@ -687,7 +677,8 @@ body {
   }
   .field-slot {
     width: auto !important;
-    height: min(100%, 19vh);
+    height: clamp(90px, 16vh, 135px);
+    max-width: 100%;
     aspect-ratio: 2 / 3 !important;
     padding: 0;
   }
@@ -696,7 +687,7 @@ body {
   .hand-cards .game-card { width: 100%; height: auto !important; aspect-ratio: 2 / 3 !important; }
 }
 @media (max-width: 380px) {
-  .field-slot { height: min(100%, 17vh); }
+  .field-slot { height: clamp(82px, 14vh, 115px); }
   .field-row { gap: 3px; }
   .hand-cards { gap: 2px; }
 }
