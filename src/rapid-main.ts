@@ -255,9 +255,9 @@ function renderBattle(): string {
     "<button class=\"icon-button\" data-action=\"settings\" aria-label=\"" + t("settings") + "\">⚙</button></header>" +
     "<div class=\"battle-columns\">" + renderLog() +
     "<section class=\"arena\"><div class=\"arena-topline\"><span class=\"arena-sticker\">" + (language === "ru" ? "ЗОНА СТОЛКНОВЕНИЯ" : "CLASH ZONE") + "</span><span class=\"arena-note\">" + t("rules") + "</span></div>" +
-    "<div class=\"side-row opponent-row\">" + playerBadge(e, "enemy") + renderBoard(e, "enemy") + "</div>" +
+    "<div class=\"side-row opponent-row\">" + renderBoard(e, "enemy") + "</div>" +
     "<div class=\"stability-strip\"><span class=\"stability-number stability-enemy\"><small>" + (language === "ru" ? "ВРАГ" : "ENEMY") + "</small><b>" + e.stability + "</b></span><div class=\"stability-center\"><span class=\"bolt\">↯</span><b>" + t("stability") + "</b><small>" + (language === "ru" ? "ЦЕНА И ЖИЗНЬ" : "COST & LIFE") + "</small></div><span class=\"stability-number stability-player\"><small>" + (language === "ru" ? "ТЫ" : "YOU") + "</small><b>" + p.stability + "</b></span></div>" +
-    "<div class=\"side-row player-row\">" + playerBadge(p, "player") + renderBoard(p, "player") + "</div>" +
+    "<div class=\"side-row player-row\">" + renderBoard(p, "player") + "</div>" +
     renderHand() +
     "<div class=\"turn-actions\"><div class=\"queued-status\"><span class=\"queued-dot\"></span><span>" + (language === "ru" ? "ВЫБРАНО" : "QUEUED") + "</span><b>" + choices + "/2</b><small>" + (language === "ru" ? "карт" : "cards") + "</small></div>" +
     "<span class=\"notice-line\">" + esc(notice || (language === "ru" ? "Цена списывается при выборе; отмена вернёт её." : "Cost is paid on selection; cancel to refund it.")) + "</span>" +
