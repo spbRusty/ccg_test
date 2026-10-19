@@ -636,7 +636,7 @@ body {
   justify-self: center;
   align-self: center;
   width: auto !important;
-  height: min(100%, 19vh);
+  height: 100%;
   max-width: 100%;
   min-height: 0;
   max-height: 100%;
@@ -683,7 +683,7 @@ body {
 }
 @media (max-width: 1080px) {
   .field-row { gap: 5px; }
-  .field-slot { height: min(100%, 17vh); }
+  .field-slot { height: 100%; }
 }
 @media (max-width: 680px) {
   .arena { gap: 4px; }
@@ -696,7 +696,7 @@ body {
   }
   .field-slot {
     width: auto !important;
-    height: min(100%, 15vh);
+    height: 100%;
     aspect-ratio: 2 / 3 !important;
     padding: 0;
   }
@@ -705,7 +705,7 @@ body {
   .hand-cards .game-card { width: 100%; height: auto !important; aspect-ratio: 2 / 3 !important; }
 }
 @media (max-width: 380px) {
-  .field-slot { height: min(100%, 14vh); }
+  .field-slot { height: 100%; }
   .field-row { gap: 3px; }
   .hand-cards { gap: 2px; }
 }
