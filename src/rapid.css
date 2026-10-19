@@ -596,7 +596,7 @@ body {
 }
 
 
-/* Final battlefield sizing: readable cards, with no oversized empty slots. */
+/* Correct card geometry: board cards fill each of the three columns and use 2:3 ratio. */
 .battle-screen, .battle-columns, .arena, .side-row, .field-row, .hand-panel, .hand-cards { min-width: 0; }
 .arena { min-height: 0; display: flex; flex-direction: column; }
 .side-row {
@@ -613,18 +613,17 @@ body {
   min-height: 0;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: center;
-  justify-items: center;
+  justify-items: stretch;
   gap: clamp(4px, .6vw, 9px);
 }
 .field-slot {
   box-sizing: border-box;
-  justify-self: center;
-  align-self: center;
-  width: auto !important;
-  height: clamp(150px, 23vh, 220px);
-  max-height: 100%;
-  max-width: 100%;
+  width: 100% !important;
+  height: auto !important;
+  min-width: 0;
   min-height: 0;
+  max-width: 100%;
+  max-height: 100%;
   aspect-ratio: 2 / 3 !important;
   padding: 0;
   overflow: visible;
@@ -663,7 +662,6 @@ body {
   aspect-ratio: 2 / 3 !important;
 }
 @media (max-width: 1080px) {
-  .field-slot { height: clamp(135px, 21vh, 190px); }
   .field-row { gap: 5px; }
 }
 @media (max-width: 680px) {
@@ -676,9 +674,8 @@ body {
     gap: 4px;
   }
   .field-slot {
-    width: auto !important;
-    height: clamp(90px, 16vh, 135px);
-    max-width: 100%;
+    width: 100% !important;
+    height: auto !important;
     aspect-ratio: 2 / 3 !important;
     padding: 0;
   }
@@ -687,7 +684,6 @@ body {
   .hand-cards .game-card { width: 100%; height: auto !important; aspect-ratio: 2 / 3 !important; }
 }
 @media (max-width: 380px) {
-  .field-slot { height: clamp(82px, 14vh, 115px); }
   .field-row { gap: 3px; }
   .hand-cards { gap: 2px; }
 }
