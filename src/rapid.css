@@ -596,16 +596,14 @@ body {
 }
 
 
-/* Board is two compact rows; all cards keep standard playing-card 2:3 geometry. */
+/* Battlefield card sizing: fill each row without oversized cards or dead space. */
 .battle-screen,
 .battle-columns,
 .arena,
 .side-row,
 .field-row,
 .hand-panel,
-.hand-cards {
-  min-width: 0;
-}
+.hand-cards { min-width: 0; }
 .arena {
   min-height: 0;
   display: flex;
@@ -622,13 +620,10 @@ body {
   display: grid;
   width: 100%;
   height: 100%;
-  flex: 1 1 auto;
   min-height: 0;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-auto-rows: 1fr;
   align-items: center;
   justify-items: center;
-  align-content: center;
   gap: clamp(4px, .7vw, 10px);
 }
 .field-slot {
@@ -636,11 +631,11 @@ body {
   justify-self: center;
   align-self: center;
   width: auto !important;
-  height: 100%;
-  max-width: 100%;
-  min-height: 0;
-  max-height: 100%;
+  height: min(100%, 24vh);
   aspect-ratio: 2 / 3 !important;
+  min-height: 0;
+  max-width: 100%;
+  max-height: 100%;
   padding: 0;
   overflow: visible;
   border-radius: 9px;
@@ -655,17 +650,13 @@ body {
   flex: 0 0 auto;
   aspect-ratio: auto;
 }
-.hand-panel {
-  flex: 0 0 auto;
-  min-height: 0;
-}
+.hand-panel { flex: 0 0 auto; min-height: 0; }
 .hand-cards {
   display: grid;
   flex: 0 0 auto;
   width: 100%;
   height: auto;
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  grid-auto-rows: auto;
   align-items: start;
   gap: clamp(3px, .55vw, 8px);
 }
@@ -683,7 +674,7 @@ body {
 }
 @media (max-width: 1080px) {
   .field-row { gap: 5px; }
-  .field-slot { height: 100%; }
+  .field-slot { height: min(100%, 22vh); }
 }
 @media (max-width: 680px) {
   .arena { gap: 4px; }
@@ -696,7 +687,7 @@ body {
   }
   .field-slot {
     width: auto !important;
-    height: 100%;
+    height: min(100%, 19vh);
     aspect-ratio: 2 / 3 !important;
     padding: 0;
   }
@@ -705,7 +696,7 @@ body {
   .hand-cards .game-card { width: 100%; height: auto !important; aspect-ratio: 2 / 3 !important; }
 }
 @media (max-width: 380px) {
-  .field-slot { height: 100%; }
+  .field-slot { height: min(100%, 17vh); }
   .field-row { gap: 3px; }
   .hand-cards { gap: 2px; }
 }
