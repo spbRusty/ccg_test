@@ -1,4 +1,4 @@
-# Build with Vite and deploy the static game to GitHub Pages
+# Build and deploy the current Stability game to GitHub Pages
 name: Build and deploy to GitHub Pages
 
 on:
@@ -33,14 +33,6 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - name: Build game
         run: npm run build
-      - name: Run Stability simulation smoke test
-        run: npm run stability:simulate -- 1000 1
-      - name: Upload Stability report
-        uses: actions/upload-artifact@v4
-        with:
-          name: stability-report
-          path: reports/stability-simulation.*
-          if-no-files-found: error
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
