@@ -596,13 +596,13 @@ body {
 }
 
 
-/* Battlefield card sizing: preserve the player badge column and size cards from each slot's width. */
+/* Card dimensions are controlled by viewport height, not percentage heights in an auto-sized grid. */
 .battle-screen, .battle-columns, .arena, .side-row, .field-row, .hand-panel, .hand-cards { min-width: 0; }
 .arena { min-height: 0; display: flex; flex-direction: column; }
 .side-row {
   display: grid !important;
   grid-template-columns: minmax(76px, .48fr) minmax(0, 1.8fr);
-  align-items: stretch;
+  align-items: center;
   gap: clamp(5px, .7vw, 11px);
   flex: 1 1 0;
   min-height: 0;
@@ -610,25 +610,24 @@ body {
 .field-row {
   display: grid;
   width: 100%;
-  height: 100%;
   min-width: 0;
   min-height: 0;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  align-items: stretch;
-  justify-items: stretch;
+  align-items: center;
+  justify-items: center;
   gap: clamp(4px, .6vw, 9px);
 }
 .field-slot {
   box-sizing: border-box;
   width: auto !important;
-  height: 100% !important;
+  height: clamp(118px, 21vh, 205px) !important;
+  aspect-ratio: 2 / 3 !important;
   min-width: 0;
   min-height: 0;
   max-width: 100%;
   max-height: 100%;
   justify-self: center;
   align-self: center;
-  aspect-ratio: 2 / 3 !important;
   padding: 0;
   overflow: visible;
   border-radius: 9px;
@@ -655,12 +654,13 @@ body {
 }
 .hand-cards .game-card {
   box-sizing: border-box;
-  justify-self: stretch;
+  justify-self: center;
   align-self: start;
-  width: 100%;
-  height: auto !important;
+  width: auto;
+  height: clamp(104px, 17vh, 165px) !important;
   min-width: 0;
   min-height: 0;
+  max-width: 100%;
   max-height: none;
   flex: 0 0 auto;
   aspect-ratio: 2 / 3 !important;
@@ -673,7 +673,7 @@ body {
   .arena { gap: 4px; }
   .side-row {
     display: grid !important;
-    grid-template-columns: 48px minmax(0, 1fr);
+    grid-template-columns: 38px minmax(0, 1fr);
     gap: 5px;
     flex: 1 1 0;
   }
@@ -681,23 +681,26 @@ body {
   .badge-copy { display: none; }
   .field-row {
     width: 100%;
-    height: 100%;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 4px;
+    gap: 3px;
   }
   .field-slot {
     width: auto !important;
-    height: 100% !important;
+    height: clamp(92px, 17vh, 138px) !important;
     aspect-ratio: 2 / 3 !important;
     padding: 0;
   }
   .field-slot .game-card { width: 100%; height: 100%; aspect-ratio: auto; }
   .hand-panel { flex: 0 0 auto; }
-  .hand-cards { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 3px; }
-  .hand-cards .game-card { width: 100%; height: auto !important; aspect-ratio: 2 / 3 !important; }
+  .hand-cards { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 2px; }
+  .hand-cards .game-card {
+    width: 100%;
+    height: auto !important;
+    aspect-ratio: 2 / 3 !important;
+  }
 }
 @media (max-width: 380px) {
-  .side-row { grid-template-columns: 38px minmax(0, 1fr); }
-  .field-row { gap: 3px; }
+  .side-row { grid-template-columns: 32px minmax(0, 1fr); }
+  .field-row { gap: 2px; }
   .hand-cards { gap: 2px; }
 }
