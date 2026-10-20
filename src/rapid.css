@@ -596,9 +596,16 @@ body {
 }
 
 
-/* Card dimensions are controlled by viewport height, not percentage heights in an auto-sized grid. */
-.battle-screen, .battle-columns, .arena, .side-row, .field-row, .hand-panel, .hand-cards { min-width: 0; }
-.arena { min-height: 0; display: flex; flex-direction: column; }
+/* Consistent card sizing: width comes from the available column; 2:3 ratio determines height. */
+.battle-screen, .battle-columns, .arena, .side-row, .field-row, .hand-panel, .hand-cards {
+  min-width: 0;
+  min-height: 0;
+}
+.arena {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
 .side-row {
   display: grid !important;
   grid-template-columns: minmax(76px, .48fr) minmax(0, 1.8fr);
@@ -607,28 +614,27 @@ body {
   flex: 1 1 0;
   min-height: 0;
 }
+.player-badge { display: flex !important; }
 .field-row {
   display: grid;
   width: 100%;
   min-width: 0;
-  min-height: 0;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: center;
-  justify-items: center;
+  justify-items: stretch;
   gap: clamp(4px, .6vw, 9px);
 }
 .field-slot {
   box-sizing: border-box;
-  width: auto !important;
-  height: clamp(118px, 21vh, 205px) !important;
-  aspect-ratio: 2 / 3 !important;
+  width: 100% !important;
+  height: auto !important;
   min-width: 0;
   min-height: 0;
-  max-width: 100%;
-  max-height: 100%;
-  justify-self: center;
-  align-self: center;
+  aspect-ratio: 2 / 3 !important;
+  max-height: 23vh;
   padding: 0;
+  justify-self: stretch;
+  align-self: center;
   overflow: visible;
   border-radius: 9px;
 }
@@ -639,68 +645,66 @@ body {
   height: 100%;
   min-width: 0;
   min-height: 0;
-  flex: 0 0 auto;
   aspect-ratio: auto;
 }
-.hand-panel { flex: 0 0 auto; min-height: 0; }
+.hand-panel {
+  flex: 0 0 auto;
+  min-height: 0;
+}
 .hand-cards {
   display: grid;
-  flex: 0 0 auto;
   width: 100%;
-  height: auto;
+  flex: 0 0 auto;
   grid-template-columns: repeat(6, minmax(0, 1fr));
   align-items: start;
   gap: clamp(3px, .55vw, 8px);
 }
 .hand-cards .game-card {
   box-sizing: border-box;
-  justify-self: center;
-  align-self: start;
-  width: auto;
-  height: clamp(104px, 17vh, 165px) !important;
+  justify-self: stretch;
+  width: 100%;
+  height: auto !important;
   min-width: 0;
   min-height: 0;
   max-width: 100%;
-  max-height: none;
-  flex: 0 0 auto;
   aspect-ratio: 2 / 3 !important;
 }
 @media (max-width: 1080px) {
   .battle-columns { grid-template-columns: minmax(0, 1fr); }
   .field-row { gap: 5px; }
+  .field-slot { max-height: 21vh; }
 }
 @media (max-width: 680px) {
-  .arena { gap: 4px; }
+  .arena { gap: 4px; padding: 5px; }
   .side-row {
-    display: grid !important;
-    grid-template-columns: 38px minmax(0, 1fr);
-    gap: 5px;
+    grid-template-columns: 32px minmax(0, 1fr);
+    gap: 4px;
     flex: 1 1 0;
   }
-  .player-badge { flex-direction: column; gap: 4px; padding: 4px 2px; }
-  .badge-copy { display: none; }
-  .field-row {
-    width: 100%;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 3px;
+  .player-badge {
+    flex-direction: column;
+    gap: 4px;
+    padding: 4px 2px;
   }
+  .badge-copy { display: none; }
+  .field-row { gap: 3px; }
   .field-slot {
-    width: auto !important;
-    height: clamp(92px, 17vh, 138px) !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: 18vh;
     aspect-ratio: 2 / 3 !important;
     padding: 0;
   }
-  .field-slot .game-card { width: 100%; height: 100%; aspect-ratio: auto; }
-  .hand-panel { flex: 0 0 auto; }
   .hand-cards { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 2px; }
   .hand-cards .game-card {
     width: 100%;
     height: auto !important;
     aspect-ratio: 2 / 3 !important;
   }
+  .card-content { padding: 4px 3px; gap: 2px; }
+  .card-description { font-size: clamp(6px, 1.7vw, 8px); line-height: 1.16; }
 }
 @media (max-width: 380px) {
-  .side-row { grid-template-columns: 32px minmax(0, 1fr); }
-  .field-row { gap: 2px; }
-  .hand-cards { gap: 2px; }
+  .side-row { grid-template-columns: 28px minmax(0, 1fr); }
+  .field-row, .hand-cards { gap: 2px; }
 }
