@@ -192,7 +192,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .badge-copy b { font-size: 9px; font-weight: 1000; overflow-wrap: anywhere; }
 .badge-copy small { font-size: 7px; font-weight: 1000; color: var(--ink-soft); letter-spacing: .06em; }
 .stability-mini { display: grid; place-items: center; flex: 0 0 29px; width: 29px; height: 29px; background: var(--yellow); border: 1px solid var(--ink); border-radius: 50%; font-size: 11px; font-weight: 1000; }
-.field-row { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: clamp(4px, .7vw, 11px); min-width: 0; min-height: 0; }
+.field-row { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: clamp(4px, .7vw, 11px); min-width: 0; min-height: 0; }
 .field-slot { position: relative; width: 100%; min-width: 0; min-height: 0; aspect-ratio: 2 / 2.7; max-height: 100%; overflow: visible; border: 2px dashed #697a98; border-radius: 12px; background: #e5edf7; padding: 3px; display: flex; align-items: stretch; justify-content: center; }
 .empty-slot { flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: #7786a0; transition: border-color .15s, background .15s, transform .15s; }
 .empty-slot:hover, .empty-slot.slot-ready { border: 2px solid var(--blue); background: #cce7ff; color: var(--blue-dark); transform: translateY(-2px); }
@@ -697,3 +697,7 @@ body {
   .side-row { grid-template-columns: 22px minmax(0, 1fr); }
   .field-row, .hand-cards { gap: 2px; }
 }
+
+/* Four slots per side: keep all cards in a single compact row on phones too. */
+.field-row { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(3px, .55vw, 8px); }
+@media (max-width: 680px) { .field-slot { aspect-ratio: 2 / 2.9; padding: 2px; border-radius: 7px; } .field-slot .card-content { padding: 4px; gap: 3px; } .field-slot .card-name { font-size: clamp(7px, 2vw, 10px); } .field-slot .card-description { font-size: clamp(6px, 1.7vw, 8px); } .field-slot .timing-chip, .field-slot .faction-label { display: none; } .slot-empty-label { font-size: 6px; } }
