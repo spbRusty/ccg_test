@@ -9,10 +9,6 @@
     "test": "vitest run",
     "build": "npm run check && npm test && vite build && node scripts/copy-assets.mjs",
     "preview": "vite preview",
-    "stability:simulate": "node --experimental-strip-types scripts/stability-simulate.mjs"
-  },
-  "dependencies": {
-    "excalibur": "^0.31.0"
   },
   "devDependencies": {
     "@types/node": "^22.15.30",
