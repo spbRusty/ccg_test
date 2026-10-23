@@ -229,7 +229,7 @@ function renderArchive(): string {
 function renderHand(): string {
   if (!game) return "";
   const p = game.player;
-  return "<section class=\"hand-panel\"><div class=\"hand-heading\"><div><span class=\"eyebrow\">" + t("hand") + "</span><h2>" + (language === "ru" ? "Твой следующий ход" : "Your next move") + "</h2></div><div class=\"hand-counter\"><b>" + p.hand.length + "</b><span>/ 6</span><small>" + (language === "ru" ? "КАРТ" : "CARDS") + "</small></div></div>" +
+  return "<section class=\"hand-panel\"><div class=\"hand-heading\"><div><span class=\"eyebrow\">" + t("hand") + "</span><h2>" + (language === "ru" ? "Твой следующий ход" : "Your next move") + "</h2></div><div class=\"hand-counter\"><b>" + p.hand.length + "</b><span>/ 4</span><small>" + (language === "ru" ? "КАРТ" : "CARDS") + "</small></div></div>" +
     "<div class=\"hand-cards\">" + p.hand.map(card => renderCard(card, "hand", (chosenCardUid === card.uid ? "selected-card" : ""), -1, card.uid)).join("") +
     (p.hand.length === 0 ? "<div class=\"empty-hand\">" + (language === "ru" ? "Карты закончились" : "No cards in hand") + "</div>" : "") + "</div>" +
     "<div class=\"hand-hint\">" + (chosenCardUid ? t("selected") + ": " + esc(cardName(game.player.hand.find(c => c.uid === chosenCardUid)!)) + " · " + t("selectHint") : t("selectHint")) + "</div></section>";
@@ -291,7 +291,7 @@ function renderDecks(): string {
     "<div class=\"deck-slots\">" + deckSlots + "</div><div class=\"deck-tools\"><span class=\"deck-status\">" + (deckIds.length === 12 ? (language === "ru" ? "КОЛОДА ГОТОВА" : "DECK READY") : (language === "ru" ? "НУЖНО ЕЩЁ " + (12 - deckIds.length) : "ADD " + (12 - deckIds.length) + " MORE")) + "</span><button class=\"button button-light\" data-action=\"auto-deck\">" + t("autoDeck") + "</button><button class=\"button button-hot\" data-action=\"save-deck\" " + (deckIds.length !== 12 ? "disabled" : "") + ">" + t("save") + " ✓</button></div></section>" +
     "<section class=\"collection-section\"><div class=\"collection-heading\"><div><span class=\"eyebrow\">" + t("cards") + " / 120</span><h2>" + t("collection") + "</h2></div><div class=\"collection-filters\"><input id=\"collection-search\" type=\"search\" placeholder=\"" + t("search") + "\" value=\"" + esc(collectionQuery) + "\"><button class=\"button button-light\" data-action=\"find\">" + (language === "ru" ? "Найти" : "Find") + "</button><select id=\"collection-faction\" aria-label=\"" + t("allFactions") + "\"><option value=\"all\">" + t("allFactions") + "</option>" +
     Array.from(new Set(CARDS.map(card => card.faction))).map(faction => "<option value=\"" + esc(faction) + "\"" + (collectionFaction === faction ? " selected" : "") + ">" + esc(language === "ru" ? faction : englishFaction(faction)) + "</option>").join("") + "</select></div></div>" +
-    "<div class=\"collection-grid\">" + shown.map(card => renderCard(card, "collection", "collection-card") + "<span class=\"collection-card-note\">" + (language === "ru" ? card.rarity : card.rarity === "Эпическая" ? "Epic" : card.rarity === "Редкая" ? "Rare" : "Common") + "</span>").join("") + "</div><p class=\"collection-footer\">" + (language === "ru" ? "Показано " + shown.length + " из 120 карт. Нажми на карту, чтобы добавить её в колоду." : "Showing " + shown.length + " of 120 cards. Select a card to add it to your deck.") + "</p></section></main>";
+    "<div class=\"collection-grid\">" + shown.map(card => "<div class=\"collection-cell\">" + renderCard(card, "collection", "collection-card") + "<span class=\"collection-card-note\">" + (language === "ru" ? card.rarity : card.rarity === "Эпическая" ? "Epic" : card.rarity === "Редкая" ? "Rare" : "Common") + "</span></div>").join("") + "</div><p class=\"collection-footer\">" + (language === "ru" ? "Показано " + shown.length + " из 120 карт. Нажми на карту, чтобы добавить её в колоду." : "Showing " + shown.length + " of 120 cards. Select a card to add it to your deck.") + "</p></section></main>";
 }
 function renderSettings(): string {
   return "<main class=\"menu-screen settings-screen\"><header class=\"page-topbar\"><button class=\"brand-lockup\" data-action=\"home\"><span class=\"brand-icon\">S!</span><span><b>" + t("title") + "</b><small>" + t("subtitle") + "</small></span></button><button class=\"button button-light\" data-action=\"back\">" + t("back") + "</button></header><section class=\"settings-content\"><span class=\"eyebrow\">" + (language === "ru" ? "ПОД СЕБЯ" : "MAKE IT YOURS") + "</span><h1>" + t("settings") + "</h1>" +
@@ -301,10 +301,35 @@ function renderSettings(): string {
     "<div class=\"settings-rule\"><span>30</span><div><b>" + (language === "ru" ? "Начальная Стабильность" : "Starting Stability") + "</b><small>" + (language === "ru" ? "Одна шкала — и цена карт, и условие победы." : "One scale: both card cost and win condition.") + "</small></div></div>" +
     "<button class=\"button button-hot settings-done\" data-action=\"back\">" + t("confirm") + " ✓</button></section></main>";
 }
+/**
+ * Один размер карты на весь стол: и поле, и рука.
+ * Считаем по двум ограничениям — ширина колонки и высота стола —
+ * и записываем в --card-w, из которой CSS берёт 2:3 для всех карт.
+ */
+function fitTable(): void {
+  if (page !== "battle") return;
+  const arena = document.querySelector<HTMLElement>(".arena");
+  const column = arena?.parentElement;
+  if (!arena || !column) return;
+  const style = getComputedStyle(arena);
+  const px = (value: string): number => Number.parseFloat(value) || 0;
+  const gap = px(style.rowGap);
+  const padX = px(style.paddingLeft) + px(style.paddingRight);
+  const padY = px(style.paddingTop) + px(style.paddingBottom);
+  const chrome = [".arena-topline", ".stability-strip", ".turn-actions", ".hand-heading", ".hand-hint"]
+    .reduce((sum, selector) => sum + (arena.querySelector<HTMLElement>(selector)?.getBoundingClientRect().height ?? 0), 0);
+  const gaps = gap * 7;
+  const byWidth = (column.clientWidth - padX - 6 - 3 * gap) / 4;
+  const byHeight = (arena.clientHeight - padY - 6 - chrome - gaps) / 4.5;
+  const width = Math.max(52, Math.min(byWidth, byHeight, 200));
+  document.documentElement.style.setProperty("--card-w", width.toFixed(1) + "px");
+}
+
 function render(): void {
   document.body.classList.toggle("battle-mode", page === "battle");
   app.innerHTML = page === "battle" ? renderBattle() : page === "decks" ? renderDecks() : page === "settings" ? renderSettings() : renderHome();
   imageFallbacks();
+  if (page === "battle") requestAnimationFrame(fitTable);
   if (page === "battle" && game?.winner) document.body.classList.add("match-finished");
   else document.body.classList.remove("match-finished");
 }
@@ -517,4 +542,7 @@ function stopMusic(): void {
   musicTimer = null;
 }
 window.addEventListener("pagehide", stopMusic);
+window.addEventListener("resize", fitTable);
+window.addEventListener("orientationchange", () => requestAnimationFrame(fitTable));
+if (document.fonts?.ready) void document.fonts.ready.then(fitTable);
 render();
