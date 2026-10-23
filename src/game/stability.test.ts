@@ -9,12 +9,13 @@ describe("Стабильность: короткая дуэль", () => {
     expect(CARDS.every(card => card.name && card.text && card.cost >= 1)).toBe(true);
   });
 
-  it("использует колоду 12, стартовую руку 4 и поле из 3 мест", () => {
+  it("использует колоду 12, стартовую руку 4 и поле из 4 мест", () => {
     const game = createGame(DEFAULT_DECK, () => 0.5);
     expect(game.settings.deckSize).toBe(12);
     expect(game.player.stability).toBe(30);
     expect(game.player.hand).toHaveLength(4);
-    expect(game.player.board).toHaveLength(3);
+    expect(game.settings.handLimit).toBe(4);
+    expect(game.player.board).toHaveLength(4);
     expect(game.player.deck.length + game.player.hand.length).toBe(12);
     expect(DEFAULT_DECK).toHaveLength(12);
     expect(new Set(DEFAULT_DECK).size).toBe(12);
