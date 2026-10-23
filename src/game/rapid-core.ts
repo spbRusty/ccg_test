@@ -43,7 +43,7 @@ export interface GameState {
 }
 const DEFAULT_SETTINGS: GameSettings = {
   startStability: 30, maxStability: 60, deckSize: 12, startHand: 4,
-  handLimit: 6, slots: 3, maxPlays: 2, roundLimit: 7,
+  handLimit: 4, slots: 4, maxPlays: 2, roundLimit: 7,
 };
 let nextUid = 1;
 const sides: Side[] = ["player", "enemy"];
