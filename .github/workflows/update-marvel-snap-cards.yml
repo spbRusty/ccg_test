@@ -25,12 +25,8 @@ jobs:
         run: python scripts/update_marvel_snap_cards.py
       - name: Commit catalog
         run: |
-          if git diff --quiet -- marvel_snap_cards.csv data/marvel_snap_translation_cache.json; then
-            echo "Catalog is already up to date."
-            exit 0
-          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add marvel_snap_cards.csv data/marvel_snap_translation_cache.json
+          git add -f marvel_snap_cards.csv data/marvel_snap_translation_cache.json
           git commit -m "Update Russian Marvel SNAP card catalog"
           git push
