@@ -5,9 +5,9 @@ on:
   schedule:
     - cron: "23 4 * * 1"
   push:
-    paths:
-      - "scripts/update_marvel_snap_cards.py"
-      - ".github/workflows/update-marvel-snap-cards.yml"
+    paths-ignore:
+      - "marvel_snap_cards.csv"
+      - "data/marvel_snap_translation_cache.json"
 
 permissions:
   contents: write
