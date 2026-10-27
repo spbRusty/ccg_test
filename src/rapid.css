@@ -785,8 +785,8 @@ body {
 @keyframes card-in { from { transform: translateY(-10px) scale(0.95); opacity: 0.35; } to { transform: none; opacity: 1; } }
 
 
-/* Three.js tabletop prototype: the DOM remains responsible for readable card text. */
-.arena { isolation: isolate; background: linear-gradient(160deg, #fffdf985, #fff0cf66); }
+/* Three.js tabletop: canvas is behind DOM controls/cards, with transparent clear color. */
+.arena { isolation: isolate; background: linear-gradient(160deg, #1c2735d9, #151d28d9); }
 .arena > .battle-scene-layer {
   position: absolute !important;
   inset: 0 !important;
@@ -794,15 +794,14 @@ body {
   overflow: hidden;
   pointer-events: none;
   border-radius: inherit;
-  opacity: 1;
 }
+.arena > .battle-scene-layer ~ * { z-index: 1; }
 .battle-scene-canvas {
   display: block;
   width: 100%;
   height: 100%;
   pointer-events: none;
 }
-.arena > .battle-scene-layer ~ * { z-index: 1; }
 .field-slot .game-card, .hand-cards .game-card { will-change: transform, opacity; transform-origin: 50% 70%; }
 @media (prefers-reduced-motion: reduce) {
   .field-slot .game-card, .hand-cards .game-card { will-change: auto; }
