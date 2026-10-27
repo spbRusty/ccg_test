@@ -470,13 +470,22 @@ app.addEventListener("click", event => {
     finishQueuedAction(chosenCardUid, Number(slotEl.dataset.slot)); return;
   }
 });
+function removeDragGhost(ghost: HTMLElement | null, delay = 230): void {
+  if (!ghost) return;
+  const remove = () => {
+    ghost.removeEventListener("transitionend", remove);
+    ghost.remove();
+  };
+  ghost.addEventListener("transitionend", remove, { once: true });
+  window.setTimeout(remove, delay);
+}
 function animateDragGhostBack(drag: NonNullable<typeof activeCardDrag>): void {
   const ghost = drag.ghost;
   if (!ghost) return;
   ghost.style.transition = "transform 190ms cubic-bezier(.2,.8,.2,1), opacity 190ms ease";
   ghost.style.transform = "translate3d(0,0,0) rotate(0deg) scale(.96)";
   ghost.style.opacity = "0";
-  window.setTimeout(() => ghost.remove(), 210);
+  removeDragGhost(ghost, 230);
 }
 function updateDragSlot(drag: NonNullable<typeof activeCardDrag>): void {
   document.querySelectorAll<HTMLElement>(".field-slot.drop-target").forEach(slot => slot.classList.remove("drop-target"));
@@ -486,6 +495,8 @@ function updateDragSlot(drag: NonNullable<typeof activeCardDrag>): void {
   drag.slot?.classList.add("drop-target");
 }
 app.addEventListener("pointerdown", event => {
+  // Clear any orphaned drag visual before a new interaction starts.
+  document.querySelectorAll<HTMLElement>(".drag-ghost-card").forEach(ghost => ghost.remove());
   if (!(event instanceof PointerEvent) || event.button !== 0 || page !== "battle" || !game || game.winner) return;
   const target = event.target instanceof HTMLElement ? event.target.closest<HTMLElement>('button.game-card[data-zone="hand"][data-uid]') : null;
   if (!target || !target.closest(".hand-cards")) return;
@@ -534,7 +545,12 @@ window.addEventListener("pointerup", event => {
   const drag = activeCardDrag;
   if (!drag || event.pointerId !== drag.pointerId) return;
   activeCardDrag = null;
-  if (!drag.moved || !drag.ghost) return;
+  drag.x = event.clientX;
+  drag.y = event.clientY;
+  if (!drag.moved || !drag.ghost) {
+    drag.source.classList.remove("dragging-card");
+    return;
+  }
   event.preventDefault();
   suppressNextClick = true;
   window.setTimeout(() => { suppressNextClick = false; }, 350);
@@ -549,7 +565,7 @@ window.addEventListener("pointerup", event => {
     const ty = targetRect.top - drag.sourceRect.top;
     drag.ghost.style.transition = "transform 190ms cubic-bezier(.18,.82,.25,1.12), opacity 190ms ease";
     drag.ghost.style.transform = "translate3d(" + tx + "px," + ty + "px,0) rotate(0deg) scale(" + sx + ")";
-    window.setTimeout(() => drag.ghost?.remove(), 215);
+    removeDragGhost(drag.ghost, 230);
     sfx("drop");
   } else {
     chosenCardUid = null;
@@ -558,6 +574,7 @@ window.addEventListener("pointerup", event => {
     sfx("invalid");
     animateDragGhostBack(drag);
   }
+  drag.source.classList.remove("dragging-card");
 });
 window.addEventListener("pointercancel", event => {
   const drag = activeCardDrag;
