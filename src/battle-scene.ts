@@ -35,19 +35,19 @@ export function mountBattleScene(root: HTMLElement): BattleSceneHandle {
   hot.position.set(5, 2.2, 1);
   scene.add(hot);
 
-  const tableMaterial = new THREE.MeshStandardMaterial({ color: "#1d2938", roughness: 0.46, metalness: 0.32 });
+  const tableMaterial = new THREE.MeshStandardMaterial({ color: "#344b65", roughness: 0.42, metalness: 0.28, emissive: "#102238", emissiveIntensity: 0.35 });
   const table = new THREE.Mesh(new THREE.BoxGeometry(12.5, 0.42, 8.2), tableMaterial);
   table.position.y = -0.36;
   table.receiveShadow = true;
   scene.add(table);
-  const inset = new THREE.Mesh(new THREE.BoxGeometry(11.9, 0.045, 7.6), new THREE.MeshStandardMaterial({ color: "#27364a", roughness: 0.6, metalness: 0.18 }));
+  const inset = new THREE.Mesh(new THREE.BoxGeometry(11.9, 0.045, 7.6), new THREE.MeshStandardMaterial({ color: "#3d5874", roughness: 0.52, metalness: 0.2, emissive: "#172d45", emissiveIntensity: 0.3 }));
   inset.position.y = -0.125;
   scene.add(inset);
 
   const slotGroup = new THREE.Group();
   scene.add(slotGroup);
-  const slotMaterial = new THREE.MeshStandardMaterial({ color: "#172333", roughness: 0.5, metalness: 0.25, emissive: "#0a1526", emissiveIntensity: 0.6 });
-  const edgeMaterial = new THREE.MeshStandardMaterial({ color: "#4d8cb8", roughness: 0.3, metalness: 0.5, emissive: "#245f8b", emissiveIntensity: 0.5 });
+  const slotMaterial = new THREE.MeshStandardMaterial({ color: "#243a52", roughness: 0.46, metalness: 0.2, emissive: "#102b48", emissiveIntensity: 0.85 });
+  const edgeMaterial = new THREE.MeshStandardMaterial({ color: "#79c8ff", roughness: 0.28, metalness: 0.35, emissive: "#287fcb", emissiveIntensity: 1.25 });
   const slots: THREE.Mesh[] = [];
   for (const z of [-2.25, 2.25]) {
     for (let i = 0; i < 4; i++) {
