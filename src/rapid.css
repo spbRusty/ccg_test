@@ -786,7 +786,7 @@ body {
 
 
 /* Three.js tabletop prototype: the DOM remains responsible for readable card text. */
-.arena { isolation: isolate; background: linear-gradient(160deg, #fffdf9f2, #fff0cff0); }
+.arena { isolation: isolate; background: linear-gradient(160deg, #fffdf985, #fff0cf66); }
 .arena > .battle-scene-layer {
   position: absolute !important;
   inset: 0 !important;
@@ -794,7 +794,7 @@ body {
   overflow: hidden;
   pointer-events: none;
   border-radius: inherit;
-  opacity: .9;
+  opacity: 1;
 }
 .battle-scene-canvas {
   display: block;
