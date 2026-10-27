@@ -470,11 +470,38 @@ app.addEventListener("dragstart", event => {
   const el = event.target instanceof HTMLElement ? event.target.closest<HTMLElement>("[data-zone=\"hand\"][data-uid]") : null;
   if (!el || !game || page !== "battle") return;
   chosenCardUid = el.dataset.uid || null;
+  const rect = el.getBoundingClientRect();
   if (event instanceof DragEvent && event.dataTransfer && chosenCardUid) {
     event.dataTransfer.setData("text/plain", chosenCardUid);
     event.dataTransfer.effectAllowed = "move";
+
+    // Use a full-size drag image and keep the same point under the pointer.
+    // This prevents the browser from cropping the card when it is grabbed near its top.
+    const preview = el.cloneNode(true) as HTMLElement;
+    preview.classList.remove("dragging-card", "selected-card");
+    preview.classList.add("drag-image-card");
+    preview.style.width = rect.width + "px";
+    preview.style.height = rect.height + "px";
+    preview.style.position = "fixed";
+    preview.style.left = "-10000px";
+    preview.style.top = "0";
+    preview.style.margin = "0";
+    preview.style.transform = "none";
+    preview.style.visibility = "visible";
+    document.body.appendChild(preview);
+    const pointerX = event.clientX || rect.left + rect.width / 2;
+    const pointerY = event.clientY || rect.top + rect.height / 2;
+    const hotX = Math.max(0, Math.min(rect.width, pointerX - rect.left));
+    const hotY = Math.max(0, Math.min(rect.height, pointerY - rect.top));
+    event.dataTransfer.setDragImage(preview, hotX, hotY);
+    window.setTimeout(() => preview.remove(), 0);
   }
+  // Hide the source card without removing its hand slot from the layout.
   el.classList.add("dragging-card");
+});
+app.addEventListener("dragend", event => {
+  const el = event.target instanceof HTMLElement ? event.target.closest<HTMLElement>("[data-zone=\"hand\"][data-uid]") : null;
+  el?.classList.remove("dragging-card");
 });
 app.addEventListener("dragover", event => {
   const slot = event.target instanceof HTMLElement ? event.target.closest("[data-slot][data-side=\"player\"]") : null;
