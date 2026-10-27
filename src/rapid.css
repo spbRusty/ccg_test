@@ -820,3 +820,116 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .field-slot .game-card, .hand-cards .game-card { will-change: auto; }
 }
+
+
+/* Physical-card interaction pass: fan, thickness, drag feedback, and landing. */
+.hand-cards { overflow: visible; perspective: 900px; }
+.hand-cards .game-card {
+  --fan-rotate: 0deg;
+  --fan-y: 0px;
+  transform: translateY(var(--fan-y)) rotate(var(--fan-rotate));
+  transform-origin: 50% 100%;
+  box-shadow: 0 2px 0 #080d14, 0 5px 0 #101722, 0 13px 19px -13px #000b;
+  transition: transform 180ms cubic-bezier(.2,.75,.25,1), box-shadow 180ms ease, filter 180ms ease;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.hand-cards .game-card:nth-child(1) { --fan-rotate: -4deg; --fan-y: 7px; }
+.hand-cards .game-card:nth-child(2) { --fan-rotate: -1.5deg; --fan-y: 2px; }
+.hand-cards .game-card:nth-child(3) { --fan-rotate: 1.5deg; --fan-y: 2px; }
+.hand-cards .game-card:nth-child(4) { --fan-rotate: 4deg; --fan-y: 7px; }
+.hand-cards .game-card:hover {
+  transform: translateY(calc(var(--fan-y) - 12px)) rotate(0deg) scale(1.055);
+  box-shadow: 0 3px 0 #080d14, 0 7px 0 #101722, 0 19px 25px -12px #000d, 0 0 0 2px #7daee8;
+  filter: saturate(1.06) brightness(1.025);
+  z-index: 20;
+}
+.hand-cards .game-card.selected-card {
+  transform: translateY(calc(var(--fan-y) - 14px)) rotate(0deg) scale(1.04);
+  box-shadow: 0 3px 0 #080d14, 0 7px 0 #101722, 0 18px 25px -12px #000d, 0 0 0 3px var(--blue);
+  z-index: 21;
+}
+.hand-cards .game-card.dragging-card { visibility: hidden; }
+.game-card {
+  border-width: 2px;
+  box-shadow: 0 2px 0 #080d14, 0 5px 0 #101722, 0 12px 18px -12px #000a;
+  backface-visibility: hidden;
+}
+.field-slot .game-card { box-shadow: 0 2px 0 #080d14, 0 4px 0 #101722, 0 10px 14px -11px #000b; }
+.game-card::after {
+  content: "";
+  position: absolute;
+  z-index: 8;
+  pointer-events: none;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid #ffffff38;
+  box-shadow: inset 1px 1px 0 #ffffff45, inset -1px -1px 0 #00000018;
+}
+.drag-ghost-card {
+  position: fixed !important;
+  z-index: 2147483000 !important;
+  display: flex !important;
+  pointer-events: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform-origin: 50% 70%;
+  filter: saturate(1.06) contrast(1.025);
+  box-shadow: 0 3px 0 #070b11, 0 8px 0 #111a27, 0 22px 32px -10px #000d, 0 0 0 1px #ffffff80 !important;
+  will-change: transform;
+}
+.drag-ghost-card::before {
+  content: "";
+  position: absolute;
+  z-index: 9;
+  inset: 2px -4px -4px 2px;
+  border-radius: inherit;
+  background: #111a27;
+  border: 1px solid #080d14;
+  transform: translateZ(-1px);
+  pointer-events: none;
+}
+.field-slot.drop-target {
+  border: 2px solid #8fc7ff !important;
+  background: #2a4864 !important;
+  box-shadow: 0 0 0 3px #8fc7ff55, inset 0 0 24px #8fc7ff20;
+  transform: translateY(-2px) scale(1.025);
+  transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
+}
+.field-slot.drop-target::after {
+  content: "↓";
+  position: absolute;
+  z-index: 30;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #eaf5ff;
+  font-size: clamp(24px, 5vw, 44px);
+  font-weight: 900;
+  text-shadow: 0 2px 8px #10253a;
+  pointer-events: none;
+}
+.field-slot.just-played .field-card,
+.field-slot.occupied-slot.just-played .game-card {
+  animation: card-land 360ms cubic-bezier(.18,.82,.25,1.18) both;
+}
+.field-slot .game-card { transition: transform 170ms ease, box-shadow 170ms ease; }
+@keyframes card-land {
+  0% { transform: translateY(-14px) rotate(-2deg) scale(1.06); filter: brightness(1.18); }
+  58% { transform: translateY(2px) rotate(.7deg) scale(.985); }
+  78% { transform: translateY(-2px) rotate(-.25deg) scale(1.01); }
+  100% { transform: translateY(0) rotate(0) scale(1); filter: brightness(1); }
+}
+@media (max-width: 680px) {
+  .hand-cards .game-card:nth-child(1) { --fan-rotate: -2.2deg; --fan-y: 3px; }
+  .hand-cards .game-card:nth-child(2) { --fan-rotate: -.8deg; --fan-y: 1px; }
+  .hand-cards .game-card:nth-child(3) { --fan-rotate: .8deg; --fan-y: 1px; }
+  .hand-cards .game-card:nth-child(4) { --fan-rotate: 2.2deg; --fan-y: 3px; }
+  .hand-cards .game-card:hover { transform: translateY(calc(var(--fan-y) - 5px)) rotate(0) scale(1.015); }
+  .drag-ghost-card { box-shadow: 0 2px 0 #070b11, 0 5px 0 #111a27, 0 14px 20px -8px #000d !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hand-cards .game-card, .field-slot, .drag-ghost-card { transition: none !important; }
+  .field-slot.just-played .field-card, .field-slot.occupied-slot.just-played .game-card { animation-duration: 1ms !important; }
+}
