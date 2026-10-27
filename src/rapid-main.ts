@@ -503,6 +503,7 @@ app.addEventListener("pointerdown", event => {
   const uid = target.dataset.uid;
   if (!uid || !game.player.hand.some(card => card.uid === uid)) return;
   const rect = target.getBoundingClientRect();
+  try { target.setPointerCapture(event.pointerId); } catch {}
   activeCardDrag = {
     pointerId: event.pointerId, uid, source: target, sourceRect: rect,
     startX: event.clientX, startY: event.clientY, x: event.clientX, y: event.clientY,
@@ -543,10 +544,10 @@ window.addEventListener("pointermove", event => {
 });
 document.addEventListener("pointerup", event => {
   const drag = activeCardDrag;
+  // A drag preview must never survive mouse release, even if the drag state was lost.
+  document.querySelectorAll<HTMLElement>(".drag-ghost-card").forEach(ghost => ghost.remove());
+  document.querySelectorAll<HTMLElement>(".dragging-card").forEach(card => card.classList.remove("dragging-card"));
   if (!drag || event.pointerId !== drag.pointerId) {
-    // Recover orphaned previews even if another handler interrupted the previous drag.
-    document.querySelectorAll<HTMLElement>(".drag-ghost-card").forEach(ghost => ghost.remove());
-    document.querySelectorAll<HTMLElement>(".dragging-card").forEach(card => card.classList.remove("dragging-card"));
     activeCardDrag = null;
     return;
   }
