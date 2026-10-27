@@ -497,6 +497,7 @@ app.addEventListener("pointerdown", event => {
     startX: event.clientX, startY: event.clientY, x: event.clientX, y: event.clientY,
     ghost: null, slot: null, moved: false
   };
+  try { target.setPointerCapture(event.pointerId); } catch {}
 });
 app.addEventListener("pointermove", event => {
   const drag = activeCardDrag;
@@ -552,10 +553,9 @@ app.addEventListener("pointerup", event => {
     window.setTimeout(() => drag.ghost?.remove(), 215);
     sfx("drop");
   } else {
-    if (!slot) {
-      showNotice(language === "ru" ? "Карта возвращена в руку: выбери место на своём поле." : "Card returned to hand. Drop it on your field.");
-      render();
-    }
+    chosenCardUid = null;
+    if (!slot) showNotice(language === "ru" ? "Карта возвращена в руку: выбери место на своём поле." : "Card returned to hand. Drop it on your field.");
+    render();
     sfx("invalid");
     animateDragGhostBack(drag);
   }
