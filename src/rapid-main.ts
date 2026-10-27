@@ -257,7 +257,7 @@ function renderBattle(): string {
     "<div class=\"turn-pill\"><span>" + t("round") + "</span><b>" + game.round + "<i>/7</i></b></div><div class=\"top-hint\">" + (language === "ru" ? "КОРОТКАЯ ДУЭЛЬ · ОДНОВРЕМЕННЫЕ ХОДЫ" : "QUICK DUEL · SIMULTANEOUS TURNS") + "</div>" +
     "<button class=\"icon-button\" data-action=\"settings\" aria-label=\"" + t("settings") + "\">⚙</button></header>" +
     "<div class=\"battle-columns\">" + renderLog() +
-    "<section class=\"arena\"><div class=\"arena-topline\"><span class=\"arena-sticker\">" + (language === "ru" ? "ЗОНА СТОЛКНОВЕНИЯ" : "CLASH ZONE") + "</span><span class=\"arena-note\">" + t("rules") + "</span></div>" +
+    "<section class=\"arena\"><div class=\"battle-scene-layer\" aria-hidden=\"true\"></div><div class=\"arena-topline\"><span class=\"arena-sticker\">" + (language === "ru" ? "ЗОНА СТОЛКНОВЕНИЯ" : "CLASH ZONE") + "</span><span class=\"arena-note\">" + t("rules") + "</span></div>" +
     "<div class=\"side-row opponent-row\">" + renderBoard(e, "enemy") + "</div>" +
     "<div class=\"stability-strip\"><span class=\"stability-number stability-enemy\"><small>" + (language === "ru" ? "ВРАГ" : "ENEMY") + "</small><b>" + e.stability + "</b></span><div class=\"stability-center\"><span class=\"bolt\">↯</span><b>" + t("stability") + "</b><small>" + (language === "ru" ? "ЦЕНА И ЖИЗНЬ" : "COST & LIFE") + "</small></div><span class=\"stability-number stability-player\"><small>" + (language === "ru" ? "ТЫ" : "YOU") + "</small><b>" + p.stability + "</b></span></div>" +
     "<div class=\"side-row player-row\">" + renderBoard(p, "player") + "</div>" +
