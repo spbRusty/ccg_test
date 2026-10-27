@@ -665,6 +665,17 @@ body {
   align-items: start;
 }
 .hand-cards .game-card { width: 100%; height: auto; aspect-ratio: 2 / 3; }
+/* During drag the hand slot stays in place but its card is invisible. */
+.hand-cards .game-card.dragging-card { visibility: hidden; }
+/* The browser snapshots this clone as the drag image; keep the entire card visible. */
+.game-card.drag-image-card {
+  visibility: visible !important;
+  opacity: 1 !important;
+  transform: none !important;
+  pointer-events: none !important;
+  transition: none !important;
+  z-index: 2147483647 !important;
+}
 .hand-hint { font-size: 7px; min-height: 10px; color: #8b9ab0; }
 .empty-hand { border: 1px dashed #3f4d61; color: #8b9ab0; font-size: 10px; }
 
