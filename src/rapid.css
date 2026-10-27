@@ -872,7 +872,7 @@ body {
   z-index: 2147483000 !important;
   display: flex !important;
   pointer-events: none !important;
-  opacity: 1 !important;
+  opacity: 1;
   visibility: visible !important;
   transform-origin: 50% 70%;
   filter: saturate(1.06) contrast(1.025);
