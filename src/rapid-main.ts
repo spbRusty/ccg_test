@@ -541,9 +541,15 @@ window.addEventListener("pointermove", event => {
   drag.ghost.style.transform = "translate3d(" + dx + "px," + dy + "px,0) rotate(" + tilt + "deg) scale(1.035)";
   updateDragSlot(drag);
 });
-window.addEventListener("pointerup", event => {
+document.addEventListener("pointerup", event => {
   const drag = activeCardDrag;
-  if (!drag || event.pointerId !== drag.pointerId) return;
+  if (!drag || event.pointerId !== drag.pointerId) {
+    // Recover orphaned previews even if another handler interrupted the previous drag.
+    document.querySelectorAll<HTMLElement>(".drag-ghost-card").forEach(ghost => ghost.remove());
+    document.querySelectorAll<HTMLElement>(".dragging-card").forEach(card => card.classList.remove("dragging-card"));
+    activeCardDrag = null;
+    return;
+  }
   activeCardDrag = null;
   drag.x = event.clientX;
   drag.y = event.clientY;
@@ -575,7 +581,7 @@ window.addEventListener("pointerup", event => {
     animateDragGhostBack(drag);
   }
   drag.source.classList.remove("dragging-card");
-});
+}, true);
 window.addEventListener("pointercancel", event => {
   const drag = activeCardDrag;
   if (!drag || event.pointerId !== drag.pointerId) return;
