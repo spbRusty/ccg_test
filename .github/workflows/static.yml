@@ -29,8 +29,13 @@ jobs:
           node-version: 22
       - name: Install dependencies
         run: npm install --no-audit --no-fund
-      - name: Install image converter
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Ensure image converter is available
+        run: |
+          if command -v ffmpeg >/dev/null 2>&1; then
+            ffmpeg -version | head -n 1
+          else
+            sudo apt-get install -y ffmpeg
+          fi
       - name: Build game
         run: npm run build
       - name: Upload Pages artifact
