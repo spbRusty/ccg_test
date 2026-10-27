@@ -522,7 +522,6 @@ app.addEventListener("pointermove", event => {
     document.body.appendChild(ghost);
     drag.ghost = ghost;
     chosenCardUid = drag.uid;
-    suppressNextClick = true;
     sfx("grab");
   }
   if (!drag.moved || !drag.ghost) return;
@@ -535,10 +534,12 @@ app.addEventListener("pointerup", event => {
   const drag = activeCardDrag;
   if (!drag || event.pointerId !== drag.pointerId) return;
   activeCardDrag = null;
-  document.querySelectorAll<HTMLElement>(".field-slot.drop-target").forEach(slot => slot.classList.remove("drop-target"));
   if (!drag.moved || !drag.ghost) return;
   event.preventDefault();
   suppressNextClick = true;
+  window.setTimeout(() => { suppressNextClick = false; }, 350);
+  updateDragSlot(drag);
+  document.querySelectorAll<HTMLElement>(".field-slot.drop-target").forEach(slot => slot.classList.remove("drop-target"));
   const slot = drag.slot;
   const targetRect = slot?.getBoundingClientRect();
   const accepted = !!slot && !slot.classList.contains("pending-slot") && finishQueuedAction(drag.uid, Number(slot.dataset.slot));
