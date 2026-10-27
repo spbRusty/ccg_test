@@ -9,7 +9,7 @@ export interface BattleSceneHandle {
 export function mountBattleScene(root: HTMLElement): BattleSceneHandle {
   root.classList.add("battle-scene-root");
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color("#111827");
+  scene.background = null;
   scene.fog = new THREE.Fog("#111827", 9, 23);
   const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 60);
   camera.position.set(0, 10.5, 14.5);
