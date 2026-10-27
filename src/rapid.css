@@ -783,3 +783,27 @@ body {
 /* ---------- анимации ---------- */
 @keyframes slot-pulse { 0%, 100% { box-shadow: 0 0 0 0 #4a8fdc00; } 50% { box-shadow: 0 0 0 4px #4a8fdc33; } }
 @keyframes card-in { from { transform: translateY(-10px) scale(0.95); opacity: 0.35; } to { transform: none; opacity: 1; } }
+
+
+/* Three.js tabletop prototype: the DOM remains responsible for readable card text. */
+.arena { isolation: isolate; background: linear-gradient(160deg, #fffdf9f2, #fff0cff0); }
+.arena > .battle-scene-layer {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  overflow: hidden;
+  pointer-events: none;
+  border-radius: inherit;
+  opacity: .9;
+}
+.battle-scene-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.arena > .battle-scene-layer ~ * { z-index: 1; }
+.field-slot .game-card, .hand-cards .game-card { will-change: transform, opacity; transform-origin: 50% 70%; }
+@media (prefers-reduced-motion: reduce) {
+  .field-slot .game-card, .hand-cards .game-card { will-change: auto; }
+}
