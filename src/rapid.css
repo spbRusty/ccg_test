@@ -606,7 +606,7 @@ body {
   padding: 0;
   border: 1px dashed #3f4d61;
   border-radius: 9px;
-  background: #18212d;
+  background: #18212d99;
   display: flex;
   align-items: stretch;
   justify-content: center;
@@ -786,7 +786,7 @@ body {
 
 
 /* Three.js tabletop: canvas is behind DOM controls/cards, with transparent clear color. */
-.arena { isolation: isolate; background: linear-gradient(160deg, #1c2735d9, #151d28d9); }
+.arena { isolation: isolate; background: linear-gradient(160deg, #1c273580, #151d2880); }
 .arena > .battle-scene-layer {
   position: absolute !important;
   inset: 0 !important;
