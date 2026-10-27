@@ -481,14 +481,14 @@ function animateDragGhostBack(drag: NonNullable<typeof activeCardDrag>): void {
 function updateDragSlot(drag: NonNullable<typeof activeCardDrag>): void {
   document.querySelectorAll<HTMLElement>(".field-slot.drop-target").forEach(slot => slot.classList.remove("drop-target"));
   const hit = document.elementFromPoint(drag.x, drag.y);
-  const slot = hit instanceof HTMLElement ? hit.closest<HTMLElement>(".field-slot[data-slot][data-side=\"player\"]") : null;
-  drag.slot = slot && !slot.classList.contains("pending-slot") ? slot : null;
+  const slot = hit instanceof HTMLElement ? hit.closest<HTMLElement>(".field-slot.empty-slot[data-slot][data-side=\"player\"]") : null;
+  drag.slot = slot;
   drag.slot?.classList.add("drop-target");
 }
 app.addEventListener("pointerdown", event => {
   if (!(event instanceof PointerEvent) || event.button !== 0 || page !== "battle" || !game || game.winner) return;
-  const target = event.target instanceof HTMLElement ? event.target.closest<HTMLElement>('[data-zone="hand"][data-uid]') : null;
-  if (!target) return;
+  const target = event.target instanceof HTMLElement ? event.target.closest<HTMLElement>('button.game-card[data-zone="hand"][data-uid]') : null;
+  if (!target || !target.closest(".hand-cards")) return;
   const uid = target.dataset.uid;
   if (!uid || !game.player.hand.some(card => card.uid === uid)) return;
   const rect = target.getBoundingClientRect();
@@ -497,9 +497,8 @@ app.addEventListener("pointerdown", event => {
     startX: event.clientX, startY: event.clientY, x: event.clientX, y: event.clientY,
     ghost: null, slot: null, moved: false
   };
-  try { target.setPointerCapture(event.pointerId); } catch {}
 });
-app.addEventListener("pointermove", event => {
+window.addEventListener("pointermove", event => {
   const drag = activeCardDrag;
   if (!drag || event.pointerId !== drag.pointerId) return;
   drag.x = event.clientX;
@@ -531,7 +530,7 @@ app.addEventListener("pointermove", event => {
   drag.ghost.style.transform = "translate3d(" + dx + "px," + dy + "px,0) rotate(" + tilt + "deg) scale(1.035)";
   updateDragSlot(drag);
 });
-app.addEventListener("pointerup", event => {
+window.addEventListener("pointerup", event => {
   const drag = activeCardDrag;
   if (!drag || event.pointerId !== drag.pointerId) return;
   activeCardDrag = null;
@@ -560,13 +559,21 @@ app.addEventListener("pointerup", event => {
     animateDragGhostBack(drag);
   }
 });
-app.addEventListener("pointercancel", event => {
+window.addEventListener("pointercancel", event => {
   const drag = activeCardDrag;
   if (!drag || event.pointerId !== drag.pointerId) return;
   activeCardDrag = null;
   document.querySelectorAll<HTMLElement>(".field-slot.drop-target").forEach(slot => slot.classList.remove("drop-target"));
   if (drag.moved && drag.ghost) animateDragGhostBack(drag);
   drag.source.classList.remove("dragging-card");
+});
+window.addEventListener("blur", () => {
+  const drag = activeCardDrag;
+  activeCardDrag = null;
+  document.querySelectorAll<HTMLElement>(".field-slot.drop-target").forEach(slot => slot.classList.remove("drop-target"));
+  document.querySelectorAll<HTMLElement>(".drag-ghost-card").forEach(ghost => ghost.remove());
+  document.querySelectorAll<HTMLElement>(".dragging-card").forEach(card => card.classList.remove("dragging-card"));
+  if (drag?.source) drag.source.classList.remove("dragging-card");
 });
 app.addEventListener("change", event => {
   const el = event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement ? event.target : null;
