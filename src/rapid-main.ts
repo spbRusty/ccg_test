@@ -23,6 +23,8 @@ let audio: AudioContext | null = null;
 let musicTimer: number | null = null;
 let musicStep = 0;
 let notice = "";
+let suppressNextClick = false;
+let activeCardDrag: { pointerId: number; uid: string; source: HTMLElement; sourceRect: DOMRect; startX: number; startY: number; x: number; y: number; ghost: HTMLElement | null; slot: HTMLElement | null; moved: boolean } | null = null;
 const I18N: Record<string, [string, string]> = {
   title: ["СТАБИЛЬНОСТЬ", "STABILITY"], subtitle: ["КАРТОЧНАЯ ДУЭЛЬ", "CARD DUEL"],
   single: ["Играть", "Play"], pvp: ["PvP · скоро", "PvP · soon"], decks: ["Коллекция и колоды", "Collection & decks"],
@@ -159,7 +161,7 @@ function renderCard(card: CardDef, zone: string, extraClass = "", copyIndex = -1
   const copyCount = zone === "collection" ? deckIds.filter(id => id === card.id).length : 0;
   const name = cardName(card);
   const title = cardText(card);
-  const isDraggable = zone === "hand" ? " draggable=\"true\"" : "";
+  const isDraggable = "";
   const uidAttr = uid ? " data-uid=\"" + esc(uid) + "\"" : "";
   const copyAttr = copyIndex >= 0 ? " data-copy-index=\"" + copyIndex + "\"" : "";
   const text = "<button class=\"game-card " + factionClass(card) + " " + extraClass + "\" data-card-id=\"" + esc(card.id) + "\" data-zone=\"" + zone + "\"" + uidAttr + copyAttr + isDraggable + " title=\"" + esc(title) + "\" aria-label=\"" + esc(name + ". " + title) + "\">" +
@@ -353,8 +355,8 @@ function startMatch(): void {
   startMusic();
   render();
 }
-function finishQueuedAction(uid: string, slot: number): void {
-  if (!game) return;
+function finishQueuedAction(uid: string, slot: number): boolean {
+  if (!game) return false;
   const result = queueCard(game, "player", uid, slot);
   showNotice(result.message);
   if (result.ok) {
@@ -362,6 +364,7 @@ function finishQueuedAction(uid: string, slot: number): void {
     sfx("play");
   }
   render();
+  return result.ok;
 }
 function action(name: string, target: HTMLElement | null): void {
   if (name === "home") { page = "home"; chosenCardUid = null; stopMusic(); render(); return; }
@@ -413,6 +416,7 @@ function action(name: string, target: HTMLElement | null): void {
   }
 }
 app.addEventListener("click", event => {
+  if (suppressNextClick) { suppressNextClick = false; event.preventDefault(); return; }
   const el = event.target instanceof HTMLElement ? event.target : null;
   if (!el) return;
   const actionEl = el.closest<HTMLElement>("[data-action]");
@@ -466,53 +470,102 @@ app.addEventListener("click", event => {
     finishQueuedAction(chosenCardUid, Number(slotEl.dataset.slot)); return;
   }
 });
-app.addEventListener("dragstart", event => {
-  const el = event.target instanceof HTMLElement ? event.target.closest<HTMLElement>("[data-zone=\"hand\"][data-uid]") : null;
-  if (!el || !game || page !== "battle") return;
-  chosenCardUid = el.dataset.uid || null;
-  const rect = el.getBoundingClientRect();
-  if (event instanceof DragEvent && event.dataTransfer && chosenCardUid) {
-    event.dataTransfer.setData("text/plain", chosenCardUid);
-    event.dataTransfer.effectAllowed = "move";
-
-    // Use a full-size drag image and keep the same point under the pointer.
-    // This prevents the browser from cropping the card when it is grabbed near its top.
-    const preview = el.cloneNode(true) as HTMLElement;
-    preview.classList.remove("dragging-card", "selected-card");
-    preview.classList.add("drag-image-card");
-    preview.style.width = rect.width + "px";
-    preview.style.height = rect.height + "px";
-    preview.style.position = "fixed";
-    preview.style.left = "-10000px";
-    preview.style.top = "0";
-    preview.style.margin = "0";
-    preview.style.transform = "none";
-    preview.style.visibility = "visible";
-    document.body.appendChild(preview);
-    const pointerX = event.clientX || rect.left + rect.width / 2;
-    const pointerY = event.clientY || rect.top + rect.height / 2;
-    const hotX = Math.max(0, Math.min(rect.width, pointerX - rect.left));
-    const hotY = Math.max(0, Math.min(rect.height, pointerY - rect.top));
-    event.dataTransfer.setDragImage(preview, hotX, hotY);
-    window.setTimeout(() => preview.remove(), 0);
+function animateDragGhostBack(drag: NonNullable<typeof activeCardDrag>): void {
+  const ghost = drag.ghost;
+  if (!ghost) return;
+  ghost.style.transition = "transform 190ms cubic-bezier(.2,.8,.2,1), opacity 190ms ease";
+  ghost.style.transform = "translate3d(0,0,0) rotate(0deg) scale(.96)";
+  ghost.style.opacity = "0";
+  window.setTimeout(() => ghost.remove(), 210);
+}
+function updateDragSlot(drag: NonNullable<typeof activeCardDrag>): void {
+  document.querySelectorAll<HTMLElement>(".field-slot.drop-target").forEach(slot => slot.classList.remove("drop-target"));
+  const hit = document.elementFromPoint(drag.x, drag.y);
+  const slot = hit instanceof HTMLElement ? hit.closest<HTMLElement>(".field-slot[data-slot][data-side=\"player\"]") : null;
+  drag.slot = slot && !slot.classList.contains("pending-slot") ? slot : null;
+  drag.slot?.classList.add("drop-target");
+}
+app.addEventListener("pointerdown", event => {
+  if (!(event instanceof PointerEvent) || event.button !== 0 || page !== "battle" || !game || game.winner) return;
+  const target = event.target instanceof HTMLElement ? event.target.closest<HTMLElement>('[data-zone="hand"][data-uid]') : null;
+  if (!target) return;
+  const uid = target.dataset.uid;
+  if (!uid || !game.player.hand.some(card => card.uid === uid)) return;
+  const rect = target.getBoundingClientRect();
+  activeCardDrag = {
+    pointerId: event.pointerId, uid, source: target, sourceRect: rect,
+    startX: event.clientX, startY: event.clientY, x: event.clientX, y: event.clientY,
+    ghost: null, slot: null, moved: false
+  };
+});
+app.addEventListener("pointermove", event => {
+  const drag = activeCardDrag;
+  if (!drag || event.pointerId !== drag.pointerId) return;
+  drag.x = event.clientX;
+  drag.y = event.clientY;
+  const dx = event.clientX - drag.startX;
+  const dy = event.clientY - drag.startY;
+  if (!drag.moved && Math.hypot(dx, dy) > 7) {
+    drag.moved = true;
+    drag.source.classList.add("dragging-card");
+    const ghost = drag.source.cloneNode(true) as HTMLElement;
+    ghost.classList.remove("dragging-card", "selected-card");
+    ghost.classList.add("drag-ghost-card");
+    ghost.removeAttribute("draggable");
+    ghost.style.width = drag.sourceRect.width + "px";
+    ghost.style.height = drag.sourceRect.height + "px";
+    ghost.style.left = drag.sourceRect.left + "px";
+    ghost.style.top = drag.sourceRect.top + "px";
+    ghost.style.margin = "0";
+    ghost.style.transition = "none";
+    ghost.style.transform = "translate3d(0,0,0) rotate(0deg) scale(1)";
+    document.body.appendChild(ghost);
+    drag.ghost = ghost;
+    chosenCardUid = drag.uid;
+    suppressNextClick = true;
+    sfx("grab");
   }
-  // Hide the source card without removing its hand slot from the layout.
-  el.classList.add("dragging-card");
-});
-app.addEventListener("dragend", event => {
-  const el = event.target instanceof HTMLElement ? event.target.closest<HTMLElement>("[data-zone=\"hand\"][data-uid]") : null;
-  el?.classList.remove("dragging-card");
-});
-app.addEventListener("dragover", event => {
-  const slot = event.target instanceof HTMLElement ? event.target.closest("[data-slot][data-side=\"player\"]") : null;
-  if (slot && chosenCardUid) event.preventDefault();
-});
-app.addEventListener("drop", event => {
-  const slot = event.target instanceof HTMLElement ? event.target.closest<HTMLElement>("[data-slot][data-side=\"player\"]") : null;
-  if (!slot || !game) return;
+  if (!drag.moved || !drag.ghost) return;
   event.preventDefault();
-  const uid = (event instanceof DragEvent && event.dataTransfer?.getData("text/plain")) || chosenCardUid;
-  if (uid) finishQueuedAction(uid, Number(slot.dataset.slot));
+  const tilt = Math.max(-7, Math.min(7, dx * 0.045));
+  drag.ghost.style.transform = "translate3d(" + dx + "px," + dy + "px,0) rotate(" + tilt + "deg) scale(1.035)";
+  updateDragSlot(drag);
+});
+app.addEventListener("pointerup", event => {
+  const drag = activeCardDrag;
+  if (!drag || event.pointerId !== drag.pointerId) return;
+  activeCardDrag = null;
+  document.querySelectorAll<HTMLElement>(".field-slot.drop-target").forEach(slot => slot.classList.remove("drop-target"));
+  if (!drag.moved || !drag.ghost) return;
+  event.preventDefault();
+  suppressNextClick = true;
+  const slot = drag.slot;
+  const targetRect = slot?.getBoundingClientRect();
+  const accepted = !!slot && !slot.classList.contains("pending-slot") && finishQueuedAction(drag.uid, Number(slot.dataset.slot));
+  if (accepted && targetRect && drag.ghost) {
+    const sx = targetRect.width / Math.max(1, drag.sourceRect.width);
+    const tx = targetRect.left - drag.sourceRect.left;
+    const ty = targetRect.top - drag.sourceRect.top;
+    drag.ghost.style.transition = "transform 190ms cubic-bezier(.18,.82,.25,1.12), opacity 190ms ease";
+    drag.ghost.style.transform = "translate3d(" + tx + "px," + ty + "px,0) rotate(0deg) scale(" + sx + ")";
+    window.setTimeout(() => drag.ghost?.remove(), 215);
+    sfx("drop");
+  } else {
+    if (!slot) {
+      showNotice(language === "ru" ? "Карта возвращена в руку: выбери место на своём поле." : "Card returned to hand. Drop it on your field.");
+      render();
+    }
+    sfx("invalid");
+    animateDragGhostBack(drag);
+  }
+});
+app.addEventListener("pointercancel", event => {
+  const drag = activeCardDrag;
+  if (!drag || event.pointerId !== drag.pointerId) return;
+  activeCardDrag = null;
+  document.querySelectorAll<HTMLElement>(".field-slot.drop-target").forEach(slot => slot.classList.remove("drop-target"));
+  if (drag.moved && drag.ghost) animateDragGhostBack(drag);
+  drag.source.classList.remove("dragging-card");
 });
 app.addEventListener("change", event => {
   const el = event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement ? event.target : null;
@@ -554,7 +607,10 @@ function tone(frequency: number, duration: number, volume: number, type: Oscilla
 }
 function sfx(kind: string): void {
   const v = soundVolume * 0.14;
-  if (kind === "play" || kind === "reveal") { tone(kind === "play" ? 420 : 660, 0.13, v); window.setTimeout(() => tone(kind === "play" ? 590 : 880, 0.16, v * 0.72), 65); }
+  if (kind === "grab") { tone(250, 0.045, v * 0.55, "triangle"); }
+  else if (kind === "drop") { tone(165, 0.075, v * 0.9, "triangle"); window.setTimeout(() => tone(310, 0.075, v * 0.55, "sine"), 45); }
+  else if (kind === "invalid") { tone(210, 0.09, v * 0.6, "sine"); window.setTimeout(() => tone(155, 0.11, v * 0.4, "sine"), 55); }
+  else if (kind === "play" || kind === "reveal") { tone(kind === "play" ? 420 : 660, 0.13, v); window.setTimeout(() => tone(kind === "play" ? 590 : 880, 0.16, v * 0.72), 65); }
   else if (kind === "win") { tone(523, 0.18, v); window.setTimeout(() => tone(659, 0.18, v), 100); window.setTimeout(() => tone(784, 0.28, v), 210); }
   else if (kind === "lose") { tone(330, 0.22, v * 0.8, "sine"); window.setTimeout(() => tone(247, 0.34, v * 0.8, "sine"), 140); }
   else if (kind === "draw") { tone(440, 0.18, v * 0.8); }
