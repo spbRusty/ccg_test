@@ -1,6 +1,9 @@
 import { CARDS, CARD_BY_ID, DEFAULT_DECK, type CardDef, type Side } from "./game/cards";
 import { createGame, queueCard, unqueueCard, lockPlayerAndResolve, type CardInstance, type GameState } from "./game/rapid-core";
 import "./rapid.css";
+import { mountBattleScene, type BattleSceneHandle } from "./battle-scene";
+
+let battleScene: BattleSceneHandle | null = null;
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
 const base = ((import.meta as any).env.BASE_URL || "/") as string;
@@ -326,10 +329,16 @@ function fitTable(): void {
 }
 
 function render(): void {
+  battleScene?.destroy();
+  battleScene = null;
   document.body.classList.toggle("battle-mode", page === "battle");
   app.innerHTML = page === "battle" ? renderBattle() : page === "decks" ? renderDecks() : page === "settings" ? renderSettings() : renderHome();
   imageFallbacks();
-  if (page === "battle") requestAnimationFrame(fitTable);
+  if (page === "battle") {
+    const sceneRoot = app.querySelector<HTMLElement>(".battle-scene-layer");
+    if (sceneRoot) battleScene = mountBattleScene(sceneRoot);
+    requestAnimationFrame(fitTable);
+  }
   if (page === "battle" && game?.winner) document.body.classList.add("match-finished");
   else document.body.classList.remove("match-finished");
 }
