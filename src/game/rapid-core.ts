@@ -20,6 +20,8 @@ export interface PlayerState {
   locked: boolean;
   /** Slots locked by an effect, keyed by slot index and cleared at round end. */
   lockedSlots: Set<number>;
+  /** Slots that become locked at the start of the next round. */
+  nextLockedSlots: Set<number>;
 }
 export interface GameSettings {
   startStability: number;
@@ -89,7 +91,7 @@ function makePlayer(defs: CardDef[], settings: GameSettings, random: () => numbe
   const deck = shuffle(defs.map(cloneCard), random);
   const p: PlayerState = {
     stability: settings.startStability, hand: [], deck, discard: [],
-    board: Array<CardInstance | null>(settings.slots).fill(null), committed: [], locked: false, lockedSlots: new Set<number>(),
+    board: Array<CardInstance | null>(settings.slots).fill(null), committed: [], locked: false, lockedSlots: new Set<number>(), nextLockedSlots: new Set<number>(),
   };
   for (let i = 0; i < settings.startHand && p.deck.length; i++) p.hand.push(p.deck.pop()!);
   return p;
@@ -207,7 +209,8 @@ function resolveAction(game: GameState, side: Side, card: CardInstance, slot: nu
   } else if (card.action === "lock") {
     const lockOwner = foe;
     for (const targetSlot of slots) {
-      lockOwner.lockedSlots.add(targetSlot);
+      if (card.trigger === "on_round_end") lockOwner.nextLockedSlots.add(targetSlot);
+      else lockOwner.lockedSlots.add(targetSlot);
       affectedSlots.push(targetSlot);
     }
   } else if (card.action === "spawn_token") {
@@ -312,8 +315,12 @@ export function resolveRound(game: GameState, random: () => number = Math.random
     enemy: game.enemy.stability - beforeVolley.enemy,
   };
   game.lastRoundEvents.push({ type: "table_volley", occupied, empty, occupiedSlots, emptySlots, delta });
-  game.player.lockedSlots.clear();
-  game.enemy.lockedSlots.clear();
+  for (const side of sides) {
+    const p = game[side];
+    p.lockedSlots.clear();
+    for (const slot of p.nextLockedSlots) p.lockedSlots.add(slot);
+    p.nextLockedSlots.clear();
+  }
   for (const side of sides) {
     const p = game[side];
     for (const plan of p.committed) {
@@ -322,7 +329,7 @@ export function resolveRound(game: GameState, random: () => number = Math.random
     p.committed = [];
     p.locked = false;
   }
-  // Locked slots affect this volley, then unlock for the next round.
+  // Current-round locks affect this volley; end-of-round locks transfer into the next round.
   checkWinner(game);
   if (!game.winner) {
     for (const side of sides) drawToFour(game, side);
