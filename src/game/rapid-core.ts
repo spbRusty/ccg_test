@@ -1,4 +1,7 @@
 import { CARDS, CARD_BY_ID, DEFAULT_DECK, type CardDef, type Effect, type EffectTarget, type Side } from "./cards";
+import { calculateCardPayment } from "./stability-payment";
+import { getRoundResolutionOrder } from "./round-order";
+import { evaluateEffectCondition } from "./effect-conditions";
 
 export type Winner = Side | "draw" | null;
 export interface CardInstance extends CardDef {
@@ -8,7 +11,8 @@ export interface CardInstance extends CardDef {
 export interface PlannedCard {
   card: CardInstance;
   targetSlot: number;
-  paid: number;
+  /** Actual Stability change caused by selecting this card; positive means spent. */
+  stabilityDelta: number;
 }
 export interface PlayerState {
   stability: number;
@@ -119,10 +123,10 @@ export function queueCard(game: GameState, side: Side, cardUid: string, targetSl
   const handIndex = p.hand.findIndex(card => card.uid === cardUid);
   if (handIndex < 0) return { ok: false, message: "Карты больше нет в руке." };
   const card = p.hand[handIndex];
-  const paid = card.cost > 0 ? (p.stability <= 1 ? 0 : Math.min(card.cost, p.stability - 1)) : card.cost;
-  p.stability = clamp(p.stability - paid, game.settings.maxStability);
+  const payment = calculateCardPayment(p.stability, card.cost, game.settings.maxStability);
+  p.stability = payment.nextStability;
   p.hand.splice(handIndex, 1);
-  p.committed.push({ card, targetSlot, paid });
+  p.committed.push({ card, targetSlot, stabilityDelta: payment.stabilityDelta });
   return { ok: true, message: "Карта выбрана. Стабильность списана." };
 }
 export function unqueueCard(game: GameState, side: Side, cardUid: string): boolean {
@@ -131,7 +135,7 @@ export function unqueueCard(game: GameState, side: Side, cardUid: string): boole
   const index = p.committed.findIndex(item => item.card.uid === cardUid);
   if (index < 0) return false;
   const [planned] = p.committed.splice(index, 1);
-  p.stability = clamp(p.stability + planned.paid, game.settings.maxStability);
+  p.stability = clamp(p.stability + planned.stabilityDelta, game.settings.maxStability);
   p.hand.push(planned.card);
   return true;
 }
@@ -179,40 +183,23 @@ function fieldCount(p: PlayerState): number {
 function hasEffectCondition(effect: Effect, game: GameState, side: Side, slot: number): boolean {
   const p = game[side];
   const foe = game[other(side)];
-  const ownCount = fieldCount(p);
-  const enemyCount = fieldCount(foe);
-  const condition = effect.condition;
-  if (condition) {
-    const threshold = condition.value ?? 0;
-    const opposite = foe.board[slot];
-    switch (condition.type) {
-      case "IS_EDGE": if (slot !== 0 && slot !== game.settings.slots - 1) return false; break;
-      case "IS_CENTER": if (slot === 0 || slot === game.settings.slots - 1) return false; break;
-      case "OPPOSITE_EMPTY": if (opposite) return false; break;
-      case "OPPOSITE_EXISTS": if (!opposite) return false; break;
-      case "LEFT_EMPTY": if (slot > 0 && p.board[slot - 1]) return false; break;
-      case "RIGHT_EMPTY": if (slot < game.settings.slots - 1 && p.board[slot + 1]) return false; break;
-      case "OWN_HAND_MORE": if (p.hand.length <= threshold) return false; break;
-      case "ENEMY_HAND_MORE": if (foe.hand.length <= threshold) return false; break;
-      case "OWN_BOARD_LESS": if (ownCount >= threshold) return false; break;
-      case "ENEMY_BOARD_LESS": if (enemyCount >= threshold) return false; break;
-      case "OWN_DECK_LESS": if (p.deck.length >= threshold) return false; break;
-      case "ENEMY_DECK_LESS": if (foe.deck.length >= threshold) return false; break;
-      case "OWN_STABILITY_BELOW": if (p.stability >= threshold) return false; break;
-      case "ENEMY_STABILITY_BELOW": if (foe.stability >= threshold) return false; break;
-    }
-  }
-  switch (effect.kind) {
-    case "if-own-more": return ownCount > enemyCount;
-    case "if-own-less": return ownCount < enemyCount;
-    case "enemy-played-more": return foe.committed.length > (effect.threshold ?? 1);
-    case "enemy-played-less": return foe.committed.length <= (effect.threshold ?? 1);
-    case "own-played-more": return p.committed.length > (effect.threshold ?? 1);
-    case "own-played-less": return p.committed.length <= (effect.threshold ?? 1);
-    case "if-enemy-stability-low": return foe.stability <= (effect.threshold ?? 10);
-    case "if-own-stability-low": return p.stability <= (effect.threshold ?? 10);
-    default: return true;
-  }
+  return evaluateEffectCondition(effect, {
+    slot,
+    slots: game.settings.slots,
+    ownBoardCount: fieldCount(p),
+    enemyBoardCount: fieldCount(foe),
+    ownHandCount: p.hand.length,
+    enemyHandCount: foe.hand.length,
+    ownDeckCount: p.deck.length,
+    enemyDeckCount: foe.deck.length,
+    ownStability: p.stability,
+    enemyStability: foe.stability,
+    ownPlayedCount: p.committed.length,
+    enemyPlayedCount: foe.committed.length,
+    oppositeOccupied: Boolean(foe.board[slot]),
+    leftOccupied: slot > 0 && Boolean(p.board[slot - 1]),
+    rightOccupied: slot < game.settings.slots - 1 && Boolean(p.board[slot + 1]),
+  });
 }
 function accumulate(out: Outcome, game: GameState, side: Side, card: CardInstance, timing: "play" | "end", slot: number): void {
   if (card.timing !== timing) return;
@@ -445,11 +432,9 @@ export function resolveRound(game: GameState, random: () => number = Math.random
     }
   };
 
-  // Priority is determined once, before reveal begins. Ties are decided randomly.
-  const first: Side = game.player.stability === game.enemy.stability
-    ? (random() < 0.5 ? "player" : "enemy")
-    : (game.player.stability < game.enemy.stability ? "player" : "enemy");
-  const order: Side[] = [first, other(first)];
+  // Priority is fixed once before reveal; the ordering rule lives in a pure module.
+  const order = getRoundResolutionOrder(game.player.stability, game.enemy.stability, random);
+  const first = order[0];
   pushLog(game, (first === "player" ? "Ты" : "Соперник") + " раскрывает карты первым.");
   // Reveal slot 1, then 2, 3, 4. Within each slot, the priority side resolves first.
   for (let slot = 0; slot < game.settings.slots; slot++) {
@@ -529,7 +514,8 @@ export function aiCommit(game: GameState, random: () => number = Math.random): v
   const candidates = [...p.hand].sort((a, b) => rateCard(b) - rateCard(a));
   for (const card of candidates) {
     if (p.committed.length >= game.settings.maxPlays) break;
-    if (p.stability - card.cost < 1) continue;
+    // queueCard is the single authority for payment rules, including partial payment
+    // and free selection at 1 Stability. The AI may use the same legal options as a player.
     let used = new Set(p.committed.map(item => item.targetSlot));
     let slot = p.board.findIndex((item, index) => item === null && !used.has(index));
     if (slot < 0) {
