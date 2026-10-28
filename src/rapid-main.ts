@@ -415,6 +415,40 @@ function animateRound(snapshot: RoundVisualSnapshot): void {
     });
   };
 
+  const volleyRay = (sourceSide: Side, slot: number, targetSide: Side, kind: "damage" | "heal") => {
+    const source = app.querySelector<HTMLElement>(".field-row." + (sourceSide === "player" ? "your-field" : "enemy-field") + ' [data-slot="' + slot + '"]');
+    const target = app.querySelector<HTMLElement>(".stability-strip " + (targetSide === "enemy" ? ".stability-enemy" : ".stability-player"));
+    if (!source || !target) return;
+    const sourceRect = source.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
+    const arenaRect = arena.getBoundingClientRect();
+    const x1 = sourceRect.left + sourceRect.width / 2 - arenaRect.left;
+    const y1 = sourceRect.top + sourceRect.height / 2 - arenaRect.top;
+    const x2 = targetRect.left + targetRect.width / 2 - arenaRect.left;
+    const y2 = targetRect.top + targetRect.height / 2 - arenaRect.top;
+    const ray = document.createElement("span");
+    ray.className = "volley-ray volley-ray-" + kind;
+    ray.style.left = x1 + "px";
+    ray.style.top = y1 + "px";
+    ray.style.width = Math.hypot(x2 - x1, y2 - y1) + "px";
+    ray.style.transform = "rotate(" + Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI + "deg)";
+    layer.append(ray);
+    gsap.fromTo(ray, { opacity: 0, scaleX: 0.02 }, {
+      opacity: 1, scaleX: 1, duration: 0.18, ease: "power2.out",
+      onComplete: () => gsap.to(ray, { opacity: 0, duration: 0.22, onComplete: () => ray.remove() }),
+    });
+    if (kind === "heal") {
+      for (let index = 0; index < 3; index++) {
+        const spark = document.createElement("i");
+        spark.className = "volley-spark";
+        spark.style.left = (x1 + (x2 - x1) * (0.18 + index * 0.13)) + "px";
+        spark.style.top = (y1 + (y2 - y1) * (0.18 + index * 0.13)) + "px";
+        layer.append(spark);
+        gsap.fromTo(spark, { opacity: 0, y: 8, scale: 0.5 }, { opacity: 1, y: -18, scale: 1, duration: 0.28, delay: index * 0.025, onComplete: () => gsap.to(spark, { opacity: 0, duration: 0.14, onComplete: () => spark.remove() }) });
+      }
+    }
+  };
+
   const firstName = snapshot.first === "player" ? label("ТЫ ВСКРЫВАЕШЬСЯ ПЕРВЫМ", "YOU REVEAL FIRST") : label("СОПЕРНИК ВСКРЫВАЕТСЯ ПЕРВЫМ", "OPPONENT REVEALS FIRST");
   stage(firstName, "initiative");
   timeline.add(() => {
@@ -542,11 +576,13 @@ function animateRound(snapshot: RoundVisualSnapshot): void {
     if (volley) {
       for (const side of ["player", "enemy"] as const) {
         for (const slot of volley.occupiedSlots[side]) {
+          volleyRay(side, slot, side === "player" ? "enemy" : "player", "damage");
           numberFx(side === "player" ? "enemy" : "player", -1, "damage", slot, side);
           battleScene?.pulseSlot(side, slot);
           battleScene?.pulseStability(side === "player" ? "enemy" : "player");
         }
         for (const slot of volley.emptySlots[side]) {
+          volleyRay(side, slot, side, "heal");
           numberFx(side, 1, "heal", slot, side);
           battleScene?.pulseSlot(side, slot);
           battleScene?.pulseStability(side);
