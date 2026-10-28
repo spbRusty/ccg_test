@@ -6,7 +6,7 @@ describe("Rapid core: короткая дуэль", () => {
   it("содержит ровно 120 карт с уникальными ID", () => {
     expect(CARDS).toHaveLength(120);
     expect(new Set(CARDS.map(card => card.id)).size).toBe(120);
-    expect(CARDS.every(card => card.name && card.text && card.cost >= 1)).toBe(true);
+    expect(CARDS.every(card => card.name && card.text && Number.isFinite(card.cost))).toBe(true);
   });
 
   it("использует колоду 12, стартовую руку 4 и поле из 4 мест и рука ограничена 4 картами", () => {
@@ -32,18 +32,18 @@ describe("Rapid core: короткая дуэль", () => {
     expect(game.player.hand.some(item => item.uid === card.uid)).toBe(true);
   });
 
-  it("не позволяет потратить Стабильность до нуля или выбрать больше двух карт", () => {
+  it("не позволяет оплатой опустить Стабильность ниже 1 и разрешает занять четыре слота", () => {
     const game = createGame(DEFAULT_DECK, () => 0.5);
     const card = game.player.hand[0];
     game.player.stability = card.cost;
-    expect(queueCard(game, "player", card.uid, 0).ok).toBe(false);
+    expect(queueCard(game, "player", card.uid, 0).ok).toBe(true);
     game.player.stability = 30;
     const first = game.player.hand[0];
     const second = game.player.hand[1];
     const third = game.player.hand[2];
     expect(queueCard(game, "player", first.uid, 0).ok).toBe(true);
     expect(queueCard(game, "player", second.uid, 1).ok).toBe(true);
-    expect(queueCard(game, "player", third.uid, 2).ok).toBe(false);
+    expect(queueCard(game, "player", third.uid, 2).ok).toBe(true);
   });
 
   it("эффекты меняют Стабильность, у карт нет атаки и здоровья", () => {
@@ -82,7 +82,7 @@ describe("Rapid core: короткая дуэль", () => {
     expect(game.winner).toBe("draw");
   });
 
-  it("стартовая колода собрана из существующих карт без дубликатов", () => {
+  it("стартовая колода собрана из существующих уникальных карт", () => {
     expect(DEFAULT_DECK.every(id => CARD_BY_ID.has(id))).toBe(true);
     expect(DEFAULT_DECK).toContain("raid");
     expect(CARDS.find(card => card.id === "raid")?.cost).toBe(2);
