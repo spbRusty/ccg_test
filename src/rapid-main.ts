@@ -9,7 +9,7 @@ let animationRound = 0;
 let roundAnimationRunning = false;
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
-const base = ((import.meta as any).env.BASE_URL || "/") as string;
+const base = ((import.meta as ImportMeta & { readonly env?: { readonly BASE_URL?: string } }).env?.BASE_URL) || "/";
 type Language = "ru" | "en";
 type Page = "home" | "battle" | "decks" | "settings";
 let language: Language = (localStorage.getItem("stability-language") as Language) || "ru";
@@ -140,7 +140,7 @@ function timingName(card: CardDef): string {
 }
 function artPath(card: CardDef): string { return base + "cards/card-art-0" + card.art + ".avif"; }
 function renderCard(card: CardDef, zone: string, extraClass = "", copyIndex = -1, uid = ""): string {
-  const copyCount = zone === "collection" ? deckIds.filter(id => id === card.id).length : 0;
+  const inDeck = zone === "collection" && deckIds.includes(card.id);
   const name = cardName(card);
   const title = cardText(card);
   const isDraggable = "";
@@ -151,7 +151,7 @@ function renderCard(card: CardDef, zone: string, extraClass = "", copyIndex = -1
     "<span class=\"cost-badge\">" + (card.cost > 0 ? "+" + card.cost : card.cost) + "</span><span class=\"rarity-mark\">" + (card.rarity === "Эпическая" ? "✦" : card.rarity === "Редкая" ? "◆" : "•") + "</span>" +
     "<span class=\"card-art\"><img src=\"" + esc(artPath(card)) + "\" alt=\"\" loading=\"lazy\"><span class=\"art-splash\"></span><span class=\"art-word\">" + esc(factionName(card).slice(0, 3).toUpperCase()) + "</span></span>" +
     "<span class=\"card-content\"><span class=\"card-name\">" + esc(name) + "</span><span class=\"card-description\">" + esc(title) + "</span><span class=\"card-bottom\"><span class=\"timing-chip\">" + timingName(card) + "</span><span class=\"faction-label\">" + esc(factionName(card)) + "</span></span></span>" +
-    (zone === "collection" ? "<span class=\"copy-counter\">" + copyCount + "/2</span>" : "") +
+    (inDeck ? "<span class=\"copy-counter\" aria-label=\"" + (language === "ru" ? "В колоде" : "In deck") + "\">✓</span>" : "") +
     "</button>";
   return text;
 }
@@ -279,7 +279,7 @@ function renderDecks(): string {
     "<div class=\"deck-slots\">" + deckSlots + "</div><div class=\"deck-tools\"><span class=\"deck-status\">" + (deckIds.length === 14 ? (language === "ru" ? "КОЛОДА ГОТОВА" : "DECK READY") : (language === "ru" ? "НУЖНО ЕЩЁ " + (14 - deckIds.length) : "ADD " + (14 - deckIds.length) + " MORE")) + "</span><button class=\"button button-light\" data-action=\"auto-deck\">" + t("autoDeck") + "</button><button class=\"button button-hot\" data-action=\"save-deck\" " + (deckIds.length !== 14 ? "disabled" : "") + ">" + t("save") + " ✓</button></div></section>" +
     "<section class=\"collection-section\"><div class=\"collection-heading\"><div><span class=\"eyebrow\">" + t("cards") + " / 31</span><h2>" + t("collection") + "</h2></div><div class=\"collection-filters\"><input id=\"collection-search\" type=\"search\" placeholder=\"" + t("search") + "\" value=\"" + esc(collectionQuery) + "\"><button class=\"button button-light\" data-action=\"find\">" + (language === "ru" ? "Найти" : "Find") + "</button><select id=\"collection-faction\" aria-label=\"" + t("allFactions") + "\"><option value=\"all\">" + t("allFactions") + "</option>" +
     Array.from(new Set(CARDS.map(card => card.faction))).map(faction => "<option value=\"" + esc(faction) + "\"" + (collectionFaction === faction ? " selected" : "") + ">" + esc(language === "ru" ? faction : englishFaction(faction)) + "</option>").join("") + "</select></div></div>" +
-    "<div class=\"collection-grid\">" + shown.map(card => "<div class=\"collection-cell\">" + renderCard(card, "collection", "collection-card") + "<span class=\"collection-card-note\">" + (language === "ru" ? card.rarity : card.rarity === "Эпическая" ? "Epic" : card.rarity === "Редкая" ? "Rare" : "Common") + "</span></div>").join("") + "</div><p class=\"collection-footer\">" + (language === "ru" ? "Показано " + shown.length + " из 31 карты. Нажми на карту, чтобы добавить её в колоду." : "Showing " + shown.length + " of 31 cards. Select a card to add it to your deck.") + "</p></section></main>";
+    "<div class=\"collection-grid\">" + shown.map(card => "<div class=\"collection-cell\">" + renderCard(card, "collection", "collection-card") + "<span class=\"collection-card-note\">" + (language === "ru" ? card.rarity : card.rarity === "Эпическая" ? "Epic" : card.rarity === "Редкая" ? "Rare" : "Common") + "</span></div>").join("") + "</div><p class=\"collection-footer\">" + (language === "ru" ? "Показано " + shown.length + " из " + CARDS.length + " карт. Нажми на карту, чтобы добавить её в колоду." : "Showing " + shown.length + " of " + CARDS.length + " cards. Select a card to add it to your deck.") + "</p></section></main>";
 }
 function renderSettings(): string {
   return "<main class=\"menu-screen settings-screen\"><header class=\"page-topbar\"><button class=\"brand-lockup\" data-action=\"home\"><span class=\"brand-icon\">S!</span><span><b>" + t("title") + "</b><small>" + t("subtitle") + "</small></span></button><button class=\"button button-light\" data-action=\"back\">" + t("back") + "</button></header><section class=\"settings-content\"><span class=\"eyebrow\">" + (language === "ru" ? "ПОД СЕБЯ" : "MAKE IT YOURS") + "</span><h1>" + t("settings") + "</h1>" +
