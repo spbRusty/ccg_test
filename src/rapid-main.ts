@@ -421,6 +421,7 @@ function animateRound(snapshot: RoundVisualSnapshot): void {
     const sideRow = app.querySelector<HTMLElement>(snapshot.first === "player" ? ".player-row" : ".opponent-row");
     sideRow?.classList.add("initiative-flash");
     battleScene?.pulseStability(snapshot.first);
+    battleScene?.signalInitiative(snapshot.first);
     sfx("initiative");
     window.setTimeout(() => sideRow?.classList.remove("initiative-flash"), 380);
   }, 0.02);
@@ -440,23 +441,13 @@ function animateRound(snapshot: RoundVisualSnapshot): void {
         if (slotEl) gsap.fromTo(slotEl, { filter: "brightness(1)" }, { filter: "brightness(1.65)", duration: 0.12, yoyo: true, repeat: 1 });
         if (cardEl) {
           const cover = cardEl.querySelector<HTMLElement>(".card-back-cover");
-          // A visible two-step flip: narrow the whole card, remove the back, then reveal the face.
-          gsap.killTweensOf(cardEl);
-          gsap.fromTo(cardEl, { scale: 0.94, y: -5, rotate: -1.5 }, { scale: 1, y: 0, rotate: 0, duration: 0.28, ease: "power2.out" });
-          if (cover) {
-            gsap.killTweensOf(cover);
-            gsap.set(cover, { opacity: 1, scaleX: 1, transformOrigin: "50% 50%" });
-            gsap.to(cardEl, {
-              scaleX: 0.04, duration: 0.3, delay: 0.05, ease: "power2.in",
-              onComplete: () => {
-                cover.remove();
-                gsap.fromTo(cardEl, { scaleX: 0.04 }, { scaleX: 1, duration: 0.34, ease: "power2.out" });
-              },
-            });
+          battleScene?.revealCard(cardEl, cover);
+          if (!battleScene) {
+            gsap.fromTo(cardEl, { scaleX: 0.04 }, { scaleX: 1, duration: 0.5, ease: "power2.out" });
+            cover?.remove();
           }
         }
-        const planned = snapshot.before[side].plans.find(plan => plan.card.uid === card.uid);
-        const cost = planned?.paid ?? card.cost;
+        const cost = revealEvent.paid;
         if (cost !== 0) {
           numberFx(side, cost, "cost", slot);
           sfx("cost");
@@ -465,16 +456,7 @@ function animateRound(snapshot: RoundVisualSnapshot): void {
       timeline.to({}, { duration: 0.82 });
   }
 
-  const newlyRevealed: Array<{ side: Side; slot: number; card: CardInstance }> = [];
-  for (const side of ["player", "enemy"] as const) {
-    for (let slot = 0; slot < 4; slot++) {
-      const card = snapshot.after[side].board[slot];
-      const oldCard = snapshot.before[side].board[slot];
-      if (card && card.playedRound === snapshot.round && oldCard?.uid !== card.uid) {
-        newlyRevealed.push({ side, slot, card });
-      }
-    }
-  }
+  const actionEvents = snapshot.events.filter((event): event is Extract<RoundEvent, { type: "action" }> => event.type === "action");
 
   timeline.add(() => {
     stage(label("ЭФФЕКТЫ КАРТ", "CARD EFFECTS"), "effect");
@@ -483,31 +465,41 @@ function animateRound(snapshot: RoundVisualSnapshot): void {
     });
   }, "+=0.1");
 
-  for (const item of newlyRevealed) {
+  for (const event of actionEvents) {
     timeline.add(() => {
-      const sideName = item.side === "player" ? label("ТВОЯ КАРТА", "YOUR CARD") : label("КАРТА СОПЕРНИКА", "OPPONENT CARD");
-      const cardNameText = cardName(item.card);
-      const effectText = cardText(item.card);
-      stage(sideName + " · " + cardNameText, "effect");
-      const slotEl = app.querySelector<HTMLElement>(".field-row." + (item.side === "player" ? "your-field" : "enemy-field") + ' [data-slot="' + item.slot + '"]');
-      const cardEl = slotEl?.querySelector<HTMLElement>(".game-card");
-      if (slotEl) {
-        slotEl.classList.add("card-effect-active");
-        window.setTimeout(() => slotEl.classList.remove("card-effect-active"), 760);
+      const sideName = event.side === "player" ? label("ТВОЯ КАРТА", "YOUR CARD") : label("КАРТА СОПЕРНИКА", "OPPONENT CARD");
+      const name = cardName(event.card);
+      const text = cardText(event.card);
+      stage(sideName + " · " + name, "effect");
+      const sourceSelector = ".field-row." + (event.side === "player" ? "your-field" : "enemy-field") + ' [data-slot="' + event.slot + '"]';
+      const sourceSlot = app.querySelector<HTMLElement>(sourceSelector);
+      const sourceCard = sourceSlot?.querySelector<HTMLElement>(".game-card");
+      if (sourceSlot) {
+        sourceSlot.classList.add("card-effect-active");
+        window.setTimeout(() => sourceSlot.classList.remove("card-effect-active"), 760);
+        battleScene?.pulseSlot(event.side, event.slot);
       }
-      if (cardEl) {
-        const rect = cardEl.getBoundingClientRect();
+      for (const affectedSlot of event.affectedSlots) {
+        battleScene?.pulseSlot(event.affectedSide, affectedSlot);
+        const targetSelector = ".field-row." + (event.affectedSide === "player" ? "your-field" : "enemy-field") + ' [data-slot="' + affectedSlot + '"]';
+        const targetSlot = app.querySelector<HTMLElement>(targetSelector);
+        if (targetSlot) {
+          gsap.fromTo(targetSlot, { filter: "brightness(1)" }, { filter: "brightness(1.8)", duration: 0.14, yoyo: true, repeat: 1 });
+        }
+      }
+      const anchorRect = (sourceCard ?? sourceSlot)?.getBoundingClientRect();
+      if (anchorRect) {
         const arenaRect = arena.getBoundingClientRect();
         const callout = document.createElement("div");
         callout.className = "round-effect-callout";
-        callout.innerHTML = "<b>" + esc(cardNameText) + "</b><span>" + esc(effectText) + "</span>";
-        callout.style.left = Math.max(8, Math.min(arenaRect.width - 248, rect.left + rect.width / 2 - arenaRect.left - 124)) + "px";
-        callout.style.top = Math.max(8, rect.top - arenaRect.top - 8) + "px";
+        callout.innerHTML = "<b>" + esc(name) + "</b><span>" + esc(text) + "</span>";
+        callout.style.left = Math.max(8, Math.min(arenaRect.width - 248, anchorRect.left + anchorRect.width / 2 - arenaRect.left - 124)) + "px";
+        callout.style.top = Math.max(8, anchorRect.top - arenaRect.top - 8) + "px";
         layer.append(callout);
         gsap.fromTo(callout, { opacity: 0, y: 14, scale: 0.92 }, { opacity: 1, y: 0, scale: 1, duration: 0.18, ease: "power2.out" });
         gsap.to(callout, { opacity: 0, y: -6, delay: 0.58, duration: 0.16, onComplete: () => callout.remove() });
-        gsap.fromTo(cardEl, { filter: "brightness(1)" }, { filter: "brightness(1.55)", duration: 0.16, yoyo: true, repeat: 1 });
       }
+      if (sourceCard) gsap.fromTo(sourceCard, { filter: "brightness(1)" }, { filter: "brightness(1.55)", duration: 0.16, yoyo: true, repeat: 1 });
       sfx("reveal");
     });
     timeline.to({}, { duration: 0.78 });
