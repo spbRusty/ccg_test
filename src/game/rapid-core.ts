@@ -328,7 +328,7 @@ function checkWinner(game: GameState): void {
 }
 export function rateCard(card: CardDef): number {
   const actionValue: Record<CardAction, number> = { remove: 5, bounce: 3.5, shift: 2.5, lock: 3, spawn_token: 2 };
-  return actionValue[card.action] - card.cost * 0.8 + (card.trigger === "on_reveal" ? 0.5 : 0);
+  return actionValue[card.action] + card.cost * 0.8 + (card.trigger === "on_reveal" ? 0.5 : 0);
 }
 export function aiCommit(game: GameState, random: () => number = Math.random): void {
   const p = game.enemy;
