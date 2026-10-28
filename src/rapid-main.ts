@@ -405,12 +405,13 @@ function animateRound(snapshot: RoundVisualSnapshot): void {
     },
   });
   const stage = (label: string, tone: string) => {
+    layer.querySelectorAll(".round-stage").forEach(node => node.remove());
     const chip = document.createElement("div");
     chip.className = "round-stage round-stage-" + tone;
     chip.textContent = label;
     layer.append(chip);
-    gsap.fromTo(chip, { opacity: 0, y: -10, scale: 0.9, xPercent: -50 }, { opacity: 1, y: 0, scale: 1, duration: 0.13, ease: "back.out(2)" });
-    gsap.delayedCall(0.55, () => { if (chip.isConnected) gsap.to(chip, { opacity: 0, y: -8, duration: 0.14, onComplete: () => chip.remove() }); });
+    gsap.fromTo(chip, { opacity: 0, y: -12, scale: 0.88, xPercent: -50 }, { opacity: 1, y: 0, scale: 1, duration: 0.22, ease: "back.out(1.7)" });
+    gsap.delayedCall(1.05, () => { if (chip.isConnected) gsap.to(chip, { opacity: 0, y: -8, duration: 0.2, onComplete: () => chip.remove() }); });
   };
   const label = (ru: string, en: string) => language === "ru" ? ru : en;
   const numberFx = (side: Side, value: number, kind: "damage" | "heal" | "cost", slot?: number, sourceSide: Side = side) => {
@@ -459,12 +460,18 @@ function animateRound(snapshot: RoundVisualSnapshot): void {
         if (slotEl) gsap.fromTo(slotEl, { filter: "brightness(1)" }, { filter: "brightness(1.65)", duration: 0.12, yoyo: true, repeat: 1 });
         if (cardEl) {
           const cover = cardEl.querySelector<HTMLElement>(".card-back-cover");
-          gsap.fromTo(cardEl, { scale: 0.97, y: -3 }, { scale: 1, y: 0, duration: 0.52, ease: "power2.out" });
+          // A visible two-step flip: narrow the whole card, remove the back, then reveal the face.
+          gsap.killTweensOf(cardEl);
+          gsap.fromTo(cardEl, { scale: 0.94, y: -5, rotate: -1.5 }, { scale: 1, y: 0, rotate: 0, duration: 0.28, ease: "power2.out" });
           if (cover) {
-            gsap.set(cover, { rotateY: 0, opacity: 1, transformPerspective: 1000, transformOrigin: "50% 50%" });
-            gsap.to(cover, {
-              rotateY: 90, opacity: 0, duration: 0.52, delay: 0.04,
-              ease: "power2.inOut", onComplete: () => cover.remove(),
+            gsap.killTweensOf(cover);
+            gsap.set(cover, { opacity: 1, scaleX: 1, transformOrigin: "50% 50%" });
+            gsap.to(cardEl, {
+              scaleX: 0.04, duration: 0.3, delay: 0.05, ease: "power2.in",
+              onComplete: () => {
+                cover.remove();
+                gsap.fromTo(cardEl, { scaleX: 0.04 }, { scaleX: 1, duration: 0.34, ease: "power2.out" });
+              },
             });
           }
         }
@@ -475,7 +482,7 @@ function animateRound(snapshot: RoundVisualSnapshot): void {
           sfx("cost");
         } else sfx("reveal");
       });
-      timeline.to({}, { duration: 0.64 });
+      timeline.to({}, { duration: 0.82 });
     }
   }
 
@@ -524,7 +531,7 @@ function animateRound(snapshot: RoundVisualSnapshot): void {
     }
   }, "+=0.15");
 
-  timeline.to({}, { duration: 0.38 });
+  timeline.to({}, { duration: 0.62 });
   timeline.add(() => {
     stage(label("ЗАЛП СТОЛА", "BOARD VOLLEY"), "volley");
     const occupiedPlayer = snapshot.after.player.board.filter(Boolean).length;
