@@ -922,3 +922,28 @@ body {
   .hand-cards .game-card, .field-slot, .drag-ghost-card { transition: none !important; }
   .field-slot.just-played .field-card, .field-slot.occupied-slot.just-played .game-card { animation-duration: 1ms !important; }
 }
+
+
+/* Compact, readable round-resolution animation */
+.round-fx-layer { position: absolute !important; inset: 0; z-index: 30 !important; pointer-events: none; overflow: hidden; }
+.round-stage { position: absolute; left: 50%; top: 44%; transform: translate(-50%, -50%); max-width: 88%; padding: 9px 16px; border: 2px solid currentColor; border-radius: 10px; background: #111827eF; color: #fff; box-shadow: 0 0 24px currentColor, 0 5px 0 #080d14; font-size: clamp(10px, 1.1vw, 15px); font-weight: 1000; letter-spacing: .1em; text-align: center; white-space: nowrap; }
+.round-stage-initiative { color: #ffd66f; }
+.round-stage-reveal { color: #a8dcff; }
+.round-stage-effect { color: #d7b6ff; }
+.round-stage-volley { color: #ff7777; }
+.round-stage-draw { color: #82f0bb; }
+.round-number-fx { position: absolute; z-index: 32; color: white; font-size: clamp(21px, 3vw, 38px); line-height: 1; font-weight: 1000; letter-spacing: -.06em; text-shadow: 0 2px 0 #101827, 0 0 15px currentColor; pointer-events: none; }
+.round-number-cost, .round-number-damage { color: #ff645e; }
+.round-number-heal { color: #5dffc0; }
+.card-back-cover { position: absolute; z-index: 25; inset: 0; display: grid; place-items: center; border-radius: inherit; border: 2px solid #ffd66f; background: repeating-linear-gradient(45deg,#172b43 0 7px,#223d5a 7px 14px); box-shadow: inset 0 0 0 4px #ffd66f55, 0 0 18px #ffcc5c99; transform-origin: left center; backface-visibility: hidden; }
+.card-back-cover::before { content: ""; position: absolute; inset: 8%; border: 1px solid #ffd66f99; border-radius: 8px; }
+.card-back-cover i { display: grid; place-items: center; width: 36%; aspect-ratio: 1; border: 2px solid #ffe09a; border-radius: 50%; color: #ffe09a; font-style: normal; font-size: clamp(14px, 2vw, 26px); font-weight: 1000; box-shadow: 0 0 18px #ffd66f88; }
+.round-reveal-card { transform-style: preserve-3d; }
+.initiative-flash { animation: initiative-flash .38s ease-out; }
+@keyframes initiative-flash { 0% { filter: brightness(1); } 30% { filter: brightness(1.8) saturate(1.4); } 100% { filter: brightness(1); } }
+.card-dissolve-fx { position: absolute; z-index: 18; inset: 8%; border-radius: 50%; background: radial-gradient(circle, #e7d8ff 0, #7e5a9d88 28%, #15121d00 70%); pointer-events: none; }
+.round-resolving .battle-screen button { pointer-events: none !important; }
+.round-resolving .battle-screen { cursor: progress; }
+@media (prefers-reduced-motion: reduce) {
+  .round-stage, .round-number-fx, .card-back-cover { animation-duration: 1ms !important; transition-duration: 1ms !important; }
+}
