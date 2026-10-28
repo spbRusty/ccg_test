@@ -38,7 +38,7 @@ const I18N: Record<string, [string, string]> = {
   log: ["ХРОНИКА", "MATCH LOG"], arsenal: ["АРХИВ", "ARCHIVE"], remaining: ["Колода", "Deck"], enemyPlayed: ["Карты соперника", "Opponent cards"],
   win: ["ПОБЕДА!", "YOU WIN!"], lose: ["ПОРАЖЕНИЕ", "DEFEAT"], draw: ["НИЧЬЯ", "DRAW"],
   playAgain: ["Ещё матч", "Play again"], mainMenu: ["В меню", "Main menu"], confirm: ["Готово", "Done"],
-  deckCount: ["Карт в колоде", "Cards in deck"], maxCopies: ["Не больше 2 копий одной карты", "Max 2 copies of a card"],
+  deckCount: ["Карт в колоде", "Cards in deck"], maxCopies: ["12 разных карт, без повторов", "12 unique cards, no duplicates"],
   addCards: ["Добавь карты из коллекции ниже. Должно быть ровно 12.", "Add cards from the collection below. Exactly 12 are required."],
   autoDeck: ["Стартовая колода", "Starter deck"], save: ["Сохранить колоду", "Save deck"], search: ["Поиск карт", "Search cards"],
   allFactions: ["Все отряды", "All squads"], sound: ["Звуковые эффекты", "Sound effects"], music: ["Музыка", "Music"],
@@ -52,10 +52,10 @@ function readDeck(): string[] {
     const stored = JSON.parse(localStorage.getItem("stability-deck") || "null");
     if (Array.isArray(stored)) {
       const clean: string[] = [];
-      const counts = new Map<string, number>();
+      const seen = new Set<string>();
       for (const id of stored) {
-        if (typeof id !== "string" || !CARD_BY_ID.has(id) || (counts.get(id) || 0) >= 2 || clean.length >= 12) continue;
-        counts.set(id, (counts.get(id) || 0) + 1);
+        if (typeof id !== "string" || !CARD_BY_ID.has(id) || seen.has(id) || clean.length >= 12) continue;
+        seen.add(id);
         clean.push(id);
       }
       if (clean.length === 12) return clean;
@@ -434,7 +434,7 @@ app.addEventListener("click", event => {
     if (zone === "collection") {
       const count = deckIds.filter(value => value === id).length;
       if (deckIds.length >= 12) { showNotice(language === "ru" ? "Колода уже содержит 12 карт. Убери одну из верхнего ряда." : "Deck already has 12 cards. Remove one from the top row."); return; }
-      if (count >= 2) { showNotice(language === "ru" ? "Можно взять не больше двух копий." : "Only two copies are allowed."); return; }
+      if (count >= 1) { showNotice(language === "ru" ? "Эта карта уже есть в колоде." : "This card is already in the deck."); return; }
       if (CARD_BY_ID.has(id)) deckIds.push(id);
       saveDeck(); render(); return;
     }
@@ -490,7 +490,7 @@ function animateDragGhostBack(drag: NonNullable<typeof activeCardDrag>): void {
 function updateDragSlot(drag: NonNullable<typeof activeCardDrag>): void {
   document.querySelectorAll<HTMLElement>(".field-slot.drop-target").forEach(slot => slot.classList.remove("drop-target"));
   const hit = document.elementFromPoint(drag.x, drag.y);
-  const slot = hit instanceof HTMLElement ? hit.closest<HTMLElement>(".field-slot.empty-slot[data-slot][data-side=\"player\"]") : null;
+  const slot = hit instanceof HTMLElement ? hit.closest<HTMLElement>(".field-slot[data-slot][data-side=\"player\"]") : null;
   drag.slot = slot;
   drag.slot?.classList.add("drop-target");
 }
