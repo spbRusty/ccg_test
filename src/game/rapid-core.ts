@@ -133,7 +133,7 @@ export function unqueueCard(game: GameState, side: Side, cardUid: string): boole
   const index = p.committed.findIndex(item => item.card.uid === cardUid);
   if (index < 0) return false;
   const [planned] = p.committed.splice(index, 1);
-  p.stability = clamp(p.stability - planned.stabilityDelta, game.settings.maxStability);
+  p.stability = clamp(p.stability + planned.stabilityDelta, game.settings.maxStability);
   p.hand.push(planned.card);
   return true;
 }
