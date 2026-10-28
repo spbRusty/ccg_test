@@ -947,3 +947,6 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .round-stage, .round-number-fx, .card-back-cover { animation-duration: 1ms !important; transition-duration: 1ms !important; }
 }
+
+.card-shift-fx { filter: drop-shadow(0 0 8px #8bdcff); }
+.card-shift-trail { position: absolute; z-index: 12; left: 12%; right: 12%; top: 45%; height: 5px; border-radius: 50%; background: linear-gradient(90deg, transparent, #a9e9ff, #fff, transparent); filter: blur(2px); pointer-events: none; }
