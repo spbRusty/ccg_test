@@ -475,21 +475,41 @@ function animateRound(snapshot: RoundVisualSnapshot): void {
 
   timeline.add(() => {
     stage(label("ЭФФЕКТЫ КАРТ", "CARD EFFECTS"), "effect");
+    app.querySelectorAll<HTMLElement>(".round-reveal-card").forEach(cardEl => {
+      gsap.fromTo(cardEl, { y: 0, scale: 1 }, { y: -7, scale: 1.035, duration: 0.16, yoyo: true, repeat: 1, ease: "power2.out" });
+    });
     for (const side of ["player", "enemy"] as const) {
       for (let slot = 0; slot < 4; slot++) {
         const oldCard = snapshot.before[side].board[slot];
         const newCard = snapshot.after[side].board[slot];
         const slotEl = app.querySelector<HTMLElement>(".field-row." + (side === "player" ? "your-field" : "enemy-field") + ' [data-slot="' + slot + '"]');
-        if (oldCard && !snapshot.after[side].board.some(card => card?.uid === oldCard.uid)) {
-          const target = slotEl;
-          if (target) {
-            const burst = document.createElement("span");
-            burst.className = "card-dissolve-fx";
-            target.append(burst);
-            gsap.fromTo(burst, { opacity: 0.1, scale: 0.35, rotate: -18 }, { opacity: 0.95, scale: 1.4, rotate: 25, duration: 0.24, onComplete: () => gsap.to(burst, { opacity: 0, scale: 1.8, duration: 0.2, onComplete: () => burst.remove() }) });
+        if (oldCard) {
+          const movedTo = snapshot.after[side].board.findIndex(card => card?.uid === oldCard.uid);
+          const bounced = snapshot.after[side].hand.some(card => card.uid === oldCard.uid);
+          if (movedTo >= 0 && movedTo !== slot) {
+            const movedEl = app.querySelector<HTMLElement>(".field-row." + (side === "player" ? "your-field" : "enemy-field") + ' [data-slot="' + movedTo + '"] .game-card');
+            if (movedEl) {
+              movedEl.classList.add("card-shift-fx");
+              gsap.fromTo(movedEl, { x: side === "player" ? -26 : 26, rotate: side === "player" ? -4 : 4, filter: "blur(2px)" }, { x: 0, rotate: 0, filter: "blur(0px)", duration: 0.28, ease: "power3.out", onComplete: () => movedEl.classList.remove("card-shift-fx") });
+            }
+            const trail = document.createElement("span");
+            trail.className = "card-shift-trail";
+            slotEl?.append(trail);
+            if (trail) gsap.fromTo(trail, { opacity: 0.8, scaleX: 0.1 }, { opacity: 0, scaleX: 1.6, duration: 0.28, onComplete: () => trail.remove() });
+          } else if (bounced) {
+            const handCard = app.querySelector<HTMLElement>('.hand-cards [data-uid="' + oldCard.uid + '"]');
+            if (handCard) gsap.fromTo(handCard, { opacity: 0.1, scale: 0.18, y: -80, rotate: 12 }, { opacity: 1, scale: 1, y: 0, rotate: 0, duration: 0.42, ease: "back.out(1.8)" });
+          } else if (movedTo < 0 && !bounced) {
+            const target = slotEl;
+            if (target) {
+              const burst = document.createElement("span");
+              burst.className = "card-dissolve-fx";
+              target.append(burst);
+              gsap.fromTo(burst, { opacity: 0.1, scale: 0.35, rotate: -18 }, { opacity: 0.95, scale: 1.4, rotate: 25, duration: 0.24, onComplete: () => gsap.to(burst, { opacity: 0, scale: 1.8, duration: 0.2, onComplete: () => burst.remove() }) });
+              gsap.fromTo(target, { x: -3 }, { x: 3, duration: 0.06, repeat: 3, yoyo: true, onComplete: () => gsap.set(target, { x: 0 }) });
+              sfx("destroy");
+            }
           }
-          if (target) gsap.fromTo(target, { x: -3 }, { x: 3, duration: 0.06, repeat: 3, yoyo: true, onComplete: () => gsap.set(target, { x: 0 }) });
-          sfx("destroy");
         }
         if (newCard && oldCard && newCard.uid !== oldCard.uid) {
           if (slotEl) gsap.fromTo(slotEl, { scale: 0.96 }, { scale: 1, duration: 0.32, ease: "elastic.out(1, 0.35)" });
