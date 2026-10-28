@@ -381,11 +381,25 @@ function action(name: string, target: HTMLElement | null): void {
   if (name === "archive-tab") { archiveTab = target?.dataset.tab === "enemy" ? "enemy" : "deck"; render(); return; }
   if (name === "commit") {
     if (!game || game.winner) return;
+    const stabilityBefore = { player: game.player.stability, enemy: game.enemy.stability };
+    const resolvedRound = game.round;
     chosenCardUid = null;
     lockPlayerAndResolve(game);
+    const revealedSlots = {
+      player: game.player.board.map((card, slot) => card?.playedRound === resolvedRound ? slot : -1).filter(slot => slot >= 0),
+      enemy: game.enemy.board.map((card, slot) => card?.playedRound === resolvedRound ? slot : -1).filter(slot => slot >= 0),
+    };
+    const stabilityAfter = { player: game.player.stability, enemy: game.enemy.stability };
     if (game.winner) sfx(game.winner === "player" ? "win" : game.winner === "draw" ? "draw" : "lose");
     else sfx("reveal");
-    render(); return;
+    render();
+    requestAnimationFrame(() => {
+      for (const side of ["player", "enemy"] as const) {
+        if (stabilityAfter[side] !== stabilityBefore[side]) battleScene?.pulseStability(side);
+        for (const slot of revealedSlots[side]) battleScene?.pulseSlot(side, slot);
+      }
+    });
+    return;
   }
   if (name === "unqueue") {
     if (game && target?.dataset.uid) {
