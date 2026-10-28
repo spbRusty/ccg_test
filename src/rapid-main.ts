@@ -133,7 +133,7 @@ function cardText(card: CardDef): string {
     bounce: "return the opposing card at " + target + " to its owner's hand.",
     shift: "move the opposing card at " + target + " to a neighboring empty slot.",
     lock: "lock " + target + (card.trigger === "on_round_end" ? " for the next round." : " for the rest of this round."),
-    spawn_token: "create a zero-cost Shard token on your side at " + target + ".",
+    spawn_token: card.target === "edge" ? "create a zero-cost Shard token toward the center if this card is on an edge." : "create a zero-cost Shard token on your side at " + target + ".",
   };
   return phase + actions[card.action];
 }
