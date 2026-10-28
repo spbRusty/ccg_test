@@ -655,32 +655,29 @@ function animateRound(snapshot: RoundVisualSnapshot): void {
   }, "+=0.1");
   timeline.to({}, { duration: 0.8 });
 
-  const fatigueEvents = snapshot.events.filter((event): event is Extract<RoundEvent, { type: "fatigue" }> => event.type === "fatigue");
-  if (fatigueEvents.length > 0) {
-    timeline.add(() => {
-      stage(label("УСТАЛОСТЬ КОЛОДЫ", "DECK FATIGUE"), "volley");
-      for (const event of fatigueEvents) numberFx(event.side, -event.amount, "damage");
-      sfx("impact");
-    });
-    timeline.to({}, { duration: 0.5 });
+  const handEvents = snapshot.events.filter((event): event is Extract<RoundEvent, { type: "draw" | "fatigue" }> => event.type === "draw" || event.type === "fatigue");
+  if (handEvents.length > 0) {
+    timeline.add(() => stage(label("ДОБОР ДО 4 КАРТ", "DRAW TO 4"), "draw"), "+=0.05");
   }
-
-  timeline.add(() => {
-    stage(label("ДОБОР ДО 4 КАРТ", "DRAW TO 4"), "draw");
-    for (const side of ["player", "enemy"] as const) {
-      const oldUids = new Set(snapshot.before[side].hand.map(card => card.uid));
-      const fresh = snapshot.after[side].hand.filter(card => !oldUids.has(card.uid));
-      if (side === "player") {
-        const hand = app.querySelector<HTMLElement>(".hand-cards");
-        fresh.forEach((card, index) => {
-          const el = hand?.querySelector<HTMLElement>('[data-uid="' + card.uid + '"]');
-          if (el) gsap.fromTo(el, { opacity: 0, y: -24, rotate: -5 }, { opacity: 1, y: 0, rotate: 0, duration: 0.34, delay: index * 0.055, ease: "back.out(1.8)" });
+  for (const event of handEvents) {
+    timeline.add(() => {
+      if (event.type === "fatigue") {
+        stage(label("УСТАЛОСТЬ КОЛОДЫ", "DECK FATIGUE"), "volley");
+        numberFx(event.side, -event.amount, "damage");
+        sfx("impact");
+        return;
+      }
+      stage(event.side === "player" ? label("КАРТА В РУКЕ", "CARD DRAWN") : label("СОПЕРНИК ДОБИРАЕТ КАРТУ", "OPPONENT DRAWS"), "draw");
+      if (event.side === "player") {
+        const el = app.querySelector<HTMLElement>('.hand-cards [data-uid="' + event.card.uid + '"]');
+        if (el) gsap.fromTo(el, { opacity: 0, y: -24, rotate: -5, scale: 0.9 }, {
+          opacity: 1, y: 0, rotate: 0, scale: 1, duration: 0.34, ease: "back.out(1.8)", overwrite: "auto",
         });
       }
-    }
-    if (snapshot.after.player.deck < snapshot.before.player.deck) sfx("draw");
-  }, "+=0.05");
-  timeline.to({}, { duration: 0.42 });
+      sfx("draw");
+    });
+    timeline.to({}, { duration: event.type === "fatigue" ? 0.32 : 0.16 });
+  }
   if (snapshot.winner) timeline.add(() => sfx(snapshot.winner === "player" ? "win" : snapshot.winner === "draw" ? "draw" : "lose"));
 }
 
