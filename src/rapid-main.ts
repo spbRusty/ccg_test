@@ -546,6 +546,25 @@ function animateRound(snapshot: RoundVisualSnapshot): void {
             gsap.fromTo(targetSlot, { filter: "brightness(1)" }, { filter: "brightness(1.8)", duration: 0.14, yoyo: true, repeat: 1 });
           }
         }
+        if (event.action === "shift" && event.affectedSlots.length >= 2) {
+          const fromSlot = event.affectedSlots[0];
+          const toSlot = event.affectedSlots[1];
+          const movedSelector = ".field-row." + (event.affectedSide === "player" ? "your-field" : "enemy-field") + ' [data-slot="' + toSlot + '"] .game-card';
+          const movedCard = app.querySelector<HTMLElement>(movedSelector);
+          if (movedCard) {
+            gsap.fromTo(movedCard, { x: (toSlot - fromSlot) * 34, y: -8, rotate: toSlot > fromSlot ? 4 : -4 }, {
+              x: 0, y: 0, rotate: 0, duration: 0.34, ease: "power3.out", overwrite: "auto",
+            });
+          }
+        } else if (event.action === "spawn_token") {
+          for (const spawnedSlot of event.affectedSlots) {
+            const spawnedSelector = ".field-row." + (event.affectedSide === "player" ? "your-field" : "enemy-field") + ' [data-slot="' + spawnedSlot + '"] .game-card';
+            const spawnedCard = app.querySelector<HTMLElement>(spawnedSelector);
+            if (spawnedCard) gsap.fromTo(spawnedCard, { opacity: 0, scale: 0.15, y: 14, rotate: -10 }, {
+              opacity: 1, scale: 1, y: 0, rotate: 0, duration: 0.38, ease: "back.out(1.8)", overwrite: "auto",
+            });
+          }
+        }
         const anchorRect = (sourceCard ?? sourceSlot)?.getBoundingClientRect();
         if (anchorRect) {
           const arenaRect = arena.getBoundingClientRect();
