@@ -181,7 +181,7 @@ function fieldSlot(p: GameState["player"], side: Side, index: number): string {
       " data-slot=\"" + index + "\" data-side=\"" + side + "\">" +
       "<span class=\"slot-number\">" + (index + 1) + "</span>" +
       renderCard(card, "board", "field-card", -1, card.uid) +
-      (card.timing === "end" ? "<span class=\"active-ribbon\">" + (language === "ru" ? "РАБОТАЕТ" : "ACTIVE") + "</span>" : "") +
+      (card.trigger === "on_round_end" ? "<span class=\"active-ribbon\">" + (language === "ru" ? "РАБОТАЕТ" : "ACTIVE") + "</span>" : "") +
       "</div>";
   }
   return "<button class=\"field-slot empty-slot" + (chosenCardUid && side === "player" ? " slot-ready" : "") + "\"" +
