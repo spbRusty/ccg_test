@@ -1,5 +1,6 @@
 import { CARDS, CARD_BY_ID, DEFAULT_DECK, type CardDef, type Effect, type EffectTarget, type Side } from "./cards";
 import { calculateCardPayment } from "./stability-payment";
+import { getRoundResolutionOrder } from "./round-order";
 
 export type Winner = Side | "draw" | null;
 export interface CardInstance extends CardDef {
@@ -447,11 +448,9 @@ export function resolveRound(game: GameState, random: () => number = Math.random
     }
   };
 
-  // Priority is determined once, before reveal begins. Ties are decided randomly.
-  const first: Side = game.player.stability === game.enemy.stability
-    ? (random() < 0.5 ? "player" : "enemy")
-    : (game.player.stability < game.enemy.stability ? "player" : "enemy");
-  const order: Side[] = [first, other(first)];
+  // Priority is fixed once before reveal; the ordering rule lives in a pure module.
+  const order = getRoundResolutionOrder(game.player.stability, game.enemy.stability, random);
+  const first = order[0];
   pushLog(game, (first === "player" ? "Ты" : "Соперник") + " раскрывает карты первым.");
   // Reveal slot 1, then 2, 3, 4. Within each slot, the priority side resolves first.
   for (let slot = 0; slot < game.settings.slots; slot++) {
