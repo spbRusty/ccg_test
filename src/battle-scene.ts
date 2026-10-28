@@ -7,6 +7,7 @@ export interface BattleSceneHandle {
   pulseSlot: (side: "player" | "enemy", slot: number) => void;
   signalInitiative: (side: "player" | "enemy") => void;
   revealCard: (card: HTMLElement, cover: HTMLElement | null) => void;
+  animateVolley: (side: "player" | "enemy", slot: number, targetSide: "player" | "enemy", kind: "damage" | "heal") => void;
 }
 
 export function mountBattleScene(root: HTMLElement): BattleSceneHandle {
@@ -164,6 +165,58 @@ export function mountBattleScene(root: HTMLElement): BattleSceneHandle {
     });
   };
 
+  const animateVolley = (side: "player" | "enemy", slot: number, targetSide: "player" | "enemy", kind: "damage" | "heal") => {
+    if (!Number.isInteger(slot) || slot < 0 || slot > 3) return;
+    const start = new THREE.Vector3((slot - 1.5) * 2.55, 0.42, side === "player" ? 2.25 : -2.25);
+    const end = new THREE.Vector3((slot - 1.5) * 1.55, 1.15, targetSide === "player" ? 4.55 : -4.55);
+    const geometry = new THREE.BufferGeometry().setFromPoints([start, end]);
+    const material = new THREE.LineBasicMaterial({
+      color: kind === "damage" ? "#ff5268" : "#65ffad",
+      transparent: true,
+      opacity: 0,
+    });
+    const beam = new THREE.Line(geometry, material);
+    beam.frustumCulled = false;
+    scene.add(beam);
+    gsap.to(material, {
+      opacity: 0.9,
+      duration: 0.13,
+      onComplete: () => gsap.to(material, {
+        opacity: 0,
+        duration: 0.24,
+        onComplete: () => {
+          scene.remove(beam);
+          geometry.dispose();
+          material.dispose();
+        },
+      }),
+    });
+
+    if (kind === "heal") {
+      for (let index = 0; index < 3; index++) {
+        const sparkGeometry = new THREE.SphereGeometry(0.045, 6, 6);
+        const sparkMaterial = new THREE.MeshBasicMaterial({ color: "#9bffc4", transparent: true, opacity: 0.95 });
+        const spark = new THREE.Mesh(sparkGeometry, sparkMaterial);
+        spark.position.copy(start).lerp(end, 0.12 + index * 0.14);
+        scene.add(spark);
+        gsap.to(spark.position, {
+          x: end.x, y: end.y + 0.16, z: end.z,
+          duration: 0.3, delay: index * 0.035, ease: "power2.out",
+          onComplete: () => {
+            gsap.to(sparkMaterial, {
+              opacity: 0, duration: 0.12,
+              onComplete: () => {
+                scene.remove(spark);
+                sparkGeometry.dispose();
+                sparkMaterial.dispose();
+              },
+            });
+          },
+        });
+      }
+    }
+  };
+
   const pulseSlot = (side: "player" | "enemy", slot: number) => {
     if (!Number.isInteger(slot) || slot < 0 || slot > 3) return;
     const pad = slots[(side === "enemy" ? 0 : 4) + slot];
@@ -194,6 +247,7 @@ export function mountBattleScene(root: HTMLElement): BattleSceneHandle {
     pulseSlot,
     signalInitiative,
     revealCard,
+    animateVolley,
     destroy: () => {
       disposed = true;
       cancelAnimationFrame(raf);
