@@ -32,18 +32,27 @@ describe("Rapid core: короткая дуэль", () => {
     expect(game.player.hand.some(item => item.uid === card.uid)).toBe(true);
   });
 
-  it("не позволяет оплатой опустить Стабильность ниже 1 и разрешает занять четыре слота", () => {
+  it("ограничивает оплату единицей Стабильности, разрешает отрицательную цену и четыре слота", () => {
     const game = createGame(DEFAULT_DECK, () => 0.5);
-    const card = game.player.hand[0];
-    game.player.stability = card.cost;
-    expect(queueCard(game, "player", card.uid, 0).ok).toBe(true);
+    const cards = [...game.player.hand];
+    game.player.hand = cards;
+    game.player.stability = 2;
+    const positive = { ...cards[0], cost: 9, effect: { ...cards[0].effect } };
+    game.player.hand[0] = positive;
+    expect(queueCard(game, "player", positive.uid, 0).ok).toBe(true);
+    expect(game.player.stability).toBe(1);
+    game.player.stability = 10;
+    const negative = { ...cards[1], cost: -3, effect: { ...cards[1].effect } };
+    game.player.hand[0] = negative;
+    expect(queueCard(game, "player", negative.uid, 1).ok).toBe(true);
+    expect(game.player.stability).toBe(13);
     game.player.stability = 30;
-    const first = game.player.hand[0];
-    const second = game.player.hand[1];
-    const third = game.player.hand[2];
-    expect(queueCard(game, "player", first.uid, 0).ok).toBe(true);
-    expect(queueCard(game, "player", second.uid, 1).ok).toBe(true);
-    expect(queueCard(game, "player", third.uid, 2).ok).toBe(true);
+    game.player.hand = cards.slice(0, 4);
+    game.player.committed = [];
+    expect(queueCard(game, "player", cards[0].uid, 0).ok).toBe(true);
+    expect(queueCard(game, "player", cards[1].uid, 1).ok).toBe(true);
+    expect(queueCard(game, "player", cards[2].uid, 2).ok).toBe(true);
+    expect(queueCard(game, "player", cards[3].uid, 3).ok).toBe(true);
   });
 
   it("эффекты меняют Стабильность, у карт нет атаки и здоровья", () => {
@@ -85,6 +94,6 @@ describe("Rapid core: короткая дуэль", () => {
   it("стартовая колода собрана из существующих уникальных карт", () => {
     expect(DEFAULT_DECK.every(id => CARD_BY_ID.has(id))).toBe(true);
     expect(DEFAULT_DECK).toContain("raid");
-    expect(CARDS.find(card => card.id === "raid")?.cost).toBe(2);
+    expect(CARDS.find(card => card.id === "raid")?.cost).toBe(-2);
   });
 });
