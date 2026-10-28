@@ -1,5 +1,5 @@
 export type Side = "player" | "enemy";
-export type CardTarget = "opposite" | "left" | "right" | "adjacent" | "edge" | "all";
+export type CardTarget = "opposite" | "left" | "right" | "adjacent" | "edge" | "all" | "self";
 export type CardAction = "remove" | "bounce" | "shift" | "lock" | "spawn_token";
 export type CardTrigger = "on_reveal" | "on_round_end" | "on_destroy";
 
