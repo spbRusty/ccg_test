@@ -32,6 +32,27 @@ describe("Rapid core: короткая дуэль", () => {
     expect(game.player.hand.some(item => item.uid === card.uid)).toBe(true);
   });
 
+  it("точно отменяет оплату на границах шкалы Стабильности", () => {
+    const game = createGame(DEFAULT_DECK, () => 0.5);
+    const base = CARD_BY_ID.get("raid")!;
+
+    const negative = { ...base, cost: -2, effect: { ...base.effect }, uid: "cap-negative", playedRound: 0 };
+    game.player.hand = [negative];
+    game.player.stability = 59;
+    expect(queueCard(game, "player", negative.uid, 0).ok).toBe(true);
+    expect(game.player.stability).toBe(60);
+    expect(unqueueCard(game, "player", negative.uid)).toBe(true);
+    expect(game.player.stability).toBe(59);
+
+    const expensive = { ...base, cost: 9, effect: { ...base.effect }, uid: "partial-payment", playedRound: 0 };
+    game.player.hand = [expensive];
+    game.player.stability = 2;
+    expect(queueCard(game, "player", expensive.uid, 0).ok).toBe(true);
+    expect(game.player.stability).toBe(1);
+    expect(unqueueCard(game, "player", expensive.uid)).toBe(true);
+    expect(game.player.stability).toBe(2);
+  });
+
   it("ограничивает оплату единицей Стабильности, разрешает отрицательную цену и четыре слота", () => {
     const game = createGame(DEFAULT_DECK, () => 0.5);
     const cards = [...game.player.hand];
