@@ -70,7 +70,7 @@ function pushLog(game: GameState, message: string): void {
   game.log.unshift(message);
   if (game.log.length > 20) game.log.length = 20;
 }
-function drawToFour(game: GameState, side: Side, random: () => number): void {
+function drawToFour(game: GameState, side: Side): void {
   const p = game[side];
   while (p.hand.length < game.settings.handLimit) {
     const card = p.deck.pop();
@@ -227,7 +227,6 @@ function resolveAction(game: GameState, side: Side, card: CardInstance, slot: nu
 export function resolveRound(game: GameState, random: () => number = Math.random): void {
   if (game.winner || !game.player.locked || !game.enemy.locked) return;
   game.lastRoundEvents = [];
-  const beforeStability = { player: game.player.stability, enemy: game.enemy.stability };
   const first: Side = game.player.stability === game.enemy.stability ? (random() < 0.5 ? "player" : "enemy") : game.player.stability < game.enemy.stability ? "player" : "enemy";
   const order: Side[] = [first, other(first)];
   game.lastRoundEvents.push({ type: "initiative", side: first });
@@ -280,13 +279,22 @@ export function resolveRound(game: GameState, random: () => number = Math.random
     player: game.player.board.filter((card, slot) => Boolean(card) && !game.player.lockedSlots.has(slot)).length,
     enemy: game.enemy.board.filter((card, slot) => Boolean(card) && !game.enemy.lockedSlots.has(slot)).length,
   };
-  const empty: Record<Side, number> = { player: game.settings.slots - occupied.player, enemy: game.settings.slots - occupied.enemy };
-  const delta: Record<Side, number> = {
-    player: empty.player - occupied.enemy,
-    enemy: empty.enemy - occupied.player,
+  const empty: Record<Side, number> = {
+    player: game.settings.slots - occupied.player,
+    enemy: game.settings.slots - occupied.enemy,
   };
-  game.player.stability = clamp(game.player.stability + delta.player, game.settings.maxStability);
-  game.enemy.stability = clamp(game.enemy.stability + delta.enemy, game.settings.maxStability);
+  // Apply each field rule as its own operation: healing is capped at 30 before
+  // the opponent's occupied slots reduce Stability. Combining them into one
+  // net delta incorrectly preserves healing that should be lost at the cap.
+  const beforeVolley = { player: game.player.stability, enemy: game.enemy.stability };
+  game.player.stability = clamp(game.player.stability + empty.player, game.settings.maxStability);
+  game.enemy.stability = clamp(game.enemy.stability + empty.enemy, game.settings.maxStability);
+  game.player.stability = clamp(game.player.stability - occupied.enemy, game.settings.maxStability);
+  game.enemy.stability = clamp(game.enemy.stability - occupied.player, game.settings.maxStability);
+  const delta: Record<Side, number> = {
+    player: game.player.stability - beforeVolley.player,
+    enemy: game.enemy.stability - beforeVolley.enemy,
+  };
   game.lastRoundEvents.push({ type: "table_volley", occupied, empty, delta });
   game.player.lockedSlots.clear();
   game.enemy.lockedSlots.clear();
@@ -301,7 +309,7 @@ export function resolveRound(game: GameState, random: () => number = Math.random
   // Locked slots affect this volley, then unlock for the next round.
   checkWinner(game);
   if (!game.winner) {
-    for (const side of sides) drawToFour(game, side, random);
+    for (const side of sides) drawToFour(game, side);
     checkWinner(game);
   }
   if (game.winner) {
@@ -317,7 +325,6 @@ export function resolveRound(game: GameState, random: () => number = Math.random
   game.round++;
   game.playedByEnemy = [...game.playedByEnemy, ...game.enemy.board.filter((card): card is CardInstance => card !== null)].slice(-30);
   pushLog(game, "Раунд " + game.round + ": выбери до двух карт.");
-  void beforeStability;
 }
 function checkWinner(game: GameState): void {
   const pDown = game.player.stability <= 0;
