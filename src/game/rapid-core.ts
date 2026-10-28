@@ -172,11 +172,32 @@ function emptyOutcome(): Outcome {
 function fieldCount(p: PlayerState): number {
   return p.board.reduce((n, card) => n + (card ? 1 : 0), 0);
 }
-function hasEffectCondition(effect: Effect, game: GameState, side: Side): boolean {
+function hasEffectCondition(effect: Effect, game: GameState, side: Side, slot: number): boolean {
   const p = game[side];
   const foe = game[other(side)];
   const ownCount = fieldCount(p);
   const enemyCount = fieldCount(foe);
+  const condition = effect.condition;
+  if (condition) {
+    const threshold = condition.value ?? 0;
+    const opposite = foe.board[slot];
+    switch (condition.type) {
+      case "IS_EDGE": if (slot !== 0 && slot !== game.settings.slots - 1) return false; break;
+      case "IS_CENTER": if (slot === 0 || slot === game.settings.slots - 1) return false; break;
+      case "OPPOSITE_EMPTY": if (opposite) return false; break;
+      case "OPPOSITE_EXISTS": if (!opposite) return false; break;
+      case "LEFT_EMPTY": if (slot > 0 && p.board[slot - 1]) return false; break;
+      case "RIGHT_EMPTY": if (slot < game.settings.slots - 1 && p.board[slot + 1]) return false; break;
+      case "OWN_HAND_MORE": if (p.hand.length <= threshold) return false; break;
+      case "ENEMY_HAND_MORE": if (foe.hand.length <= threshold) return false; break;
+      case "OWN_BOARD_LESS": if (ownCount >= threshold) return false; break;
+      case "ENEMY_BOARD_LESS": if (enemyCount >= threshold) return false; break;
+      case "OWN_DECK_LESS": if (p.deck.length >= threshold) return false; break;
+      case "ENEMY_DECK_LESS": if (foe.deck.length >= threshold) return false; break;
+      case "OWN_STABILITY_BELOW": if (p.stability >= threshold) return false; break;
+      case "ENEMY_STABILITY_BELOW": if (foe.stability >= threshold) return false; break;
+    }
+  }
   switch (effect.kind) {
     case "if-own-more": return ownCount > enemyCount;
     case "if-own-less": return ownCount < enemyCount;
@@ -189,12 +210,13 @@ function hasEffectCondition(effect: Effect, game: GameState, side: Side): boolea
     default: return true;
   }
 }
-function accumulate(out: Outcome, game: GameState, side: Side, card: CardInstance, timing: "play" | "end"): void {
+function accumulate(out: Outcome, game: GameState, side: Side, card: CardInstance, timing: "play" | "end", slot: number): void {
   if (card.timing !== timing) return;
   const p = game[side];
   const foe = game[other(side)];
   const e = card.effect;
   const amount = e.amount;
+  if (!hasEffectCondition(e, game, side, slot)) return;
   switch (e.kind) {
     case "damage": out.damage += amount; break;
     case "heal": out.heal += amount; break;
@@ -219,13 +241,13 @@ function accumulate(out: Outcome, game: GameState, side: Side, card: CardInstanc
     case "enemy-played-less":
     case "own-played-more":
     case "own-played-less":
-      if (hasEffectCondition(e, game, side)) out.damage += amount;
+      if (hasEffectCondition(e, game, side, slot)) out.damage += amount;
       break;
     case "if-enemy-stability-low":
-      if (hasEffectCondition(e, game, side)) out.damage += amount;
+      if (hasEffectCondition(e, game, side, slot)) out.damage += amount;
       break;
     case "if-own-stability-low":
-      if (hasEffectCondition(e, game, side)) out.heal += amount;
+      if (hasEffectCondition(e, game, side, slot)) out.heal += amount;
       break;
   }
 }
@@ -314,7 +336,7 @@ export function resolveRound(game: GameState, random: () => number = Math.random
   const applyEffect = (side: Side, card: CardInstance, timing: "play" | "end") => {
     if (game.winner || card.timing !== timing) return;
     const out = emptyOutcome();
-    accumulate(out, game, side, card, timing);
+    accumulate(out, game, side, card, timing, game[side].board.findIndex(item => item?.uid === card.uid));
     const p = game[side];
     const foeSide = other(side);
     const foe = game[foeSide];
