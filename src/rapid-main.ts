@@ -30,7 +30,7 @@ const I18N: Record<string, [string, string]> = {
   single: ["Играть", "Play"], pvp: ["PvP · скоро", "PvP · soon"], decks: ["Коллекция и колоды", "Collection & decks"],
   settings: ["Настройки", "Settings"], back: ["Назад", "Back"], start: ["Начать дуэль", "Start duel"],
   cards: ["Карты", "Cards"], deck: ["Колода", "Deck"], collection: ["Коллекция", "Collection"],
-  rules: ["30 Стабильности · 12 карт · 4 места · рука 4 · до 7 раундов", "30 Stability · 12 cards · 4 slots · hand 4 · up to 7 rounds"],
+  rules: ["30 Стабильности · 12 карт · 4 места · рука до 4 · до 7 раундов", "30 Stability · 12 cards · 4 slots · hand up to 4 · up to 7 rounds"],
   hand: ["ТВОЯ РУКА", "YOUR HAND"], enemy: ["СОПЕРНИК", "OPPONENT"], player: ["ТВОЙ ЛАГЕРЬ", "YOUR CAMP"],
   reveal: ["Зафиксировать ход", "Lock in turn"], pass: ["Можно пропустить ход", "You may pass this turn"],
   selected: ["Выбрана", "Selected"], selectHint: ["Выбери карту в руке, затем нажми место на поле.", "Select a card, then tap a field slot."],
