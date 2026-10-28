@@ -74,17 +74,18 @@ function pushLog(game: GameState, message: string): void {
 }
 function drawToFour(game: GameState, side: Side): void {
   const p = game[side];
-  while (p.hand.length < game.settings.handLimit) {
+  const cardsNeeded = Math.max(0, game.settings.handLimit - p.hand.length);
+  for (let index = 0; index < cardsNeeded; index++) {
     const card = p.deck.pop();
-    if (!card) {
-      p.stability = clamp(p.stability - 2, game.settings.maxStability);
-      game.lastRoundEvents.push({ type: "fatigue", side, amount: 2 });
-      pushLog(game, (side === "player" ? "Ты теряешь" : "Соперник теряет") + " 2 Стойкости из-за усталости.");
-      if (p.stability === 0) break;
+    if (card) {
+      p.hand.push(card);
+      game.lastRoundEvents.push({ type: "draw", side, amount: 1 });
       continue;
     }
-    p.hand.push(card);
-    game.lastRoundEvents.push({ type: "draw", side, amount: 1 });
+    p.stability = clamp(p.stability - 2, game.settings.maxStability);
+    game.lastRoundEvents.push({ type: "fatigue", side, amount: 2 });
+    pushLog(game, (side === "player" ? "Ты теряешь" : "Соперник теряет") + " 2 Стойкости из-за усталости.");
+    if (p.stability === 0) break;
   }
 }
 function makePlayer(defs: CardDef[], settings: GameSettings, random: () => number): PlayerState {
