@@ -1,4 +1,4 @@
-import { CARDS, CARD_BY_ID, DEFAULT_DECK, type CardDef, type Effect, type Side } from "./cards";
+import { CARDS, CARD_BY_ID, DEFAULT_DECK, type CardDef, type Effect, type EffectTarget, type Side } from "./cards";
 
 export type Winner = Side | "draw" | null;
 export interface CardInstance extends CardDef {
@@ -165,9 +165,13 @@ interface Outcome {
   delayed: number;
   shield: number;
   curse: boolean;
+  selfDamage: number;
+  enemyHeal: number;
+  targetedDestroy: { side: Side; slot: number } | null;
+  targetedShift: { side: Side; from: number; to: number } | null;
 }
 function emptyOutcome(): Outcome {
-  return { damage: 0, heal: 0, transfer: 0, draw: 0, remove: 0, returns: 0, boost: 0, delayed: 0, shield: 0, curse: false };
+  return { damage: 0, heal: 0, transfer: 0, draw: 0, remove: 0, returns: 0, boost: 0, delayed: 0, shield: 0, curse: false, selfDamage: 0, enemyHeal: 0, targetedDestroy: null, targetedShift: null };
 }
 function fieldCount(p: PlayerState): number {
   return p.board.reduce((n, card) => n + (card ? 1 : 0), 0);
@@ -217,6 +221,44 @@ function accumulate(out: Outcome, game: GameState, side: Side, card: CardInstanc
   const e = card.effect;
   const amount = e.amount;
   if (!hasEffectCondition(e, game, side, slot)) return;
+  if (e.action) {
+    const target: EffectTarget = e.target ?? "opposite";
+    const targetSide: Side = target === "self" || target === "adjacent" ? side : other(side);
+    if (e.action === "damage") {
+      if (target === "self") out.selfDamage += amount;
+      else out.damage += amount;
+    } else if (e.action === "heal") {
+      if (target === "opposite") out.enemyHeal += amount;
+      else out.heal += amount;
+    } else if (e.action === "destroy") {
+      let targetSlot = -1;
+      if (target === "opposite" || target === "self") targetSlot = slot;
+      else if (target === "adjacent") {
+        const left = slot - 1;
+        const right = slot + 1;
+        targetSlot = left >= 0 && game[targetSide].board[left] ? left : right < game.settings.slots && game[targetSide].board[right] ? right : -1;
+      } else {
+        targetSlot = game[targetSide].board.findIndex(Boolean);
+      }
+      if (targetSlot >= 0) out.targetedDestroy = { side: targetSide, slot: targetSlot };
+    } else if (e.action === "shift") {
+      let from = -1;
+      if (target === "opposite" || target === "self") from = slot;
+      else if (target === "adjacent") {
+        const left = slot - 1;
+        const right = slot + 1;
+        from = left >= 0 && game[targetSide].board[left] ? left : right < game.settings.slots && game[targetSide].board[right] ? right : -1;
+      } else {
+        from = game[targetSide].board.findIndex(Boolean);
+      }
+      if (from >= 0) {
+        const direction = amount < 0 ? -1 : 1;
+        const to = from + direction;
+        if (to >= 0 && to < game.settings.slots && !game[targetSide].board[to]) out.targetedShift = { side: targetSide, from, to };
+      }
+    }
+    return;
+  }
   switch (e.kind) {
     case "damage": out.damage += amount; break;
     case "heal": out.heal += amount; break;
@@ -349,6 +391,32 @@ export function resolveRound(game: GameState, random: () => number = Math.random
       if (actual > 0) pushLog(game, (side === "player" ? "Твоя карта" : "Карта соперника") + " снижает Стабильность " + (foeSide === "player" ? "тебе" : "сопернику") + " на " + actual + ".");
     } else {
       p.nextBoost += out.boost;
+    }
+    if (out.selfDamage > 0) {
+      p.stability = clamp(p.stability - out.selfDamage, game.settings.maxStability);
+      pushLog(game, (side === "player" ? "Твоя карта снижает твою" : "Карта соперника снижает его") + " Стабильность на " + out.selfDamage + ".");
+    }
+    if (out.enemyHeal > 0) {
+      foe.stability = clamp(foe.stability + out.enemyHeal, game.settings.maxStability);
+      pushLog(game, (side === "player" ? "Твоя карта восстанавливает сопернику " : "Карта соперника восстанавливает тебе ") + out.enemyHeal + " Стабильности.");
+    }
+    if (out.targetedDestroy) {
+      const target = game[out.targetedDestroy.side];
+      const victim = target.board[out.targetedDestroy.slot];
+      if (victim) {
+        target.board[out.targetedDestroy.slot] = null;
+        target.discard.push(victim);
+        pushLog(game, (side === "player" ? "Ты уничтожил" : "Соперник уничтожил") + " «" + victim.name + "» в слоте " + (out.targetedDestroy.slot + 1) + ".");
+      }
+    }
+    if (out.targetedShift) {
+      const target = game[out.targetedShift.side];
+      const moving = target.board[out.targetedShift.from];
+      if (moving && !target.board[out.targetedShift.to]) {
+        target.board[out.targetedShift.to] = moving;
+        target.board[out.targetedShift.from] = null;
+        pushLog(game, "Карта «" + moving.name + "» перемещена из слота " + (out.targetedShift.from + 1) + " в слот " + (out.targetedShift.to + 1) + ".");
+      }
     }
     shields[side] += out.shield;
     if (out.curse) cursed[side] = true;
