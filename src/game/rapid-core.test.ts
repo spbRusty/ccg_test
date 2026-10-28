@@ -88,6 +88,32 @@ describe("Rapid core: короткая дуэль", () => {
     expect(game.enemy.stability).toBe(33);
   });
 
+  it("выполняет универсальные действия уничтожения и сдвига по целевому слоту", () => {
+    const game = createGame(DEFAULT_DECK, () => 0.5);
+    const base = CARD_BY_ID.get("raid")!;
+    const destroyer = { ...base, effect: { ...base.effect, action: "destroy" as const, target: "opposite" as const }, uid: "destroy-test", playedRound: 0 };
+    const victim = { ...base, effect: { ...base.effect }, uid: "victim-test", playedRound: 0, timing: "start" as const };
+    game.player.hand = [destroyer];
+    game.enemy.board[0] = victim;
+    expect(queueCard(game, "player", destroyer.uid, 0).ok).toBe(true);
+    game.player.locked = true;
+    game.enemy.locked = true;
+    resolveRound(game, () => 0.5);
+    expect(game.enemy.board[0]).toBeNull();
+
+    const next = createGame(DEFAULT_DECK, () => 0.5);
+    const shifter = { ...base, effect: { ...base.effect, action: "shift" as const, target: "opposite" as const, amount: 1 }, uid: "shift-test", playedRound: 0 };
+    const moved = { ...victim, uid: "moved-test" };
+    next.player.hand = [shifter];
+    next.enemy.board[0] = moved;
+    expect(queueCard(next, "player", shifter.uid, 0).ok).toBe(true);
+    next.player.locked = true;
+    next.enemy.locked = true;
+    resolveRound(next, () => 0.5);
+    expect(next.enemy.board[0]).toBeNull();
+    expect(next.enemy.board[1]?.uid).toBe("moved-test");
+  });
+
   it("при одновременном смертельном эффекте обеих сторон фиксирует ничью", () => {
     const game = createGame(DEFAULT_DECK, () => 0.5);
     const ambush = CARD_BY_ID.get("ambush")!;
