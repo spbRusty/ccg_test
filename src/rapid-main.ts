@@ -537,23 +537,38 @@ function animateRound(snapshot: RoundVisualSnapshot): void {
 
   timeline.to({}, { duration: 0.62 });
   timeline.add(() => {
-    stage(label("ИТОГ ЭФФЕКТОВ", "EFFECTS RESULT"), "volley");
-    const playerDelta = snapshot.after.player.stability - snapshot.before.player.stability;
-    const enemyDelta = snapshot.after.enemy.stability - snapshot.before.enemy.stability;
-    if (playerDelta !== 0) {
-      numberFx("player", playerDelta, playerDelta > 0 ? "heal" : "damage");
-      battleScene?.pulseStability("player");
+    stage(label("ЗАЛП СТОЛА", "BOARD VOLLEY"), "volley");
+    const volley = snapshot.events.find((event): event is Extract<RoundEvent, { type: "table_volley" }> => event.type === "table_volley");
+    if (volley) {
+      for (const side of ["player", "enemy"] as const) {
+        for (const slot of volley.occupiedSlots[side]) {
+          numberFx(side === "player" ? "enemy" : "player", -1, "damage", slot, side);
+          battleScene?.pulseSlot(side, slot);
+          battleScene?.pulseStability(side === "player" ? "enemy" : "player");
+        }
+        for (const slot of volley.emptySlots[side]) {
+          numberFx(side, 1, "heal", slot, side);
+          battleScene?.pulseSlot(side, slot);
+          battleScene?.pulseStability(side);
+        }
+      }
+      if (volley.occupied.player + volley.occupied.enemy > 0) sfx("impact");
+      if (volley.empty.player + volley.empty.enemy > 0) sfx("heal");
     }
-    if (enemyDelta !== 0) {
-      numberFx("enemy", enemyDelta, enemyDelta > 0 ? "heal" : "damage");
-      battleScene?.pulseStability("enemy");
-    }
-    if (playerDelta < 0 || enemyDelta < 0) sfx("impact");
-    if (playerDelta > 0 || enemyDelta > 0) sfx("heal");
     const strip = app.querySelector<HTMLElement>(".stability-strip");
     if (strip) gsap.fromTo(strip, { scale: 1 }, { scale: 1.025, duration: 0.12, yoyo: true, repeat: 1, onComplete: () => gsap.set(strip, { scale: 1 }) });
   }, "+=0.1");
   timeline.to({}, { duration: 0.8 });
+
+  const fatigueEvents = snapshot.events.filter((event): event is Extract<RoundEvent, { type: "fatigue" }> => event.type === "fatigue");
+  if (fatigueEvents.length > 0) {
+    timeline.add(() => {
+      stage(label("УСТАЛОСТЬ КОЛОДЫ", "DECK FATIGUE"), "volley");
+      for (const event of fatigueEvents) numberFx(event.side, -event.amount, "damage");
+      sfx("impact");
+    });
+    timeline.to({}, { duration: 0.5 });
+  }
 
   timeline.add(() => {
     stage(label("ДОБОР ДО 4 КАРТ", "DRAW TO 4"), "draw");
