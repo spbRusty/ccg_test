@@ -179,6 +179,8 @@ function imageFallbacks(): void {
   });
 }
 function fieldSlot(p: GameState["player"], side: Side, index: number): string {
+  const locked = p.lockedSlots.has(index);
+  const lockLabel = language === "ru" ? "ЗАБЛОКИРОВАНО" : "LOCKED";
   const pending = side === "player" ? p.committed.find(item => item.targetSlot === index) : undefined;
   if (pending) {
     return "<div class=\"field-slot pending-slot\" data-slot=\"" + index + "\" data-side=\"player\">" +
@@ -188,16 +190,17 @@ function fieldSlot(p: GameState["player"], side: Side, index: number): string {
   }
   const card = p.board[index];
   if (card) {
-    return "<div class=\"field-slot occupied-slot" + (card.playedRound === animationRound && animationRound > 0 ? " just-played" : "") + "\"" +
+    return "<div class=\"field-slot occupied-slot" + (card.playedRound === animationRound && animationRound > 0 ? " just-played" : "") + (locked ? " locked-slot" : "") + "\"" +
       " data-slot=\"" + index + "\" data-side=\"" + side + "\">" +
       "<span class=\"slot-number\">" + (index + 1) + "</span>" +
+      (locked ? "<span class=\"slot-lock-badge\">" + lockLabel + "</span>" : "") +
       renderCard(card, "board", "field-card", -1, card.uid) +
       (card.trigger === "on_round_end" ? "<span class=\"active-ribbon\">" + (language === "ru" ? "РАБОТАЕТ" : "ACTIVE") + "</span>" : "") +
       "</div>";
   }
-  return "<button class=\"field-slot empty-slot" + (chosenCardUid && side === "player" ? " slot-ready" : "") + "\"" +
-    (side === "player" ? " data-slot=\"" + index + "\" data-side=\"player\"" : "") + ">" +
-    "<span class=\"slot-plus\">+</span><span class=\"slot-empty-label\">" + (language === "ru" ? "МЕСТО " : "SLOT ") + (index + 1) + "</span></button>";
+  return "<button class=\"field-slot empty-slot" + (chosenCardUid && side === "player" && !locked ? " slot-ready" : "") + (locked ? " locked-slot" : "") + "\" data-slot=\"" + index + "\" data-side=\"" + side + "\" aria-label=\"" + lockLabel + " " + (index + 1) + "\">" +
+    (locked ? "<span class=\"slot-lock-badge\">" + lockLabel + "</span>" : "<span class=\"slot-plus\">+</span>") +
+    "<span class=\"slot-empty-label\">" + (locked ? lockLabel : (language === "ru" ? "МЕСТО " : "SLOT ") + (index + 1)) + "</span></button>";
 }
 function renderBoard(p: GameState["player"], side: Side): string {
   return "<div class=\"field-row " + (side === "player" ? "your-field" : "enemy-field") + "\" aria-label=\"" + (side === "player" ? t("player") : t("enemy")) + "\">" +
