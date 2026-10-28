@@ -1,5 +1,5 @@
 import { CARDS, CARD_BY_ID, DEFAULT_DECK, type CardDef, type Side } from "./game/cards";
-import { createGame, queueCard, unqueueCard, lockPlayerAndResolve, type CardInstance, type GameState } from "./game/rapid-core";
+import { createGame, queueCard, unqueueCard, lockPlayerAndResolve, type CardInstance, type GameState, type RoundEvent } from "./game/rapid-core";
 import "./rapid.css";
 import { mountBattleScene, type BattleSceneHandle } from "./battle-scene";
 import { gsap } from "gsap";
@@ -57,7 +57,7 @@ function readDeck(): string[] {
       const clean: string[] = [];
       const seen = new Set<string>();
       for (const id of stored) {
-        if (typeof id !== "string" || !CARD_BY_ID.has(id) || seen.has(id) || clean.length >= 14) continue;
+        if (typeof id !== "string" || !CARD_BY_ID.has(id) || CARD_BY_ID.get(id)?.token || seen.has(id) || clean.length >= 14) continue;
         seen.add(id);
         clean.push(id);
       }
@@ -425,11 +425,12 @@ function animateRound(snapshot: RoundVisualSnapshot): void {
   }, 0.02);
 
   const orderedSides: Side[] = [snapshot.first, snapshot.first === "player" ? "enemy" : "player"];
-  for (let slot = 0; slot < 4; slot++) {
-    for (const side of orderedSides) {
+  const revealEvents = snapshot.events.filter((event): event is Extract<RoundEvent, { type: "reveal" }> => event.type === "reveal");
+  for (const revealEvent of revealEvents) {
+      const { side, slot, card: eventCard } = revealEvent;
       const card = snapshot.after[side].board[slot];
       const was = snapshot.before[side].board[slot];
-      if (!card || card.playedRound !== snapshot.round || was?.uid === card.uid) continue;
+      if (!card || card.uid !== eventCard.uid || card.playedRound !== snapshot.round || was?.uid === card.uid) continue;
       const selector = ".field-row." + (side === "player" ? "your-field" : "enemy-field") + ' [data-slot="' + slot + '"]';
       const slotEl = app.querySelector<HTMLElement>(selector);
       const cardEl = slotEl?.querySelector<HTMLElement>(".round-reveal-card");
@@ -454,15 +455,14 @@ function animateRound(snapshot: RoundVisualSnapshot): void {
             });
           }
         }
-        const planned = side === "player" ? snapshot.before.player.plans.find(plan => plan.card.uid === card.uid) : undefined;
+        const planned = snapshot.before[side].plans.find(plan => plan.card.uid === card.uid);
         const cost = planned?.paid ?? card.cost;
         if (cost !== 0) {
-          numberFx(side, cost > 0 ? -cost : Math.abs(cost), "cost", slot);
+          numberFx(side, cost, "cost", slot);
           sfx("cost");
         } else sfx("reveal");
       });
       timeline.to({}, { duration: 0.82 });
-    }
   }
 
   const newlyRevealed: Array<{ side: Side; slot: number; card: CardInstance }> = [];
@@ -610,8 +610,8 @@ function action(name: string, target: HTMLElement | null): void {
     if (!game || game.winner || roundAnimationRunning) return;
     const resolvedRound = game.round;
     const before = {
-      player: { stability: game.player.stability, board: [...game.player.board], hand: [...game.player.hand], deck: game.player.deck.length, plans: [...game.player.committed] },
-      enemy: { stability: game.enemy.stability, board: [...game.enemy.board], hand: [...game.enemy.hand], deck: game.enemy.deck.length, plans: [] as typeof game.player.committed },
+      player: { stability: game.player.stability, board: [...game.player.board], hand: [...game.player.hand], deck: game.player.deck.length, plans: game.player.committed.map(plan => ({ ...plan, paid: plan.card.cost })) },
+      enemy: { stability: game.enemy.stability, board: [...game.enemy.board], hand: [...game.enemy.hand], deck: game.enemy.deck.length, plans: game.enemy.committed.map(plan => ({ ...plan, paid: plan.card.cost })) },
     };
     animationRound = resolvedRound;
     chosenCardUid = null;
@@ -622,7 +622,7 @@ function action(name: string, target: HTMLElement | null): void {
     };
     const initiativeLine = game.log.find(line => line.includes("раскрывает карты первым"));
     const first: Side = initiativeLine?.startsWith("Ты") ? "player" : "enemy";
-    const roundEvents = { round: resolvedRound, before, after, first, winner: game.winner };
+    const roundEvents = { round: resolvedRound, before, after, first, winner: game.winner, events: [...game.lastRoundEvents] };
     if (game.winner) sfx(game.winner === "player" ? "win" : game.winner === "draw" ? "draw" : "lose");
     render();
     roundAnimationRunning = true;
