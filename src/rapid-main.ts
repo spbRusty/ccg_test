@@ -413,16 +413,16 @@ function animateRound(snapshot: RoundVisualSnapshot): void {
     gsap.delayedCall(0.55, () => { if (chip.isConnected) gsap.to(chip, { opacity: 0, y: -8, duration: 0.14, onComplete: () => chip.remove() }); });
   };
   const label = (ru: string, en: string) => language === "ru" ? ru : en;
-  const numberFx = (side: Side, value: number, kind: "damage" | "heal" | "cost", slot?: number) => {
+  const numberFx = (side: Side, value: number, kind: "damage" | "heal" | "cost", slot?: number, sourceSide: Side = side) => {
     const strip = app.querySelector<HTMLElement>(".stability-strip");
     const target = strip?.querySelector<HTMLElement>(side === "enemy" ? ".stability-enemy" : ".stability-player");
     if (!target) return;
     const rect = target.getBoundingClientRect();
     const arenaRect = arena.getBoundingClientRect();
     const el = document.createElement("div");
-    el.className = "round-number-fx round-number-" + kind;
+    el.className = "round-number-fx round-number-" + kind + (kind === "cost" && value > 0 ? " round-number-positive" : "");
     el.textContent = (value > 0 ? "+" : "") + value;
-    const source = slot === undefined ? null : app.querySelector<HTMLElement>(".field-row." + (side === "player" ? "your-field" : "enemy-field") + ' [data-slot="' + slot + '"]');
+    const source = slot === undefined ? null : app.querySelector<HTMLElement>(".field-row." + (sourceSide === "player" ? "your-field" : "enemy-field") + ' [data-slot="' + slot + '"]');
     const sourceRect = source?.getBoundingClientRect();
     el.style.left = ((sourceRect ? sourceRect.left + sourceRect.width / 2 : rect.left + rect.width / 2) - arenaRect.left) + "px";
     el.style.top = ((sourceRect ? sourceRect.top + sourceRect.height / 2 : rect.top + rect.height / 2) - arenaRect.top) + "px";
@@ -469,7 +469,7 @@ function animateRound(snapshot: RoundVisualSnapshot): void {
           sfx("cost");
         } else sfx("reveal");
       });
-      timeline.to({}, { duration: 0.16 });
+      timeline.to({}, { duration: 0.20 });
     }
   }
 
@@ -496,9 +496,9 @@ function animateRound(snapshot: RoundVisualSnapshot): void {
         }
       }
     }
-  }, "+=0.12");
+  }, "+=0.15");
 
-  timeline.to({}, { duration: 0.28 });
+  timeline.to({}, { duration: 0.38 });
   timeline.add(() => {
     stage(label("ЗАЛП СТОЛА", "BOARD VOLLEY"), "volley");
     const occupiedPlayer = snapshot.after.player.board.filter(Boolean).length;
@@ -511,7 +511,7 @@ function animateRound(snapshot: RoundVisualSnapshot): void {
         const slotEl = app.querySelector<HTMLElement>(".field-row." + (side === "player" ? "your-field" : "enemy-field") + ' [data-slot="' + slot + '"]');
         if (card && slotEl) {
           gsap.fromTo(slotEl, { filter: "brightness(1)" }, { filter: "brightness(1.8)", duration: 0.12, yoyo: true, repeat: 1, delay: slot * 0.025 });
-          numberFx(side === "player" ? "enemy" : "player", -1, "damage", slot);
+          numberFx(side === "player" ? "enemy" : "player", -1, "damage", slot, side);
         }
       }
     }
@@ -524,7 +524,7 @@ function animateRound(snapshot: RoundVisualSnapshot): void {
     const strip = app.querySelector<HTMLElement>(".stability-strip");
     if (strip) gsap.fromTo(strip, { x: 0 }, { x: 2, duration: 0.045, repeat: 5, yoyo: true, onComplete: () => gsap.set(strip, { x: 0 }) });
   }, "+=0.1");
-  timeline.to({}, { duration: 0.78 });
+  timeline.to({}, { duration: 0.95 });
 
   timeline.add(() => {
     stage(label("ДОБОР ДО 4 КАРТ", "DRAW TO 4"), "draw");
@@ -540,8 +540,8 @@ function animateRound(snapshot: RoundVisualSnapshot): void {
       }
     }
     if (snapshot.after.player.deck < snapshot.before.player.deck) sfx("draw");
-  }, "+=0.04");
-  timeline.to({}, { duration: 0.34 });
+  }, "+=0.05");
+  timeline.to({}, { duration: 0.42 });
   if (snapshot.winner) timeline.add(() => sfx(snapshot.winner === "player" ? "win" : snapshot.winner === "draw" ? "draw" : "lose"));
 }
 
