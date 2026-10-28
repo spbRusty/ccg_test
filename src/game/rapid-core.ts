@@ -214,7 +214,15 @@ function resolveAction(game: GameState, side: Side, card: CardInstance, slot: nu
     const targetBoard = source.board;
     const token = CARD_BY_ID.get("token");
     if (token) {
-      const candidates = card.target === "left" ? [slot - 1] : card.target === "right" ? [slot + 1] : slots;
+      const candidates = card.target === "left"
+        ? [slot - 1]
+        : card.target === "right"
+          ? [slot + 1]
+          : card.target === "adjacent"
+            ? [slot - 1, slot + 1]
+            : card.target === "edge"
+              ? slot === 0 ? [1] : slot === game.settings.slots - 1 ? [game.settings.slots - 2] : []
+              : slots;
       const free = candidates.find(i => i >= 0 && i < game.settings.slots && !targetBoard[i] && !source.lockedSlots.has(i));
       if (free !== undefined) {
         targetBoard[free] = { ...token, uid: "token-" + nextUid++, playedRound: game.round };
