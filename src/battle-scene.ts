@@ -5,6 +5,8 @@ export interface BattleSceneHandle {
   destroy: () => void;
   pulseStability: (side: "player" | "enemy") => void;
   pulseSlot: (side: "player" | "enemy", slot: number) => void;
+  signalInitiative: (side: "player" | "enemy") => void;
+  revealCard: (card: HTMLElement, cover: HTMLElement | null) => void;
 }
 
 export function mountBattleScene(root: HTMLElement): BattleSceneHandle {
@@ -35,6 +37,10 @@ export function mountBattleScene(root: HTMLElement): BattleSceneHandle {
   const hot = new THREE.PointLight("#ff5b70", 18, 14);
   hot.position.set(5, 2.2, 1);
   scene.add(hot);
+
+  const initiativeLight = new THREE.PointLight("#ffd36b", 0, 12);
+  initiativeLight.position.set(0, 3.2, 2.25);
+  scene.add(initiativeLight);
 
   const tableMaterial = new THREE.MeshStandardMaterial({ color: "#344b65", roughness: 0.42, metalness: 0.28, emissive: "#102238", emissiveIntensity: 0.35 });
   const table = new THREE.Mesh(new THREE.BoxGeometry(12.5, 0.42, 8.2), tableMaterial);
@@ -124,6 +130,40 @@ export function mountBattleScene(root: HTMLElement): BattleSceneHandle {
     gsap.fromTo(centerRail.scale, { x: 0.55, y: 1, z: 1 }, { x: 1, duration: 0.42, ease: "elastic.out(1, 0.4)" });
   };
 
+  const signalInitiative = (side: "player" | "enemy") => {
+    initiativeLight.position.z = side === "player" ? 2.25 : -2.25;
+    gsap.killTweensOf(initiativeLight);
+    gsap.fromTo(initiativeLight, { intensity: 0 }, {
+      intensity: 36, duration: 0.24, yoyo: true, repeat: 1, ease: "power2.out",
+      onComplete: () => { initiativeLight.intensity = 0; },
+    });
+    gsap.killTweensOf(centerRail.material);
+    gsap.fromTo(centerRail.material, { emissiveIntensity: 0.5 }, {
+      emissiveIntensity: 2.8, duration: 0.22, yoyo: true, repeat: 1, ease: "power2.out",
+    });
+  };
+
+  const revealCard = (card: HTMLElement, cover: HTMLElement | null) => {
+    gsap.killTweensOf(card);
+    gsap.set(card, { transformPerspective: 720, transformOrigin: "50% 50%", rotationY: 180, backfaceVisibility: "hidden" });
+    let coverRemoved = false;
+    if (cover) gsap.set(cover, { opacity: 1, transformOrigin: "50% 50%", backfaceVisibility: "hidden" });
+    gsap.to(card, {
+      rotationY: 0, duration: 0.72, ease: "back.out(1.25)", overwrite: "auto",
+      onUpdate: () => {
+        const rotation = Number(gsap.getProperty(card, "rotationY"));
+        if (!coverRemoved && rotation <= 92) {
+          coverRemoved = true;
+          cover?.remove();
+        }
+      },
+      onComplete: () => {
+        cover?.remove();
+        gsap.set(card, { clearProps: "transformPerspective,backfaceVisibility" });
+      },
+    });
+  };
+
   const pulseSlot = (side: "player" | "enemy", slot: number) => {
     if (!Number.isInteger(slot) || slot < 0 || slot > 3) return;
     const pad = slots[(side === "enemy" ? 0 : 4) + slot];
@@ -152,11 +192,13 @@ export function mountBattleScene(root: HTMLElement): BattleSceneHandle {
   return {
     pulseStability,
     pulseSlot,
+    signalInitiative,
+    revealCard,
     destroy: () => {
       disposed = true;
       cancelAnimationFrame(raf);
       observer.disconnect();
-      gsap.killTweensOf([rim, hot, centerRail.scale]);
+      gsap.killTweensOf([rim, hot, initiativeLight, centerRail.scale, centerRail.material]);
       renderer.dispose();
       table.geometry.dispose(); tableMaterial.dispose();
       inset.geometry.dispose(); (inset.material as THREE.Material).dispose();
