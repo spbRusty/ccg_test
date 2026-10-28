@@ -3,86 +3,100 @@ import { CARDS, CARD_BY_ID, DEFAULT_DECK } from "./cards";
 import { createGame, queueCard, resolveRound, type CardInstance } from "./rapid-core";
 
 function instance(id: string, uid: string): CardInstance {
-  const def = CARD_BY_ID.get(id);
-  if (!def) throw new Error("Unknown card: " + id);
-  return { ...def, uid, playedRound: 0 };
+  const definition = CARD_BY_ID.get(id);
+  if (!definition) throw new Error("Unknown card: " + id);
+  return { ...definition, uid, playedRound: 0 };
 }
-function ready(game: ReturnType<typeof createGame>): void {
+
+function lockBoth(game: ReturnType<typeof createGame>): void {
   game.player.locked = true;
   game.enemy.locked = true;
 }
 
-describe("Rapid core — новая кор-механика", () => {
-  it("имеет стартовую коллекцию уникальных карт и синглтон-колоду из 14 карт", () => {
+describe("Rapid core — Stability and positional control", () => {
+  it("uses a unique 14-card deck, a four-card hand, and Stability capped at 30", () => {
+    const game = createGame(DEFAULT_DECK, () => 0.5);
     expect(CARDS.length).toBeGreaterThanOrEqual(25);
     expect(new Set(CARDS.map(card => card.id)).size).toBe(CARDS.length);
     expect(DEFAULT_DECK).toHaveLength(14);
     expect(new Set(DEFAULT_DECK).size).toBe(14);
-    expect(createGame(DEFAULT_DECK, () => 0.5).player.stability).toBe(30);
-    expect(createGame(DEFAULT_DECK, () => 0.5).settings.maxStability).toBe(30);
+    expect(game.settings).toMatchObject({
+      startStability: 30, maxStability: 30, deckSize: 14,
+      startHand: 4, handLimit: 4, slots: 4, maxPlays: 2,
+    });
+    expect(game.player.stability).toBe(30);
+    expect(game.player.hand).toHaveLength(4);
+    expect(game.player.deck).toHaveLength(10);
+    expect(CARDS.every(card => card.cost >= -7 && card.cost <= 4)).toBe(true);
   });
 
-  it("инициатива у игрока с меньшей Стойкостью; при равенстве используется random", () => {
-    const game = createGame(DEFAULT_DECK, () => 0.1);
+  it("gives initiative to the player with less Stability and breaks ties using the supplied RNG", () => {
+    const game = createGame(DEFAULT_DECK, () => 0.5);
     game.player.stability = 18;
     game.enemy.stability = 22;
-    ready(game);
-    resolveRound(game, () => 0.5);
+    lockBoth(game);
+    resolveRound(game, () => 0.9);
     expect(game.lastRoundEvents[0]).toEqual({ type: "initiative", side: "player" });
 
     const tied = createGame(DEFAULT_DECK, () => 0.5);
-    ready(tied);
+    lockBoth(tied);
     resolveRound(tied, () => 0.1);
     expect(tied.lastRoundEvents[0]).toEqual({ type: "initiative", side: "player" });
   });
 
-  it("закрытая карта, убранная до её вскрытия, не платит и не активируется", () => {
+  it("destroys a face-down card before reveal without charging its cost or triggering it", () => {
     const game = createGame(DEFAULT_DECK, () => 0.5);
-    const remover = instance("hook", "remover");
+    const remover = { ...instance("hook", "remover"), cost: 0, target: "opposite" as const, action: "remove" as const };
     const victim = instance("glass-cannon", "victim");
     game.player.hand = [remover];
     game.enemy.hand = [victim];
     game.player.stability = 20;
     game.enemy.stability = 20;
-    queueCard(game, "player", remover.uid, 0);
-    queueCard(game, "enemy", victim.uid, 0);
-    // Hook targets the enemy slot to the left of slot 1: no slot exists, so use a dedicated opposite-target remover.
-    const direct = { ...remover, id: "test-remove", target: "opposite" as const, action: "remove" as const, cost: 0 };
-    game.player.committed[0] = { card: direct, targetSlot: 0, paid: 0 };
-    ready(game);
-    resolveRound(game, () => 0.5);
-    expect(game.enemy.stability).toBe(23);
+    expect(queueCard(game, "player", remover.uid, 0).ok).toBe(true);
+    expect(queueCard(game, "enemy", victim.uid, 0).ok).toBe(true);
+    lockBoth(game);
+    resolveRound(game, () => 0.1);
+
     expect(game.lastRoundEvents.some(event => event.type === "reveal" && event.card.uid === "victim")).toBe(false);
+    expect(game.lastRoundEvents.some(event => event.type === "reveal" && event.card.uid === "remover")).toBe(true);
     expect(game.enemy.discard.some(card => card.uid === "victim")).toBe(true);
+    expect(game.enemy.stability).toBe(19);
   });
 
-  it("правило стола: занятые слоты снижают стойкость врага, пустые лечат владельца", () => {
+  it("applies occupied-slot pressure and empty-slot recovery", () => {
     const game = createGame(DEFAULT_DECK, () => 0.5);
     game.player.board = [instance("token", "p1"), instance("token", "p2"), null, null];
     game.enemy.board = [instance("token", "e1"), null, null, null];
     game.player.stability = 20;
     game.enemy.stability = 20;
-    ready(game);
+    lockBoth(game);
     resolveRound(game, () => 0.5);
-    expect(game.player.stability).toBe(20 + 2 - 1);
-    expect(game.enemy.stability).toBe(20 + 3 - 2);
+
+    expect(game.player.stability).toBe(21);
+    expect(game.enemy.stability).toBe(21);
+    expect(game.lastRoundEvents.find(event => event.type === "table_volley")).toMatchObject({
+      occupied: { player: 2, enemy: 1 },
+      empty: { player: 2, enemy: 3 },
+      delta: { player: 1, enemy: 1 },
+    });
   });
 
-  it("не позволяет оплатить карту, если стоимость обнуляет Стойкость", () => {
+  it("does not allow a card cost to reduce Stability to zero or below", () => {
     const game = createGame(DEFAULT_DECK, () => 0.5);
-    const card = { ...instance("glass-cannon", "expensive"), cost: -2 };
-    game.player.hand = [card];
+    const expensive = { ...instance("glass-cannon", "expensive"), cost: -2 };
+    game.player.hand = [expensive];
     game.player.stability = 2;
     game.enemy.stability = 30;
-    queueCard(game, "player", card.uid, 0);
-    ready(game);
+    expect(queueCard(game, "player", expensive.uid, 0).ok).toBe(true);
+    lockBoth(game);
     resolveRound(game, () => 0.5);
-    expect(game.player.stability).toBe(6); // карта не платит; четыре пустых слота восстанавливают
-    expect(game.player.discard.some(item => item.uid === "expensive")).toBe(true);
+
+    expect(game.player.stability).toBe(6);
+    expect(game.player.discard.some(card => card.uid === "expensive")).toBe(true);
     expect(game.lastRoundEvents.some(event => event.type === "reveal" && event.card.uid === "expensive")).toBe(false);
   });
 
-  it("штрафует усталостью по 2 Стойкости за каждую недостающую карту", () => {
+  it("applies fatigue for each card missing from the four-card hand", () => {
     const game = createGame(DEFAULT_DECK, () => 0.5);
     game.player.hand = [];
     game.player.deck = [];
@@ -90,9 +104,24 @@ describe("Rapid core — новая кор-механика", () => {
     game.enemy.deck = [];
     game.player.board = [null, null, null, null];
     game.enemy.board = [null, null, null, null];
-    ready(game);
+    lockBoth(game);
     resolveRound(game, () => 0.5);
+
     expect(game.lastRoundEvents.filter(event => event.type === "fatigue" && event.side === "player")).toHaveLength(4);
-    expect(game.player.stability).toBe(22); // +4 за пустое поле с капом 30, затем -8 усталости
+    expect(game.lastRoundEvents.filter(event => event.type === "fatigue" && event.side === "enemy")).toHaveLength(4);
+    expect(game.player.stability).toBe(22);
+    expect(game.enemy.stability).toBe(22);
+  });
+
+  it("caps recovery before applying the opposing table pressure", () => {
+    const game = createGame(DEFAULT_DECK, () => 0.5);
+    game.player.board = [null, null, null, null];
+    game.enemy.board = [instance("token", "e1"), null, null, null];
+    game.player.stability = 29;
+    game.enemy.stability = 20;
+    lockBoth(game);
+    resolveRound(game, () => 0.5);
+
+    expect(game.player.stability).toBe(29);
   });
 });
