@@ -41,8 +41,8 @@ const I18N: Record<string, [string, string]> = {
   log: ["ХРОНИКА", "MATCH LOG"], arsenal: ["АРХИВ", "ARCHIVE"], remaining: ["Колода", "Deck"], enemyPlayed: ["Карты соперника", "Opponent cards"],
   win: ["ПОБЕДА!", "YOU WIN!"], lose: ["ПОРАЖЕНИЕ", "DEFEAT"], draw: ["НИЧЬЯ", "DRAW"],
   playAgain: ["Ещё матч", "Play again"], mainMenu: ["В меню", "Main menu"], confirm: ["Готово", "Done"],
-  deckCount: ["Карт в колоде", "Cards in deck"], maxCopies: ["12 разных карт, без повторов", "12 unique cards, no duplicates"],
-  addCards: ["Добавь карты из коллекции ниже. Должно быть ровно 12.", "Add cards from the collection below. Exactly 12 are required."],
+  deckCount: ["Карт в колоде", "Cards in deck"], maxCopies: ["14 разных карт, без повторов", "14 unique cards, no duplicates"],
+  addCards: ["Добавь карты из коллекции ниже. Должно быть ровно 14.", "Add cards from the collection below. Exactly 14 are required."],
   autoDeck: ["Стартовая колода", "Starter deck"], save: ["Сохранить колоду", "Save deck"], search: ["Поиск карт", "Search cards"],
   allFactions: ["Все отряды", "All squads"], sound: ["Звуковые эффекты", "Sound effects"], music: ["Музыка", "Music"],
   language: ["Язык", "Language"], volumeOff: ["выкл.", "off"], capped: ["Раундов", "Rounds"],
@@ -57,11 +57,11 @@ function readDeck(): string[] {
       const clean: string[] = [];
       const seen = new Set<string>();
       for (const id of stored) {
-        if (typeof id !== "string" || !CARD_BY_ID.has(id) || seen.has(id) || clean.length >= 12) continue;
+        if (typeof id !== "string" || !CARD_BY_ID.has(id) || seen.has(id) || clean.length >= 14) continue;
         seen.add(id);
         clean.push(id);
       }
-      if (clean.length === 12) return clean;
+      if (clean.length === 14) return clean;
     }
   } catch {}
   return [...DEFAULT_DECK];
@@ -254,7 +254,7 @@ function renderBattle(): string {
 }
 function renderHome(): string {
   return "<main class=\"menu-screen home-screen\"><div class=\"home-sunburst\"></div><div class=\"home-topline\"><span class=\"mini-brand\">S!</span><span class=\"eyebrow\">" + (language === "ru" ? "КОЛЛЕКЦИОННАЯ КАРТОЧНАЯ ИГРА" : "COLLECTIBLE CARD GAME") + "</span><button class=\"icon-button home-setting\" data-action=\"settings\">⚙</button></div>" +
-    "<section class=\"hero-block\"><div class=\"hero-kicker\"><span>✦</span> " + (language === "ru" ? "ПОСТАПОКАЛИПСИС НА ЛАДОНИ" : "POST-APOCALYPSE IN YOUR HAND") + "</div><h1>" + t("title") + "<span>!</span></h1><p>" + (language === "ru" ? "Собери отряд. Рискни Стабильностью. Перехитри соперника." : "Build a squad. Risk your Stability. Outplay your rival.") + "</p><div class=\"hero-stats\"><span><b>120</b><small>" + (language === "ru" ? "КАРТ" : "CARDS") + "</small></span><span><b>12</b><small>" + (language === "ru" ? "В КОЛОДЕ" : "IN DECK") + "</small></span><span><b>3–5</b><small>" + (language === "ru" ? "МИНУТЫ" : "MINUTES") + "</small></span></div></section>" +
+    "<section class=\"hero-block\"><div class=\"hero-kicker\"><span>✦</span> " + (language === "ru" ? "ПОСТАПОКАЛИПСИС НА ЛАДОНИ" : "POST-APOCALYPSE IN YOUR HAND") + "</div><h1>" + t("title") + "<span>!</span></h1><p>" + (language === "ru" ? "Собери отряд. Рискни Стабильностью. Перехитри соперника." : "Build a squad. Risk your Stability. Outplay your rival.") + "</p><div class=\"hero-stats\"><span><b>31</b><small>" + (language === "ru" ? "КАРТ" : "CARDS") + "</small></span><span><b>12</b><small>" + (language === "ru" ? "В КОЛОДЕ" : "IN DECK") + "</small></span><span><b>3–5</b><small>" + (language === "ru" ? "МИНУТЫ" : "MINUTES") + "</small></span></div></section>" +
     "<nav class=\"menu-actions\"><button class=\"menu-button menu-primary\" data-action=\"start\"><span class=\"menu-number\">01</span><span><b>" + t("single") + "</b><small>" + (language === "ru" ? "Сразись с ИИ" : "Challenge the AI") + "</small></span><i>↗</i></button>" +
     "<button class=\"menu-button\" data-action=\"pvp\"><span class=\"menu-number\">02</span><span><b>" + t("pvp") + "</b><small>" + (language === "ru" ? "Сетевой режим готовится" : "Online play is in development") + "</small></span><i>⌁</i></button>" +
     "<button class=\"menu-button\" data-action=\"decks\"><span class=\"menu-number\">03</span><span><b>" + t("decks") + "</b><small>" + (language === "ru" ? "Собери свою колоду" : "Build your own deck") + "</small></span><i>▦</i></button></nav>" +
@@ -274,7 +274,7 @@ function renderDecks(): string {
     return renderCard(card, "deck", "deck-slot-card", index) + "<span class=\"deck-remove-hint\">" + (language === "ru" ? "× убрать" : "× remove") + "</span>";
   }).join("");
   return "<main class=\"menu-screen collection-screen\"><header class=\"page-topbar\"><button class=\"brand-lockup\" data-action=\"home\"><span class=\"brand-icon\">S!</span><span><b>" + t("title") + "</b><small>" + t("subtitle") + "</small></span></button><div class=\"page-actions\"><button class=\"button button-light\" data-action=\"settings\">⚙ " + t("settings") + "</button><button class=\"button button-light\" data-action=\"home\">" + t("back") + "</button></div></header>" +
-    "<section class=\"page-intro\"><div><span class=\"eyebrow\">" + t("collection") + " / 120</span><h1>" + t("decks") + "</h1><p>" + t("addCards") + "</p></div><div class=\"collection-stats\"><b>120</b><span>" + (language === "ru" ? "УНИКАЛЬНЫХ КАРТ" : "UNIQUE CARDS") + "</span></div></section>" +
+    "<section class=\"page-intro\"><div><span class=\"eyebrow\">" + t("collection") + " / 31</span><h1>" + t("decks") + "</h1><p>" + t("addCards") + "</p></div><div class=\"collection-stats\"><b>31</b><span>" + (language === "ru" ? "УНИКАЛЬНЫХ КАРТ" : "UNIQUE CARDS") + "</span></div></section>" +
     "<section class=\"deck-editor\"><div class=\"deck-editor-heading\"><div><span class=\"eyebrow\">" + t("deck") + " 01</span><h2>" + (language === "ru" ? "Колода вылазки" : "Expedition deck") + "</h2><p>" + t("maxCopies") + "</p></div><div class=\"deck-progress\"><b>" + deckIds.length + "<small>/12</small></b><span class=\"deck-progress-track\"><i style=\"width:" + (deckIds.length / 14 * 100) + "%\"></i></span><small>" + (language === "ru" ? "СРЕДНЯЯ ЦЕНА" : "AVG COST") + " " + (deckIds.length ? (totalDeckCost / deckIds.length).toFixed(1) : "—") + "</small></div></div>" +
     "<div class=\"deck-slots\">" + deckSlots + "</div><div class=\"deck-tools\"><span class=\"deck-status\">" + (deckIds.length === 14 ? (language === "ru" ? "КОЛОДА ГОТОВА" : "DECK READY") : (language === "ru" ? "НУЖНО ЕЩЁ " + (14 - deckIds.length) : "ADD " + (12 - deckIds.length) + " MORE")) + "</span><button class=\"button button-light\" data-action=\"auto-deck\">" + t("autoDeck") + "</button><button class=\"button button-hot\" data-action=\"save-deck\" " + (deckIds.length !== 14 ? "disabled" : "") + ">" + t("save") + " ✓</button></div></section>" +
     "<section class=\"collection-section\"><div class=\"collection-heading\"><div><span class=\"eyebrow\">" + t("cards") + " / 120</span><h2>" + t("collection") + "</h2></div><div class=\"collection-filters\"><input id=\"collection-search\" type=\"search\" placeholder=\"" + t("search") + "\" value=\"" + esc(collectionQuery) + "\"><button class=\"button button-light\" data-action=\"find\">" + (language === "ru" ? "Найти" : "Find") + "</button><select id=\"collection-faction\" aria-label=\"" + t("allFactions") + "\"><option value=\"all\">" + t("allFactions") + "</option>" +
@@ -643,7 +643,7 @@ function action(name: string, target: HTMLElement | null): void {
     deckIds = [...DEFAULT_DECK]; saveDeck(); showNotice(language === "ru" ? "Стартовая колода восстановлена." : "Starter deck restored."); render(); return;
   }
   if (name === "save-deck") {
-    if (deckIds.length !== 12) return;
+    if (deckIds.length !== 14) return;
     saveDeck(); showNotice(language === "ru" ? "Колода сохранена." : "Deck saved."); sfx("win"); render(); return;
   }
   if (name === "find") {
@@ -678,7 +678,7 @@ app.addEventListener("click", event => {
       const count = deckIds.filter(value => value === id).length;
       if (deckIds.length >= 14) { showNotice(language === "ru" ? "Колода уже содержит 14 карт. Убери одну из верхнего ряда." : "Deck already has 14 cards. Remove one from the top row."); return; }
       if (count >= 1) { showNotice(language === "ru" ? "Эта карта уже есть в колоде." : "This card is already in the deck."); return; }
-      if (CARD_BY_ID.has(id)) deckIds.push(id);
+      if (CARD_BY_ID.has(id) && !CARD_BY_ID.get(id)?.token) deckIds.push(id);
       saveDeck(); render(); return;
     }
   }
