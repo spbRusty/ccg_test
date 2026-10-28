@@ -206,8 +206,9 @@ function resolveAction(game: GameState, side: Side, card: CardInstance, slot: nu
       }
     }
   } else if (card.action === "lock") {
+    const lockOwner = card.target === "self" ? source : foe;
     for (const targetSlot of slots) {
-      foe.lockedSlots.add(targetSlot);
+      lockOwner.lockedSlots.add(targetSlot);
       affectedSlots.push(targetSlot);
     }
   } else if (card.action === "spawn_token") {
