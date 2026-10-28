@@ -199,7 +199,7 @@ function fieldSlot(p: GameState["player"], side: Side, index: number): string {
   const card = p.board[index];
   if (card) {
     return "<div class=\"field-slot occupied-slot" + (card.playedRound === animationRound && animationRound > 0 ? " just-played" : "") + "\"" +
-      (side === "player" ? " data-slot=\"" + index + "\" data-side=\"player\"" : "") + ">" +
+      " data-slot=\"" + index + "\" data-side=\"" + side + "\">" +
       "<span class=\"slot-number\">" + (index + 1) + "</span>" +
       renderCard(card, "board", "field-card", -1, card.uid) +
       (card.timing === "end" ? "<span class=\"active-ribbon\">" + (language === "ru" ? "РАБОТАЕТ" : "ACTIVE") + "</span>" : "") +
