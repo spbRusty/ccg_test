@@ -164,6 +164,9 @@ function resolveAction(game: GameState, side: Side, card: CardInstance, slot: nu
   const affectedSide: Side = card.action === "spawn_token" ? side : foeSide;
   const slots = targetSlots(slot, card.target, game.settings.slots);
   const affectedSlots: number[] = [];
+  // Keep the event stream in execution order. The arrays are populated below
+  // and retained by reference so the event has the completed affected-slot list.
+  game.lastRoundEvents.push({ type: "action", side, slot, card, action: card.action, targetSlots: slots, affectedSide, affectedSlots });
   if (card.action === "remove") {
     for (const targetSlot of slots) {
       const hiddenIndex = foe.committed.findIndex(plan => plan.targetSlot === targetSlot);
@@ -233,7 +236,6 @@ function resolveAction(game: GameState, side: Side, card: CardInstance, slot: nu
       }
     }
   }
-  game.lastRoundEvents.push({ type: "action", side, slot, card, action: card.action, targetSlots: slots, affectedSide, affectedSlots });
 }
 export function resolveRound(game: GameState, random: () => number = Math.random): void {
   if (game.winner || !game.player.locked || !game.enemy.locked) return;
