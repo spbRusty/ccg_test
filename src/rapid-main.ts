@@ -635,12 +635,14 @@ function animateRound(snapshot: RoundVisualSnapshot): void {
     if (volley) {
       for (const side of ["player", "enemy"] as const) {
         for (const slot of volley.occupiedSlots[side]) {
+          battleScene?.animateVolley(side, slot, side === "player" ? "enemy" : "player", "damage");
           volleyRay(side, slot, side === "player" ? "enemy" : "player", "damage");
           numberFx(side === "player" ? "enemy" : "player", -1, "damage", slot, side);
           battleScene?.pulseSlot(side, slot);
           battleScene?.pulseStability(side === "player" ? "enemy" : "player");
         }
         for (const slot of volley.emptySlots[side]) {
+          battleScene?.animateVolley(side, slot, side, "heal");
           volleyRay(side, slot, side, "heal");
           numberFx(side, 1, "heal", slot, side);
           battleScene?.pulseSlot(side, slot);
