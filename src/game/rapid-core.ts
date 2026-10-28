@@ -1,6 +1,7 @@
 import { CARDS, CARD_BY_ID, DEFAULT_DECK, type CardDef, type Effect, type EffectTarget, type Side } from "./cards";
 import { calculateCardPayment } from "./stability-payment";
 import { getRoundResolutionOrder } from "./round-order";
+import { evaluateEffectCondition } from "./effect-conditions";
 
 export type Winner = Side | "draw" | null;
 export interface CardInstance extends CardDef {
@@ -182,40 +183,23 @@ function fieldCount(p: PlayerState): number {
 function hasEffectCondition(effect: Effect, game: GameState, side: Side, slot: number): boolean {
   const p = game[side];
   const foe = game[other(side)];
-  const ownCount = fieldCount(p);
-  const enemyCount = fieldCount(foe);
-  const condition = effect.condition;
-  if (condition) {
-    const threshold = condition.value ?? 0;
-    const opposite = foe.board[slot];
-    switch (condition.type) {
-      case "IS_EDGE": if (slot !== 0 && slot !== game.settings.slots - 1) return false; break;
-      case "IS_CENTER": if (slot === 0 || slot === game.settings.slots - 1) return false; break;
-      case "OPPOSITE_EMPTY": if (opposite) return false; break;
-      case "OPPOSITE_EXISTS": if (!opposite) return false; break;
-      case "LEFT_EMPTY": if (slot > 0 && p.board[slot - 1]) return false; break;
-      case "RIGHT_EMPTY": if (slot < game.settings.slots - 1 && p.board[slot + 1]) return false; break;
-      case "OWN_HAND_MORE": if (p.hand.length <= threshold) return false; break;
-      case "ENEMY_HAND_MORE": if (foe.hand.length <= threshold) return false; break;
-      case "OWN_BOARD_LESS": if (ownCount >= threshold) return false; break;
-      case "ENEMY_BOARD_LESS": if (enemyCount >= threshold) return false; break;
-      case "OWN_DECK_LESS": if (p.deck.length >= threshold) return false; break;
-      case "ENEMY_DECK_LESS": if (foe.deck.length >= threshold) return false; break;
-      case "OWN_STABILITY_BELOW": if (p.stability >= threshold) return false; break;
-      case "ENEMY_STABILITY_BELOW": if (foe.stability >= threshold) return false; break;
-    }
-  }
-  switch (effect.kind) {
-    case "if-own-more": return ownCount > enemyCount;
-    case "if-own-less": return ownCount < enemyCount;
-    case "enemy-played-more": return foe.committed.length > (effect.threshold ?? 1);
-    case "enemy-played-less": return foe.committed.length <= (effect.threshold ?? 1);
-    case "own-played-more": return p.committed.length > (effect.threshold ?? 1);
-    case "own-played-less": return p.committed.length <= (effect.threshold ?? 1);
-    case "if-enemy-stability-low": return foe.stability <= (effect.threshold ?? 10);
-    case "if-own-stability-low": return p.stability <= (effect.threshold ?? 10);
-    default: return true;
-  }
+  return evaluateEffectCondition(effect, {
+    slot,
+    slots: game.settings.slots,
+    ownBoardCount: fieldCount(p),
+    enemyBoardCount: fieldCount(foe),
+    ownHandCount: p.hand.length,
+    enemyHandCount: foe.hand.length,
+    ownDeckCount: p.deck.length,
+    enemyDeckCount: foe.deck.length,
+    ownStability: p.stability,
+    enemyStability: foe.stability,
+    ownPlayedCount: p.committed.length,
+    enemyPlayedCount: foe.committed.length,
+    oppositeOccupied: Boolean(foe.board[slot]),
+    leftOccupied: slot > 0 && Boolean(p.board[slot - 1]),
+    rightOccupied: slot < game.settings.slots - 1 && Boolean(p.board[slot + 1]),
+  });
 }
 function accumulate(out: Outcome, game: GameState, side: Side, card: CardInstance, timing: "play" | "end", slot: number): void {
   if (card.timing !== timing) return;
