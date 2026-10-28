@@ -1,4 +1,5 @@
 import { CARDS, CARD_BY_ID, DEFAULT_DECK, type CardDef, type Effect, type EffectTarget, type Side } from "./cards";
+import { calculateCardPayment } from "./stability-payment";
 
 export type Winner = Side | "draw" | null;
 export interface CardInstance extends CardDef {
@@ -8,7 +9,8 @@ export interface CardInstance extends CardDef {
 export interface PlannedCard {
   card: CardInstance;
   targetSlot: number;
-  paid: number;
+  /** Actual Stability change caused by selecting this card; positive means spent. */
+  stabilityDelta: number;
 }
 export interface PlayerState {
   stability: number;
@@ -119,10 +121,10 @@ export function queueCard(game: GameState, side: Side, cardUid: string, targetSl
   const handIndex = p.hand.findIndex(card => card.uid === cardUid);
   if (handIndex < 0) return { ok: false, message: "Карты больше нет в руке." };
   const card = p.hand[handIndex];
-  const paid = card.cost > 0 ? (p.stability <= 1 ? 0 : Math.min(card.cost, p.stability - 1)) : card.cost;
-  p.stability = clamp(p.stability - paid, game.settings.maxStability);
+  const payment = calculateCardPayment(p.stability, card.cost, game.settings.maxStability);
+  p.stability = payment.nextStability;
   p.hand.splice(handIndex, 1);
-  p.committed.push({ card, targetSlot, paid });
+  p.committed.push({ card, targetSlot, stabilityDelta: payment.stabilityDelta });
   return { ok: true, message: "Карта выбрана. Стабильность списана." };
 }
 export function unqueueCard(game: GameState, side: Side, cardUid: string): boolean {
@@ -131,7 +133,7 @@ export function unqueueCard(game: GameState, side: Side, cardUid: string): boole
   const index = p.committed.findIndex(item => item.card.uid === cardUid);
   if (index < 0) return false;
   const [planned] = p.committed.splice(index, 1);
-  p.stability = clamp(p.stability + planned.paid, game.settings.maxStability);
+  p.stability = clamp(p.stability - planned.stabilityDelta, game.settings.maxStability);
   p.hand.push(planned.card);
   return true;
 }
@@ -529,7 +531,8 @@ export function aiCommit(game: GameState, random: () => number = Math.random): v
   const candidates = [...p.hand].sort((a, b) => rateCard(b) - rateCard(a));
   for (const card of candidates) {
     if (p.committed.length >= game.settings.maxPlays) break;
-    if (p.stability - card.cost < 1) continue;
+    // queueCard is the single authority for payment rules, including partial payment
+    // and free selection at 1 Stability. The AI may use the same legal options as a player.
     let used = new Set(p.committed.map(item => item.targetSlot));
     let slot = p.board.findIndex((item, index) => item === null && !used.has(index));
     if (slot < 0) {
