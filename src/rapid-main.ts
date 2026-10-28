@@ -476,12 +476,37 @@ function animateRound(snapshot: RoundVisualSnapshot): void {
       const { side, slot, card, paid } = event;
       const slotSelector = ".field-row." + (side === "player" ? "your-field" : "enemy-field") + ' [data-slot="' + slot + '"]';
       const slotEl = app.querySelector<HTMLElement>(slotSelector);
-      const currentCard = snapshot.after[side].board[slot];
-      const cardEl = currentCard?.uid === card.uid ? slotEl?.querySelector<HTMLElement>(".round-reveal-card") : null;
+      const finalSlot = snapshot.after[side].board.findIndex(current => current?.uid === card.uid);
+      const existingCardEl = finalSlot === slot ? slotEl?.querySelector<HTMLElement>(".round-reveal-card") ?? null : null;
       timeline.add(() => {
         stage(label("СЛОТ " + (slot + 1) + " · " + cardName(card), "SLOT " + (slot + 1) + " · " + cardName(card)), "reveal");
         battleScene?.pulseSlot(side, slot);
         if (slotEl) gsap.fromTo(slotEl, { filter: "brightness(1)" }, { filter: "brightness(1.75)", duration: 0.14, yoyo: true, repeat: 1 });
+        let cardEl = existingCardEl;
+        let transientCard = false;
+        if (!cardEl && slotEl) {
+          // The card may already have been removed or shifted by a later effect.
+          // Show a temporary card at its original slot so its reveal is still visible.
+          const template = document.createElement("div");
+          template.innerHTML = renderCard(card, "board", "field-card", -1, card.uid);
+          cardEl = template.querySelector<HTMLElement>(".game-card");
+          if (cardEl) {
+            const slotRect = slotEl.getBoundingClientRect();
+            const arenaRect = arena.getBoundingClientRect();
+            Object.assign(cardEl.style, {
+              position: "absolute",
+              left: slotRect.left - arenaRect.left + "px",
+              top: slotRect.top - arenaRect.top + "px",
+              width: slotRect.width + "px",
+              height: slotRect.height + "px",
+              margin: "0",
+              zIndex: "45",
+              pointerEvents: "none",
+            });
+            layer.append(cardEl);
+            transientCard = true;
+          }
+        }
         if (cardEl) {
           const cover = cardEl.querySelector<HTMLElement>(".card-back-cover");
           battleScene?.revealCard(cardEl, cover);
@@ -489,6 +514,7 @@ function animateRound(snapshot: RoundVisualSnapshot): void {
             gsap.fromTo(cardEl, { scaleX: 0.04 }, { scaleX: 1, duration: 0.5, ease: "power2.out" });
             cover?.remove();
           }
+          if (transientCard) gsap.delayedCall(0.9, () => cardEl?.remove());
         }
         if (paid !== 0) {
           numberFx(side, paid, "cost", slot, side);
