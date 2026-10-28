@@ -39,7 +39,7 @@ export type RoundEvent =
   | { type: "action"; side: Side; slot: number; card: CardInstance; action: CardAction; targetSlots: number[]; affectedSide: Side; affectedSlots: number[] }
   | { type: "table_volley"; occupied: Record<Side, number>; empty: Record<Side, number>; occupiedSlots: Record<Side, number[]>; emptySlots: Record<Side, number[]>; delta: Record<Side, number> }
   | { type: "fatigue"; side: Side; amount: number }
-  | { type: "draw"; side: Side; amount: number }
+  | { type: "draw"; side: Side; amount: number; card: CardInstance }
   | { type: "winner"; winner: Winner };
 export interface GameState {
   round: number;
@@ -79,7 +79,7 @@ function drawToFour(game: GameState, side: Side): void {
     const card = p.deck.pop();
     if (card) {
       p.hand.push(card);
-      game.lastRoundEvents.push({ type: "draw", side, amount: 1 });
+      game.lastRoundEvents.push({ type: "draw", side, amount: 1, card });
       continue;
     }
     p.stability = clamp(p.stability - 2, game.settings.maxStability);
