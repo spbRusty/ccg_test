@@ -117,6 +117,24 @@ describe("Rapid core — Stability and positional control", () => {
     expect(CARDS.every(card => !/нанеси? \\d+ урона|наносит урон|щит|запрет хила/i.test(card.text))).toBe(true);
   });
 
+  it("records destroy reactions after the action that caused them", () => {
+    const game = createGame(DEFAULT_DECK, () => 0.5);
+    const remover = instance("scrapper", "scrapper");
+    const destroyed = instance("afterimage", "afterimage");
+    game.player.hand = [remover];
+    game.enemy.hand = [];
+    game.enemy.board[0] = destroyed;
+    expect(queueCard(game, "player", remover.uid, 0).ok).toBe(true);
+    lockBoth(game);
+
+    resolveRound(game, () => 0.1);
+
+    const actions = game.lastRoundEvents.filter((event): event is Extract<typeof event, { type: "action" }> => event.type === "action");
+    expect(actions[0]?.card.uid).toBe("scrapper");
+    expect(actions[1]?.card.uid).toBe("afterimage");
+    expect(game.enemy.board[1]?.id).toBe("token");
+  });
+
   it("keeps on-round-end slot locks active through the following round", () => {
     const game = createGame(DEFAULT_DECK, () => 0.5);
     game.player.board[1] = instance("bulwark", "bulwark");
