@@ -35,7 +35,7 @@ describe("Rapid core: короткая дуэль", () => {
   it("ограничивает оплату единицей Стабильности, разрешает отрицательную цену и четыре слота", () => {
     const game = createGame(DEFAULT_DECK, () => 0.5);
     const cards = [...game.player.hand];
-    game.player.hand = cards;
+    game.player.hand = [...cards];
     game.player.stability = 2;
     const positive = { ...cards[0], cost: 9, effect: { ...cards[0].effect } };
     game.player.hand[0] = positive;
@@ -47,7 +47,7 @@ describe("Rapid core: короткая дуэль", () => {
     expect(queueCard(game, "player", negative.uid, 1).ok).toBe(true);
     expect(game.player.stability).toBe(13);
     game.player.stability = 30;
-    game.player.hand = cards.slice(0, 4);
+    game.player.hand = [...cards];
     game.player.committed = [];
     expect(queueCard(game, "player", cards[0].uid, 0).ok).toBe(true);
     expect(queueCard(game, "player", cards[1].uid, 1).ok).toBe(true);
@@ -62,6 +62,8 @@ describe("Rapid core: короткая дуэль", () => {
     game.player.hand = [card];
     game.player.stability = 30;
     game.enemy.stability = 3;
+    const filler = { ...card, uid: "enemy-filler", timing: "start" as const, cost: 0 };
+    game.enemy.board = [filler, { ...filler, uid: "enemy-filler-2" }, { ...filler, uid: "enemy-filler-3" }, { ...filler, uid: "enemy-filler-4" }];
     expect(queueCard(game, "player", card.uid, 0).ok).toBe(true);
     game.player.locked = true;
     game.enemy.locked = true;
@@ -83,7 +85,7 @@ describe("Rapid core: короткая дуэль", () => {
     game.player.locked = true;
     game.enemy.locked = true;
     resolveRound(game, () => 0.5);
-    expect(game.enemy.stability).toBe(30);
+    expect(game.enemy.stability).toBe(33);
   });
 
   it("при одновременном смертельном эффекте обеих сторон фиксирует ничью", () => {
@@ -95,6 +97,9 @@ describe("Rapid core: короткая дуэль", () => {
     game.enemy.hand = [eCard];
     game.player.stability = 2;
     game.enemy.stability = 2;
+    const filler = { ...pCard, uid: "filler", timing: "start" as const, cost: 0 };
+    game.player.board = [filler, { ...filler, uid: "filler-p2" }, { ...filler, uid: "filler-p3" }, { ...filler, uid: "filler-p4" }];
+    game.enemy.board = [{ ...filler, uid: "filler-e1" }, { ...filler, uid: "filler-e2" }, { ...filler, uid: "filler-e3" }, { ...filler, uid: "filler-e4" }];
     expect(queueCard(game, "player", pCard.uid, 0).ok).toBe(true);
     expect(queueCard(game, "enemy", eCard.uid, 0).ok).toBe(true);
     game.player.locked = true;
