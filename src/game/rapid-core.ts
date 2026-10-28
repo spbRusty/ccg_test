@@ -43,7 +43,7 @@ export interface GameState {
 }
 const DEFAULT_SETTINGS: GameSettings = {
   startStability: 30, maxStability: 60, deckSize: 12, startHand: 4,
-  handLimit: 4, slots: 4, maxPlays: 2, roundLimit: 7,
+  handLimit: 4, slots: 4, maxPlays: 4, roundLimit: 7,
 };
 let nextUid = 1;
 const sides: Side[] = ["player", "enemy"];
@@ -84,10 +84,10 @@ function makePlayer(defs: CardDef[], settings: GameSettings, random: () => numbe
 }
 function sanitizeDeck(ids: string[]): string[] {
   const result: string[] = [];
-  const counts = new Map<string, number>();
+  const seen = new Set<string>();
   for (const id of ids) {
-    if (!CARD_BY_ID.has(id) || (counts.get(id) ?? 0) >= 2 || result.length >= 12) continue;
-    counts.set(id, (counts.get(id) ?? 0) + 1);
+    if (!CARD_BY_ID.has(id) || seen.has(id) || result.length >= 12) continue;
+    seen.add(id);
     result.push(id);
   }
   if (result.length !== 12) return [...DEFAULT_DECK];
@@ -114,15 +114,15 @@ export function queueCard(game: GameState, side: Side, cardUid: string, targetSl
   if (!Number.isInteger(targetSlot) || targetSlot < 0 || targetSlot >= game.settings.slots) {
     return { ok: false, message: "Такого места на поле нет." };
   }
-  if (p.committed.length >= game.settings.maxPlays) return { ok: false, message: "За раунд можно разыграть не больше двух карт." };
+  if (p.committed.length >= game.settings.maxPlays) return { ok: false, message: "Все четыре слота уже выбраны." };
   if (p.committed.some(item => item.targetSlot === targetSlot)) return { ok: false, message: "Это место уже занято выбранной картой." };
   const handIndex = p.hand.findIndex(card => card.uid === cardUid);
   if (handIndex < 0) return { ok: false, message: "Карты больше нет в руке." };
   const card = p.hand[handIndex];
-  if (p.stability - card.cost < 1) return { ok: false, message: "После оплаты должно остаться хотя бы 1 Стабильности." };
-  p.stability -= card.cost;
+  const paid = card.cost > 0 ? (p.stability <= 1 ? 0 : Math.min(card.cost, p.stability - 1)) : card.cost;
+  p.stability = clamp(p.stability - paid, game.settings.maxStability);
   p.hand.splice(handIndex, 1);
-  p.committed.push({ card, targetSlot, paid: card.cost });
+  p.committed.push({ card, targetSlot, paid });
   return { ok: true, message: "Карта выбрана. Стабильность списана." };
 }
 export function unqueueCard(game: GameState, side: Side, cardUid: string): boolean {
@@ -266,32 +266,14 @@ function checkWinner(game: GameState): void {
   else if (pDown) game.winner = "enemy";
   else if (eDown) game.winner = "player";
 }
-function beginNextRound(game: GameState, random: () => number): void {
+function beginNextRound(game: GameState): void {
   game.round++;
-  const afterFatigue: Record<Side, number> = { player: 0, enemy: 0 };
   for (const side of sides) {
     const p = game[side];
     p.locked = false;
     p.swapUsed = false;
-    afterFatigue[side] = p.pendingDamage;
-    p.pendingDamage = 0;
   }
-  for (const side of sides) game[side].stability = clamp(game[side].stability - afterFatigue[side], game.settings.maxStability);
-  for (const side of sides) {
-    if (afterFatigue[side] > 0) pushLog(game, (side === "player" ? "Ты теряешь" : "Соперник теряет") + " " + afterFatigue[side] + " Стабильности от отложенного эффекта.");
-  }
-  checkWinner(game);
-  if (game.winner) return;
-  for (const side of sides) {
-    const p = game[side];
-    if (p.deck.length) draw(p, 1, game.settings, random);
-    else {
-      p.stability = clamp(p.stability - 2, game.settings.maxStability);
-      pushLog(game, (side === "player" ? "У тебя" : "У соперника") + " закончилась колода: −2 Стабильности.");
-    }
-  }
-  checkWinner(game);
-  if (!game.winner) pushLog(game, "Раунд " + game.round + ": выбери до двух карт.");
+  if (!game.winner) pushLog(game, "Раунд " + game.round + ": выбери карты для четырёх слотов.");
 }
 export function resolveRound(game: GameState, random: () => number = Math.random): void {
   if (game.winner || !game.player.locked || !game.enemy.locked) return;
@@ -312,43 +294,104 @@ export function resolveRound(game: GameState, random: () => number = Math.random
       p.board[plan.targetSlot] = plan.card;
       newlyPlayed[side].push(plan.card);
       if (side === "enemy") game.playedByEnemy.unshift(plan.card);
-      pushLog(game, (side === "player" ? "Ты разыграл" : "Соперник разыграл") + " «" + plan.card.name + "».");
+      pushLog(game, (side === "player" ? "Ты выставил" : "Соперник выставил") + " закрытую карту в слот " + (plan.targetSlot + 1) + ".");
     }
   }
-  const out: Record<Side, Outcome> = { player: emptyOutcome(), enemy: emptyOutcome() };
-  for (const side of sides) {
-    for (const card of newlyPlayed[side]) accumulate(out[side], game, side, card, "play");
-  }
-  resolveRemovals(game, out, oldUids);
-  resolveReturns(game, out);
-  for (const side of sides) {
-    for (const card of game[side].board) if (card) accumulate(out[side], game, side, card, "end");
-  }
-  // Calculate both sides' boosts before applying either side's Stability change.
-  // This preserves truly simultaneous resolution (no first-side advantage).
-  for (const side of sides) {
+
+  const shields: Record<Side, number> = { player: 0, enemy: 0 };
+  const cursed: Record<Side, boolean> = { player: false, enemy: false };
+  const applyEffect = (side: Side, card: CardInstance, timing: "play" | "end") => {
+    if (game.winner || card.timing !== timing) return;
+    const out = emptyOutcome();
+    accumulate(out, game, side, card, timing);
     const p = game[side];
-    if (out[side].damage > 0) {
-      out[side].damage += p.nextBoost + out[side].boost;
+    const foeSide = other(side);
+    const foe = game[foeSide];
+    let damage = out.damage;
+    if (damage > 0) {
+      damage += p.nextBoost + out.boost;
       p.nextBoost = 0;
+      const actual = Math.max(0, damage - shields[foeSide]);
+      foe.stability = clamp(foe.stability - actual, game.settings.maxStability);
+      if (actual > 0) pushLog(game, (side === "player" ? "Твоя карта" : "Карта соперника") + " снижает Стабильность " + (foeSide === "player" ? "тебе" : "сопернику") + " на " + actual + ".");
     } else {
-      p.nextBoost += out[side].boost;
+      p.nextBoost += out.boost;
+    }
+    shields[side] += out.shield;
+    if (out.curse) cursed[side] = true;
+    const healing = (cursed[foeSide] ? 0 : out.heal) + (cursed[foeSide] ? 0 : out.transfer);
+    if (healing > 0) {
+      p.stability = clamp(p.stability + healing, game.settings.maxStability);
+      pushLog(game, (side === "player" ? "Ты восстанавливаешь" : "Соперник восстанавливает") + " " + healing + " Стабильности.");
+    }
+    if (out.delayed > 0) {
+      foe.pendingDamage += out.delayed;
+      pushLog(game, "Отложенный эффект: −" + out.delayed + " Стабильности в начале следующего раунда.");
+    }
+    if (out.remove > 0) {
+      const outcomes: Record<Side, Outcome> = { player: emptyOutcome(), enemy: emptyOutcome() };
+      outcomes[side].remove = out.remove;
+      resolveRemovals(game, outcomes, oldUids);
+    }
+    if (out.returns > 0) {
+      const outcomes: Record<Side, Outcome> = { player: emptyOutcome(), enemy: emptyOutcome() };
+      outcomes[side].returns = out.returns;
+      resolveReturns(game, outcomes);
+    }
+    if (out.draw > 0) {
+      const count = draw(p, out.draw, game.settings, random);
+      if (count) pushLog(game, (side === "player" ? "Ты добираешь" : "Соперник добирает") + " " + count + " карту.");
+    }
+  };
+
+  // Priority is determined once, before reveal begins. Ties are decided randomly.
+  const first: Side = game.player.stability === game.enemy.stability
+    ? (random() < 0.5 ? "player" : "enemy")
+    : (game.player.stability < game.enemy.stability ? "player" : "enemy");
+  const order: Side[] = [first, other(first)];
+  pushLog(game, (first === "player" ? "Ты" : "Соперник") + " раскрывает карты первым.");
+  // Reveal slot 1, then 2, 3, 4. Within each slot, the priority side resolves first.
+  for (let slot = 0; slot < game.settings.slots; slot++) {
+    for (const side of order) {
+      const card = newlyPlayed[side].find(item => game[side].board[slot]?.uid === item.uid);
+      if (!card || game[side].board[slot]?.uid !== card.uid) continue;
+      pushLog(game, "Слот " + (slot + 1) + ": раскрыта карта «" + card.name + "».");
+      applyEffect(side, card, "play");
     }
   }
-  for (const side of sides) {
-    const p = game[side];
-    const foeOut = out[other(side)];
-    // The defending side's own shield reduces its incoming Stability loss.
-    const incoming = Math.max(0, foeOut.damage - out[side].shield);
-    const healing = foeOut.curse ? 0 : out[side].heal + out[side].transfer;
-    p.stability = clamp(p.stability - incoming + healing, game.settings.maxStability);
-    p.pendingDamage += foeOut.delayed;
-    if (foeOut.damage > 0) pushLog(game, (side === "player" ? "Ты теряешь" : "Соперник теряет") + " " + incoming + " Стабильности.");
-    if (healing > 0) pushLog(game, (side === "player" ? "Ты восстанавливаешь" : "Соперник восстанавливает") + " " + healing + " Стабильности.");
+
+  // Persistent/end-of-turn effects also resolve by slot, in the same priority order.
+  for (let slot = 0; slot < game.settings.slots; slot++) {
+    for (const side of order) {
+      const card = game[side].board[slot];
+      if (card) applyEffect(side, card, "end");
+    }
+  }
+
+  // End-of-turn board rule: occupied slots drain the opponent; empty slots restore their owner.
+  const occupied: Record<Side, number> = {
+    player: fieldCount(game.player),
+    enemy: fieldCount(game.enemy),
+  };
+  const endDelta: Record<Side, number> = {
+    player: game.settings.slots - occupied.player - occupied.enemy,
+    enemy: game.settings.slots - occupied.enemy - occupied.player,
+  };
+  // Apply both players' slot deltas from the same post-effect snapshot.
+  game.player.stability = clamp(game.player.stability + endDelta.player, game.settings.maxStability);
+  game.enemy.stability = clamp(game.enemy.stability + endDelta.enemy, game.settings.maxStability);
+  if (occupied.player) {
+    game.enemy.stability = clamp(game.enemy.stability - occupied.player, game.settings.maxStability);
+    pushLog(game, "Твои занятые слоты: соперник теряет " + occupied.player + " Стабильности.");
+  }
+  if (occupied.enemy) {
+    game.player.stability = clamp(game.player.stability - occupied.enemy, game.settings.maxStability);
+    pushLog(game, "Слоты соперника: ты теряешь " + occupied.enemy + " Стабильности.");
   }
   for (const side of sides) {
     const p = game[side];
-    draw(p, out[side].draw, game.settings, random);
+    const count = draw(p, game.settings.handLimit - p.hand.length, game.settings, random);
+    if (count > 0) pushLog(game, (side === "player" ? "Ты добираешь до руки" : "Соперник добирает до руки") + ": +" + count + ".");
     p.committed = [];
     p.locked = false;
   }
@@ -365,7 +408,7 @@ export function resolveRound(game: GameState, random: () => number = Math.random
     pushLog(game, game.winner === "draw" ? "Ничья по Стабильности после 7 раундов." : "После 7 раундов больше Стабильности у " + (game.winner === "player" ? "тебя." : "соперника."));
     return;
   }
-  beginNextRound(game, random);
+  beginNextRound(game);
 }
 function cardBoardValue(card: CardInstance): number {
   const a = card.effect.amount;
