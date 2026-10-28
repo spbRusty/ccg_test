@@ -1,197 +1,60 @@
 export type Side = "player" | "enemy";
-export type Timing = "start" | "play" | "end";
-export type EffectKind =
-  | "damage" | "heal" | "draw" | "remove" | "return" | "boost" | "delay"
-  | "own-count" | "enemy-count" | "transfer" | "guard" | "own-heal"
-  | "curse" | "payoff" | "total-count" | "hand-count" | "enemy-hand-count"
-  | "if-own-more" | "if-own-less" | "enemy-played-more" | "enemy-played-less"
-  | "own-played-more" | "own-played-less" | "if-enemy-stability-low" | "if-own-stability-low";
+export type CardTarget = "opposite" | "left" | "right" | "adjacent" | "edge" | "all";
+export type CardAction = "remove" | "bounce" | "shift" | "lock" | "spawn_token";
+export type CardTrigger = "on_reveal" | "on_round_end" | "on_destroy";
 
-export type EffectConditionType =
-  | "IS_EDGE" | "IS_CENTER" | "OPPOSITE_EMPTY" | "OPPOSITE_EXISTS"
-  | "LEFT_EMPTY" | "RIGHT_EMPTY" | "OWN_HAND_MORE" | "ENEMY_HAND_MORE"
-  | "OWN_BOARD_LESS" | "ENEMY_BOARD_LESS" | "OWN_DECK_LESS" | "ENEMY_DECK_LESS"
-  | "OWN_STABILITY_BELOW" | "ENEMY_STABILITY_BELOW";
-
-export interface EffectCondition {
-  type: EffectConditionType;
-  value?: number;
-}
-
-export type EffectTarget = "opposite" | "adjacent" | "self" | "board";
-export type EffectAction = "damage" | "heal" | "shift" | "destroy";
-
-export interface Effect {
-  kind: EffectKind;
-  amount: number;
-  threshold?: number;
-  min?: number;
-  /** Optional declarative condition evaluated against the card's slot and game state. */
-  condition?: EffectCondition;
-  /** Optional generic action/target pair for new data-driven card definitions. */
-  action?: EffectAction;
-  target?: EffectTarget;
-}
 export interface CardDef {
   id: string;
   name: string;
   cost: number;
   text: string;
-  timing: Timing;
-  effect: Effect;
+  target: CardTarget;
+  action: CardAction;
+  trigger: CardTrigger;
   faction: string;
   rarity: "Обычная" | "Редкая" | "Эпическая";
   art: number;
+  token?: boolean;
 }
 
-/**
- * The short-match set: 120 individually named cards.
- * Costs are paid from Stability, so direct effects get a modest efficiency edge;
- * repeating effects are priced for roughly 2-3 activations and consume one of 3 slots.
- * Table format: id|name|cost|timing|effect|amount|faction|threshold|min|rules text
- */
-const RAW = String.raw`
-raid|Налёт на рассвете|-2|play|damage|3|Рейдеры|-|-|При раскрытии: враг теряет 3 Стабильности.
-ambush|Тихая засада|0|play|damage|2|Рейдеры|-|-|При раскрытии: враг теряет 2 Стабильности.
-sniper|Снайперский овощ|4|play|damage|5|Рейдеры|-|-|При раскрытии: враг теряет 5 Стабильности.
-blackout|Глухая ночь|5|play|damage|6|Рейдеры|-|-|При раскрытии: враг теряет 6 Стабильности.
-dog|Морозный пёс|4|end|damage|2|Рейдеры|-|-|В конце каждого раунда: враг теряет 2 Стабильности.
-convoy|Бронеконвой|6|end|damage|3|Караван|-|-|В конце каждого раунда: враг теряет 3 Стабильности.
-charge|Отложенный заряд|3|play|delay|4|Технари|-|-|При раскрытии: в начале следующего раунда враг потеряет 4 Стабильности.
-saboteur|Диверсант|4|play|remove|1|Рейдеры|-|-|При раскрытии: убери одну старую карту с поля врага.
-cleaner|Чистильщик|6|play|remove|2|Рейдеры|-|-|При раскрытии: убери до двух старых карт с поля врага.
-hunger|Голодный дозор|6|end|enemy-count|1|Дозор|-|-|В конце раунда: враг теряет 1 Стабильность за каждую свою карту на поле.
-payoff|Последний патрон|4|play|payoff|3|Рейдеры|-|10|При раскрытии: враг теряет 3 Стабильности, или 6, если у тебя не больше 10.
-pressure|Красная черта|3|play|if-enemy-stability-low|3|Рейдеры|10|-|При раскрытии: если у врага 10 Стабильности или меньше, он теряет ещё 3.
-scavenger|Сборщик хлама|2|play|draw|1|Сборщики|-|-|При раскрытии: добери 1 карту.
-map|Карта старых дорог|0|play|return|1|Сборщики|-|-|При раскрытии: верни одну старую карту со своего поля в руку.
-reserves|Запасной рюкзак|3|play|draw|2|Сборщики|-|-|При раскрытии: добери до 2 карт.
-stowaway|Безбилетник|4|end|hand-count|1|Сборщики|-|-|В конце раунда: восстанови 1 Стабильность за каждую карту в руке.
-rattletrap|Погремушка|4|play|enemy-hand-count|1|Сборщики|-|-|При раскрытии: враг теряет 1 Стабильность за каждую карту в его руке.
-dust-tax|Долг за пыль|3|play|if-own-less|3|Сборщики|-|-|При раскрытии: нанеси 3 урона по Стабильности, если на твоём поле меньше карт, чем у врага.
-lone-wolf|Один против всех|2|play|if-own-less|3|Рейдеры|-|-|При раскрытии: если твоих карт на поле меньше, враг теряет 3 Стабильности.
-street-deal|Уличная сделка|4|play|if-own-more|3|Сборщики|-|-|При раскрытии: если твоих карт на поле больше, враг теряет 3 Стабильности.
-signalman|Сигнальщик|2|play|boost|2|Технари|-|-|Усиль следующий свой урон по Стабильности на 2.
-scrap-king|Король свалки|5|play|draw|2|Сборщики|-|-|При раскрытии: добери 2 карты.
-rust-darts|Ржавые дротики|3|play|damage|4|Рейдеры|-|-|При раскрытии: враг теряет 4 Стабильности.
-smuggler|Контрабандист|3|play|enemy-played-less|4|Караван|1|-|При раскрытии: если враг разыграл не больше 1 карты, он теряет 4 Стабильности.
-medic|Полевой медик|2|play|heal|3|Медики|-|-|При раскрытии: восстанови 3 Стабильности.
-ration|Сухой паёк|-1|play|heal|2|Медики|-|-|При раскрытии: восстанови 2 Стабильности.
-hope|Последняя надежда|5|play|heal|6|Медики|-|-|При раскрытии: восстанови 6 Стабильности.
-camp|Костровой|4|end|heal|2|Караван|-|-|В конце каждого раунда: восстанови 2 Стабильности.
-battery|Старая батарея|4|end|heal|2|Технари|-|-|В конце каждого раунда: восстанови 2 Стабильности.
-quiet|Тихий час|-1|end|heal|1|Медики|-|-|В конце каждого раунда: восстанови 1 Стабильность.
-kitchen|Полевая кухня|6|end|own-heal|1|Караван|-|-|В конце раунда: восстанови 1 Стабильность за каждую свою карту на поле.
-watch|Долгий дозор|5|end|transfer|1|Дозор|-|-|В конце каждого раунда: перенеси 1 Стабильность от врага к себе.
-mediator|Посредник|3|play|transfer|2|Караван|-|-|При раскрытии: перенеси 2 Стабильности от врага к себе.
-second-wind|Второе дыхание|3|play|if-own-stability-low|3|Медики|10|-|При раскрытии: если у тебя 10 Стабильности или меньше, восстанови 3.
-field-doctor|Доктор с окраины|4|play|heal|5|Медики|-|-|При раскрытии: восстанови 5 Стабильности.
-emergency-blood|Запас крови|4|play|heal|6|Медики|-|-|При раскрытии: восстанови 6 Стабильности.
-barrier|Живая преграда|4|play|guard|4|Технари|-|-|При раскрытии: сократи суммарную потерю Стабильности в этом раунде на 4.
-living-barrier|Стена из деталей|5|end|guard|2|Технари|-|-|В конце раунда: сократи входящую потерю Стабильности на 2.
-signal|Сигнал тревоги|-2|play|boost|2|Технари|-|-|Следующий свой эффект потери Стабильности станет сильнее на 2.
-overcharge|Перегрузка|4|play|boost|4|Технари|-|-|Усиль следующий свой урон по Стабильности на 4.
-coolant|Холодный контур|3|play|guard|3|Технари|-|-|При раскрытии: сократи входящую потерю Стабильности на 3 в этом раунде.
-static|Радиопомеха|3|play|curse|1|Технари|-|-|Враг не может восстановить Стабильность в этом раунде.
-jammer|Глушилка|5|end|curse|1|Технари|-|-|Пока карта на поле, в конце каждого раунда враг не восстанавливает Стабильность.
-fault-line|Разлом тактики|4|play|enemy-played-more|3|Технари|1|-|При раскрытии: если враг разыграл 2 карты или больше, он теряет 3 Стабильности.
-counter-spark|Ответный импульс|3|play|enemy-played-less|3|Технари|1|-|При раскрытии: если враг разыграл не больше 1 карты, он теряет 3 Стабильности.
-mirror-trap|Зеркальная ловушка|4|play|own-played-more|3|Технари|1|-|При раскрытии: если ты разыграл 2 карты, враг теряет 3 Стабильности.
-red-switch|Красный тумблер|3|play|own-played-less|3|Технари|1|-|При раскрытии: если ты разыграл только одну карту, враг теряет 3 Стабильности.
-tesla-coil|Катушка Теслы|5|end|damage|2|Технари|-|-|В конце каждого раунда: враг теряет 2 Стабильности.
-tower|Смотровая вышка|6|end|own-count|1|Дозор|-|-|В конце раунда враг теряет 1 Стабильность за каждую твою карту на поле.
-sleeper|Спящий агент|2|end|damage|1|Рейдеры|-|-|В конце каждого раунда: враг теряет 1 Стабильность.
-breaker|Ломатель|4|end|damage|2|Рейдеры|-|-|В конце каждого раунда: враг теряет 2 Стабильности.
-billboard|Ржавая вывеска|4|end|enemy-count|1|Дозор|-|-|В конце раунда враг теряет 1 Стабильность за каждую свою карту на поле.
-raider-banner|Флаг налётчиков|5|end|if-own-more|2|Рейдеры|-|-|В конце раунда враг теряет 2 Стабильности, если твоих карт на поле больше.
-silence|Мёртвая тишина|4|end|if-own-less|2|Дозор|-|-|В конце раунда враг теряет 2 Стабильности, если твоих карт на поле меньше.
-bell|Колокол тревоги|3|end|damage|1|Дозор|-|-|В конце каждого раунда: враг теряет 1 Стабильность.
-siren|Сирена на крыше|6|end|enemy-hand-count|1|Дозор|-|-|В конце раунда враг теряет 1 Стабильность за каждую карту в своей руке.
-sentry|Последний часовой|5|end|payoff|2|Дозор|-|12|В конце раунда враг теряет 2 Стабильности, или 4, если у тебя не больше 12.
-pressure-valve|Клапан давления|4|end|if-enemy-stability-low|2|Технари|12|-|В конце раунда, если у врага 12 Стабильности или меньше, он теряет 2.
-hungry-swarm|Голодный рой|6|end|own-count|1|Рейдеры|-|-|В конце раунда враг теряет 1 Стабильность за каждую твою карту на поле.
-old-gun|Старая пушка|4|play|damage|5|Рейдеры|-|-|При раскрытии: враг теряет 5 Стабильности.
-field-kitchen|Большая полевая кухня|6|end|own-heal|1|Медики|-|-|В конце раунда восстанови 1 Стабильность за каждую свою карту на поле.
-warm-camp|Тёплый лагерь|4|end|heal|2|Караван|-|-|В конце каждого раунда: восстанови 2 Стабильности.
-quiet-hours|Часы покоя|2|end|heal|1|Медики|-|-|В конце каждого раунда: восстанови 1 Стабильность.
-purifier|Фильтр надежды|3|play|heal|4|Медики|-|-|При раскрытии: восстанови 4 Стабильности.
-oasis|Оазис в бетоне|6|end|hand-count|1|Караван|-|-|В конце раунда восстанови 1 Стабильность за каждую карту в руке.
-medic-cart|Санитарная тележка|5|end|heal|2|Медики|-|-|В конце каждого раунда: восстанови 2 Стабильности.
-spark-gen|Генератор искр|4|end|heal|1|Технари|-|-|В конце каждого раунда: восстанови 1 Стабильность.
-mutual-aid|Взаимопомощь|5|end|if-own-stability-low|3|Медики|12|-|В конце раунда, если у тебя 12 Стабильности или меньше, восстанови 3.
-emergency-ration|Аварийный паёк|4|end|if-own-stability-low|2|Караван|15|-|В конце раунда, если у тебя 15 Стабильности или меньше, восстанови 2.
-battery-farm|Батарейная ферма|5|end|own-heal|1|Технари|-|-|В конце раунда восстанови 1 Стабильность за каждую свою карту на поле.
-lifeline|Канат спасения|5|end|transfer|1|Медики|-|-|В конце каждого раунда: перенеси 1 Стабильность от врага к себе.
-hope-garden|Грядка надежды|4|end|if-own-stability-low|2|Караван|18|-|В конце раунда, если у тебя 18 Стабильности или меньше, восстанови 2.
-numbers-game|Сила толпы|5|play|own-count|2|Рейдеры|-|-|При раскрытии: враг теряет 2 Стабильности за каждую твою карту на поле.
-high-ground|Верхняя точка|3|play|enemy-count|2|Дозор|-|-|При раскрытии: враг теряет 2 Стабильности за каждую свою карту на поле.
-full-house|Полный состав|6|end|own-count|1|Дозор|-|-|В конце раунда враг теряет 1 Стабильность за каждую твою карту на поле.
-empty-seats|Пустые места|3|play|if-own-less|3|Сборщики|-|-|При раскрытии: если твоих карт меньше, враг теряет 3 Стабильности.
-majority|Большинство решает|5|play|if-own-more|4|Дозор|-|-|При раскрытии: если твоих карт на поле больше, враг теряет 4 Стабильности.
-no-backup|Без подмоги|3|play|if-own-less|4|Рейдеры|-|-|При раскрытии: если твоих карт меньше, враг теряет 4 Стабильности.
-jury|Суд толпы|4|play|total-count|1|Дозор|-|-|При раскрытии: враг теряет 1 Стабильность за каждую карту на обоих полях.
-crowd-control|Контроль толпы|5|end|enemy-count|1|Дозор|-|-|В конце раунда враг теряет 1 Стабильность за каждую свою карту на поле.
-flank|Обходной манёвр|4|play|enemy-played-more|2|Рейдеры|1|-|При раскрытии: если враг разыграл 2 карты или больше, он теряет 2 Стабильности.
-lone-signal|Одинокий сигнал|3|play|own-played-less|4|Технари|1|-|При раскрытии: если ты разыграл только одну карту, враг теряет 4 Стабильности.
-field-marshal|Полевой маршал|5|end|own-count|1|Рейдеры|-|-|В конце раунда враг теряет 1 Стабильность за каждую твою карту на поле.
-open-lanes|Открытые линии|4|play|total-count|1|Сборщики|-|-|При раскрытии: враг теряет 1 Стабильность за каждую карту на обоих полях.
-closer|Добивающий удар|4|play|payoff|4|Рейдеры|-|10|При раскрытии: нанеси 4 урона по Стабильности, или 8, если у тебя не больше 10.
-executioner|Исполнитель|4|play|if-enemy-stability-low|5|Рейдеры|12|-|При раскрытии: если у врага 12 Стабильности или меньше, он теряет 5.
-last-stand|Последний рубеж|3|play|if-own-stability-low|4|Медики|10|-|При раскрытии: если у тебя 10 Стабильности или меньше, восстанови 4.
-dead-drop|Мёртвая капля|2|play|if-enemy-stability-low|3|Сборщики|7|-|При раскрытии: если у врага 7 Стабильности или меньше, он теряет 3.
-underdog|Аутсайдер|3|play|if-own-less|4|Рейдеры|-|-|При раскрытии: если твоих карт меньше, враг теряет 4.
-king-hill|Хозяин высоты|4|play|if-own-more|3|Дозор|-|-|При раскрытии: если твоих карт больше, враг теряет 3.
-early-bird|Ранний ход|3|play|enemy-played-less|4|Сборщики|1|-|При раскрытии: если враг разыграл не больше одной карты, он теряет 4.
-counterpunch|Контрудар|3|play|enemy-played-more|3|Рейдеры|1|-|При раскрытии: если враг разыграл две карты, он теряет 3.
-rush-hour|Час пик|3|play|own-played-more|3|Караван|1|-|При раскрытии: если ты разыграл две карты, враг теряет 3.
-single-strike|Один точный ход|2|play|own-played-less|3|Рейдеры|1|-|При раскрытии: если ты разыграл только одну карту, враг теряет 3.
-broken-line|Пролом строя|4|play|enemy-count|2|Рейдеры|-|-|При раскрытии: враг теряет 2 Стабильности за каждую свою карту на поле.
-calm-focus|Холодная голова|3|play|hand-count|1|Медики|-|-|При раскрытии: восстанови 1 Стабильность за каждую оставшуюся карту в руке.
-curse|Сухой закон|3|play|curse|1|Рейдеры|-|-|Враг не может восстановить Стабильность в этом раунде.
-blackmail|Шантажист|4|play|enemy-hand-count|1|Сборщики|-|-|При раскрытии: враг теряет 1 Стабильность за каждую карту в руке.
-recall|Возвращение|2|play|return|1|Технари|-|-|При раскрытии: верни одну старую карту со своего поля в руку.
-trash-compactor|Пресс для хлама|6|play|remove|2|Технари|-|-|При раскрытии: убери до двух старых карт с поля врага.
-interceptor|Перехватчик|5|play|remove|1|Дозор|-|-|При раскрытии: убери одну старую карту с поля врага.
-butcher|Механик-мясник|4|play|remove|1|Рейдеры|-|-|При раскрытии: убери одну старую карту с поля врага.
-mute-button|Кнопка тишины|4|end|curse|1|Технари|-|-|Пока карта на поле, враг не восстанавливает Стабильность в конце раунда.
-barter|Обмен по-честному|5|play|transfer|3|Караван|-|-|При раскрытии: перенеси 3 Стабильности от врага к себе.
-anchor|Якорь|3|play|guard|3|Технари|-|-|При раскрытии: сократи входящую потерю Стабильности на 3 в этом раунде.
-overgrowth|Тёплый парник|6|end|own-heal|1|Медики|-|-|В конце раунда восстанови 1 Стабильность за каждую свою карту на поле.
-night-market|Ночной рынок|3|play|draw|2|Сборщики|-|-|При раскрытии: добери до 2 карт.
-stolen-battery|Чужая батарея|5|play|transfer|3|Технари|-|-|При раскрытии: перенеси 3 Стабильности от врага к себе.
-last-bullet|Последний выстрел|6|play|damage|7|Рейдеры|-|-|При раскрытии: враг теряет 7 Стабильности.
-sunrise|Первые лучи|5|play|heal|7|Медики|-|-|При раскрытии: восстанови 7 Стабильности.
-redline|Красная линия|6|play|transfer|4|Рейдеры|-|-|При раскрытии: перенеси 4 Стабильности от врага к себе.
-engine-heart|Сердце двигателя|6|end|damage|3|Технари|-|-|В конце каждого раунда: враг теряет 3 Стабильности.
-community|Общий костёр|6|end|heal|3|Караван|-|-|В конце каждого раунда: восстанови 3 Стабильности.
-delayed-bomb|Бомба на таймере|4|play|delay|5|Технари|-|-|В начале следующего раунда враг потеряет 5 Стабильности.
-megaphone|Мегафон|3|play|boost|3|Дозор|-|-|Усиль следующий свой урон по Стабильности на 3.
-riot-shield|Щит из знаков|6|end|guard|3|Дозор|-|-|В конце каждого раунда: сократи входящую потерю Стабильности на 3.
-crowd-favorite|Любимец толпы|6|end|own-count|1|Легенды|-|-|В конце раунда враг теряет 1 Стабильность за каждую твою карту на поле.
-sixth-sense|Шестое чувство|5|play|total-count|1|Легенды|-|-|При раскрытии: враг теряет 1 Стабильность за каждую карту на обоих полях.
-final-word|Последнее слово|5|play|if-enemy-stability-low|6|Легенды|15|-|При раскрытии: если у врага 15 Стабильности или меньше, он теряет 6.
-phoenix|Феникс из банки|5|play|if-own-stability-low|6|Легенды|15|-|При раскрытии: если у тебя 15 Стабильности или меньше, восстанови 6.
-`;
+const definitions: CardDef[] = [
+  { id: "scout", name: "Разведчик", cost: 0, target: "opposite", action: "shift", trigger: "on_reveal", text: "При вскрытии: сдвинь карту напротив на соседний свободный слот.", faction: "Дозор", rarity: "Обычная", art: 1 },
+  { id: "hook", name: "Крюк", cost: -2, target: "left", action: "remove", trigger: "on_reveal", text: "При вскрытии: убери карту в левом соседнем слоте врага.", faction: "Рейдеры", rarity: "Редкая", art: 2 },
+  { id: "repulsor", name: "Отталкиватель", cost: -3, target: "opposite", action: "shift", trigger: "on_reveal", text: "При вскрытии: сдвинь карту напротив вправо, если слот свободен.", faction: "Технари", rarity: "Редкая", art: 3 },
+  { id: "evacuation", name: "Эвакуация", cost: 1, target: "all", action: "bounce", trigger: "on_reveal", text: "При вскрытии: верни свою карту с крайнего слота в руку.", faction: "Караван", rarity: "Обычная", art: 1 },
+  { id: "roadblock", name: "Завал", cost: -2, target: "opposite", action: "lock", trigger: "on_reveal", text: "При вскрытии: заблокируй слот напротив до конца раунда.", faction: "Технари", rarity: "Обычная", art: 2 },
+  { id: "scrapper", name: "Разборщик", cost: -4, target: "opposite", action: "remove", trigger: "on_reveal", text: "При вскрытии: убери карту напротив.", faction: "Сборщики", rarity: "Эпическая", art: 3 },
+  { id: "side-step", name: "Шаг в сторону", cost: 1, target: "self", action: "shift", trigger: "on_reveal", text: "При вскрытии: сдвинься влево, если соседний слот свободен.", faction: "Дозор", rarity: "Обычная", art: 1 },
+  { id: "shard-maker", name: "Осколочник", cost: -3, target: "right", action: "spawn_token", trigger: "on_reveal", text: "При вскрытии: создай Осколок в правом соседнем слоте.", faction: "Технари", rarity: "Редкая", art: 2 },
+  { id: "sweeper", name: "Зачистка", cost: -5, target: "edge", action: "remove", trigger: "on_reveal", text: "При вскрытии: убери карту врага на крайнем слоте.", faction: "Рейдеры", rarity: "Эпическая", art: 3 },
+  { id: "recall", name: "Отзыв", cost: 2, target: "opposite", action: "bounce", trigger: "on_reveal", text: "При вскрытии: верни карту напротив в руку владельца.", faction: "Караван", rarity: "Редкая", art: 1 },
+  { id: "jammer", name: "Глушитель", cost: -2, target: "adjacent", action: "lock", trigger: "on_reveal", text: "При вскрытии: заблокируй соседние слоты врага до конца раунда.", faction: "Технари", rarity: "Редкая", art: 2 },
+  { id: "mirror", name: "Зеркальный манёвр", cost: 0, target: "opposite", action: "shift", trigger: "on_reveal", text: "При вскрытии: сдвинь карту напротив влево или вправо в свободный слот.", faction: "Дозор", rarity: "Обычная", art: 3 },
+  { id: "corner-guard", name: "Страж края", cost: 2, target: "edge", action: "lock", trigger: "on_reveal", text: "При вскрытии: заблокируй соответствующий крайний слот врага.", faction: "Дозор", rarity: "Обычная", art: 1 },
+  { id: "token-seed", name: "Семя осколка", cost: -1, target: "adjacent", action: "spawn_token", trigger: "on_reveal", text: "При вскрытии: создай Осколок в соседнем свободном слоте.", faction: "Медики", rarity: "Обычная", art: 2 },
+  { id: "recycler", name: "Переработчик", cost: 1, target: "self", action: "bounce", trigger: "on_reveal", text: "При вскрытии: верни себя в руку вместо занятия слота.", faction: "Сборщики", rarity: "Редкая", art: 3 },
+  { id: "bulwark", name: "Укрепление", cost: -3, target: "adjacent", action: "lock", trigger: "on_round_end", text: "В конце раунда заблокируй соседние слоты врага на следующий раунд.", faction: "Технари", rarity: "Редкая", art: 1 },
+  { id: "undertow", name: "Обратное течение", cost: 0, target: "all", action: "shift", trigger: "on_round_end", text: "В конце раунда сдвинь одну карту врага к ближайшему свободному слоту.", faction: "Караван", rarity: "Редкая", art: 2 },
+  { id: "afterimage", name: "Послесвечение", cost: 1, target: "self", action: "spawn_token", trigger: "on_destroy", text: "Когда эту карту убирают, создай Осколок в соседнем слоте.", faction: "Легенды", rarity: "Эпическая", art: 3 },
+  { id: "glass-cannon", name: "Хрупкий заслон", cost: -6, target: "opposite", action: "remove", trigger: "on_reveal", text: "При вскрытии: убери карту напротив. Стоимость высока, но эффект немедленный.", faction: "Рейдеры", rarity: "Эпическая", art: 1 },
+  { id: "free-shard", name: "Бесплатный осколок", cost: 0, target: "left", action: "spawn_token", trigger: "on_reveal", text: "При вскрытии: создай Осколок слева, если слот свободен.", faction: "Технари", rarity: "Обычная", art: 2 },
+  { id: "medic", name: "Полевой медик", cost: 3, target: "self", action: "bounce", trigger: "on_reveal", text: "При вскрытии: верни свою карту напротив в руку.", faction: "Медики", rarity: "Обычная", art: 3 },
+  { id: "locksmith", name: "Слесарь", cost: -4, target: "opposite", action: "lock", trigger: "on_reveal", text: "При вскрытии: заблокируй слот напротив и не дай ему участвовать в залпе.", faction: "Сборщики", rarity: "Редкая", art: 1 },
+  { id: "flanker", name: "Обходчик", cost: -2, target: "right", action: "remove", trigger: "on_reveal", text: "При вскрытии: убери карту в правом соседнем слоте врага.", faction: "Рейдеры", rarity: "Обычная", art: 2 },
+  { id: "shifter", name: "Перестановщик", cost: 2, target: "all", action: "shift", trigger: "on_reveal", text: "При вскрытии: сдвинь карту напротив в любой свободный соседний слот.", faction: "Дозор", rarity: "Редкая", art: 3 },
+  { id: "cornerstone", name: "Краеугольный", cost: -1, target: "edge", action: "spawn_token", trigger: "on_reveal", text: "При вскрытии на краю: создай Осколок в соседнем слоте.", faction: "Легенды", rarity: "Эпическая", art: 1 },
+  { id: "retreat", name: "Отступление", cost: 4, target: "self", action: "bounce", trigger: "on_round_end", text: "В конце раунда верни себя в руку.", faction: "Караван", rarity: "Редкая", art: 2 },
+  { id: "sentry", name: "Часовой", cost: -2, target: "opposite", action: "lock", trigger: "on_reveal", text: "При вскрытии: блокируй слот напротив до конца раунда.", faction: "Дозор", rarity: "Обычная", art: 3 },
+  { id: "needle", name: "Игла", cost: -1, target: "opposite", action: "shift", trigger: "on_reveal", text: "При вскрытии: сдвинь карту напротив влево, если там свободно.", faction: "Рейдеры", rarity: "Обычная", art: 1 },
+  { id: "tether", name: "Привязь", cost: 2, target: "adjacent", action: "bounce", trigger: "on_reveal", text: "При вскрытии: верни соседнюю карту врага в руку владельца.", faction: "Технари", rarity: "Редкая", art: 2 },
+  { id: "fracture", name: "Трещина", cost: -7, target: "all", action: "remove", trigger: "on_reveal", text: "При вскрытии: убери карту напротив; на пустом месте сработает базовое восстановление.", faction: "Легенды", rarity: "Эпическая", art: 3 },
+  { id: "echo", name: "Эхо", cost: 0, target: "self", action: "spawn_token", trigger: "on_destroy", text: "Когда эту карту убирают, оставь Осколок на соседнем свободном слоте.", faction: "Легенды", rarity: "Эпическая", art: 1 },
+  { id: "token", name: "Осколок", cost: 0, target: "all", action: "shift", trigger: "on_reveal", text: "Токен без эффекта. Занимает слот и участвует в залпе стола.", faction: "Токены", rarity: "Обычная", art: 2, token: true }
+];
 
-const rows = RAW.trim().split("\n");
-export const CARDS: CardDef[] = rows.map((line, index) => {
-  const [id, name, costRaw, timingRaw, kindRaw, amountRaw, faction, thresholdRaw, minRaw, text] = line.split("|");
-  const cost = Number(costRaw);
-  const amount = Number(amountRaw);
-  const threshold = thresholdRaw === "-" ? undefined : Number(thresholdRaw);
-  const min = minRaw === "-" ? undefined : Number(minRaw);
-  const effect: Effect = { kind: kindRaw as EffectKind, amount };
-  if (threshold !== undefined) effect.threshold = threshold;
-  if (min !== undefined) effect.min = min;
-  return {
-    id, name, cost, timing: timingRaw as Timing, effect, text, faction,
-    rarity: Math.abs(cost) >= 6 ? "Эпическая" : Math.abs(cost) >= 4 ? "Редкая" : "Обычная",
-    art: (index % 3) + 1,
-  };
-});
-
+export const CARDS: CardDef[] = definitions;
 export const CARD_BY_ID = new Map(CARDS.map(card => [card.id, card]));
 export const DEFAULT_DECK = [
-  "raid", "ambush", "sniper", "scavenger", "ration", "medic",
-  "signal", "barrier", "dog", "quiet", "map", "rust-darts",
+  "scout", "hook", "repulsor", "evacuation", "roadblock", "scrapper", "side-step",
+  "shard-maker", "sweeper", "recall", "jammer", "mirror", "corner-guard", "token-seed"
 ];
