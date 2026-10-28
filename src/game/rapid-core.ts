@@ -196,7 +196,7 @@ function resolveAction(game: GameState, side: Side, card: CardInstance, slot: nu
     const from = candidates.find(i => i >= 0 && i < game.settings.slots && targetBoard[i]);
     if (from !== undefined) {
       const directions = card.target === "left" ? [-1] : card.target === "right" ? [1] : [-1, 1];
-      const to = directions.map(d => from + d).find(i => i >= 0 && i < game.settings.slots && !targetBoard[i] && !game[card.target === "self" ? side : foeSide].lockedSlots.has(i));
+      const to = directions.map(d => from + d).find(i => i >= 0 && i < game.settings.slots && !targetBoard[i] && !foe.lockedSlots.has(i));
       if (to !== undefined) {
         const moved = targetBoard[from]!;
         targetBoard[to] = moved;
@@ -205,7 +205,7 @@ function resolveAction(game: GameState, side: Side, card: CardInstance, slot: nu
       }
     }
   } else if (card.action === "lock") {
-    const lockOwner = card.target === "self" ? source : foe;
+    const lockOwner = foe;
     for (const targetSlot of slots) {
       lockOwner.lockedSlots.add(targetSlot);
       affectedSlots.push(targetSlot);
