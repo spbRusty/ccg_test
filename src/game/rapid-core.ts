@@ -287,8 +287,8 @@ export function resolveRound(game: GameState, random: () => number = Math.random
     enemy: game.enemy.board.filter((card, slot) => Boolean(card) && !game.enemy.lockedSlots.has(slot)).length,
   };
   const empty: Record<Side, number> = {
-    player: game.settings.slots - occupied.player,
-    enemy: game.settings.slots - occupied.enemy,
+    player: game.player.board.filter((card, slot) => !card && !game.player.lockedSlots.has(slot)).length,
+    enemy: game.enemy.board.filter((card, slot) => !card && !game.enemy.lockedSlots.has(slot)).length,
   };
   // Apply each field rule as its own operation: healing is capped at 30 before
   // the opponent's occupied slots reduce Stability. Combining them into one
