@@ -388,9 +388,25 @@ function animateRound(snapshot: RoundVisualSnapshot): void {
     return;
   }
   layer.innerHTML = "";
+  const displayedStability: Record<Side, number> = {
+    player: snapshot.before.player.stability,
+    enemy: snapshot.before.enemy.stability,
+  };
+  const setStability = (side: Side, value: number, pulse = true) => {
+    const bounded = Math.max(0, Math.min(30, Math.round(value)));
+    displayedStability[side] = bounded;
+    const number = app.querySelector<HTMLElement>(".stability-number." + (side === "player" ? "stability-player" : "stability-enemy") + " b");
+    if (!number) return;
+    number.textContent = String(bounded);
+    if (pulse) gsap.fromTo(number, { scale: 1 }, { scale: 1.18, duration: 0.12, yoyo: true, repeat: 1, ease: "power2.out" });
+  };
+  setStability("player", snapshot.before.player.stability, false);
+  setStability("enemy", snapshot.before.enemy.stability, false);
   const timeline = gsap.timeline({
     defaults: { overwrite: "auto" },
     onComplete: () => {
+      setStability("player", snapshot.after.player.stability, false);
+      setStability("enemy", snapshot.after.enemy.stability, false);
       layer.innerHTML = "";
       roundAnimationRunning = false;
       app.classList.remove("round-resolving");
@@ -520,6 +536,7 @@ function animateRound(snapshot: RoundVisualSnapshot): void {
           if (transientCard) gsap.delayedCall(0.9, () => cardEl?.remove());
         }
         if (paid !== 0) {
+          setStability(side, displayedStability[side] + paid);
           numberFx(side, paid, "cost", slot, side);
           sfx("cost");
         } else {
@@ -633,6 +650,8 @@ function animateRound(snapshot: RoundVisualSnapshot): void {
     stage(label("ЗАЛП СТОЛА", "BOARD VOLLEY"), "volley");
     const volley = snapshot.events.find((event): event is Extract<RoundEvent, { type: "table_volley" }> => event.type === "table_volley");
     if (volley) {
+      setStability("player", displayedStability.player + volley.delta.player);
+      setStability("enemy", displayedStability.enemy + volley.delta.enemy);
       for (const side of ["player", "enemy"] as const) {
         for (const slot of volley.occupiedSlots[side]) {
           battleScene?.animateVolley(side, slot, side === "player" ? "enemy" : "player", "damage");
@@ -665,6 +684,7 @@ function animateRound(snapshot: RoundVisualSnapshot): void {
     timeline.add(() => {
       if (event.type === "fatigue") {
         stage(label("УСТАЛОСТЬ КОЛОДЫ", "DECK FATIGUE"), "volley");
+        setStability(event.side, displayedStability[event.side] - event.amount);
         numberFx(event.side, -event.amount, "damage");
         sfx("impact");
         return;
