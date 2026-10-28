@@ -33,7 +33,7 @@ const I18N: Record<string, [string, string]> = {
   single: ["Играть", "Play"], pvp: ["PvP · скоро", "PvP · soon"], decks: ["Коллекция и колоды", "Collection & decks"],
   settings: ["Настройки", "Settings"], back: ["Назад", "Back"], start: ["Начать дуэль", "Start duel"],
   cards: ["Карты", "Cards"], deck: ["Колода", "Deck"], collection: ["Коллекция", "Collection"],
-  rules: ["30 Стабильности · 12 карт · 4 места · рука до 4 · до 7 раундов", "30 Stability · 12 cards · 4 slots · hand up to 4 · up to 7 rounds"],
+  rules: ["30 Стабильности · 14 карт · 4 места · рука 4 · до 20 раундов", "30 Stability · 14 cards · 4 slots · hand of 4 · up to 20 rounds"],
   hand: ["ТВОЯ РУКА", "YOUR HAND"], enemy: ["СОПЕРНИК", "OPPONENT"], player: ["ТВОЙ ЛАГЕРЬ", "YOUR CAMP"],
   reveal: ["Зафиксировать ход", "Lock in turn"], pass: ["Можно пропустить ход", "You may pass this turn"],
   selected: ["Выбрана", "Selected"], selectHint: ["Выбери карту в руке, затем нажми место на поле.", "Select a card, then tap a field slot."],
@@ -115,37 +115,16 @@ function englishFaction(faction: string): string {
 function cardName(card: CardDef): string { return language === "ru" ? card.name : englishName(card); }
 function cardText(card: CardDef): string {
   if (language === "ru") return card.text;
-  const e = card.effect;
-  const n = e.amount;
-  const phase = card.timing === "end" ? "At the end of each round, " : "On reveal, ";
-  switch (e.kind) {
-    case "damage": return phase + "the enemy loses " + n + " Stability.";
-    case "heal": return phase + "restore " + n + " Stability.";
-    case "transfer": return phase + "transfer " + n + " Stability from the enemy to you.";
-    case "draw": return phase + "draw up to " + n + " card(s).";
-    case "remove": return phase + "remove up to " + n + " old enemy card(s).";
-    case "return": return phase + "return an old card from your field to your hand.";
-    case "boost": return "Your next Stability-damage effect is increased by " + n + ".";
-    case "delay": return "At the start of the next round, the enemy loses " + n + " Stability.";
-    case "own-count": return phase + "the enemy loses " + n + " Stability per card on your field.";
-    case "enemy-count": return phase + "the enemy loses " + n + " Stability per card on their field.";
-    case "own-heal": return phase + "restore " + n + " Stability per card on your field.";
-    case "guard": return phase + "reduce incoming Stability loss this round by " + n + ".";
-    case "curse": return "The enemy cannot restore Stability this round.";
-    case "payoff": return phase + "the enemy loses " + n + " Stability, doubled when you have " + (e.min ?? 10) + " or less.";
-    case "total-count": return phase + "the enemy loses " + n + " Stability per card on both fields.";
-    case "hand-count": return phase + "restore " + n + " Stability per card in your hand.";
-    case "enemy-hand-count": return phase + "the enemy loses " + n + " Stability per card in their hand.";
-    case "if-own-more": return phase + "if you have more field cards, the enemy loses " + n + " Stability.";
-    case "if-own-less": return phase + "if you have fewer field cards, the enemy loses " + n + " Stability.";
-    case "enemy-played-more": return phase + "if the enemy played at least two cards, they lose " + n + " Stability.";
-    case "enemy-played-less": return phase + "if the enemy played one card or fewer, they lose " + n + " Stability.";
-    case "own-played-more": return phase + "if you played two cards, the enemy loses " + n + " Stability.";
-    case "own-played-less": return phase + "if you played one card or fewer, the enemy loses " + n + " Stability.";
-    case "if-enemy-stability-low": return phase + "if the enemy has " + (e.threshold ?? 10) + " Stability or less, they lose " + n + ".";
-    case "if-own-stability-low": return phase + "if you have " + (e.threshold ?? 10) + " Stability or less, restore " + n + ".";
-    default: return card.text;
-  }
+  const phase = card.trigger === "on_round_end" ? "At the end of the round, " : card.trigger === "on_destroy" ? "When destroyed, " : "On reveal, ";
+  const target = card.target === "opposite" ? "the opposing slot" : card.target === "left" ? "the left adjacent slot" : card.target === "right" ? "the right adjacent slot" : card.target === "adjacent" ? "adjacent slots" : card.target === "edge" ? "an edge slot" : card.target === "self" ? "your own card" : "all slots";
+  const actions: Record<CardDef["action"], string> = {
+    remove: "remove a card from " + target + ".",
+    bounce: "return a card from " + target + " to its owner's hand.",
+    shift: "move a card from " + target + " to a neighboring empty slot.",
+    lock: "lock " + target + " for the round.",
+    spawn_token: "create a zero-cost Shard token in " + target + ".",
+  };
+  return phase + actions[card.action];
 }
 function factionClass(card: CardDef): string {
   const map: Record<string, string> = {
@@ -156,8 +135,8 @@ function factionClass(card: CardDef): string {
 }
 function factionName(card: CardDef): string { return language === "ru" ? card.faction : englishFaction(card.faction); }
 function timingName(card: CardDef): string {
-  if (language === "ru") return card.timing === "end" ? "КАЖДЫЙ РАУНД" : "ПРИ РАСКРЫТИИ";
-  return card.timing === "end" ? "EACH ROUND" : "ON REVEAL";
+  if (language === "ru") return card.trigger === "on_round_end" ? "КАЖДЫЙ РАУНД" : "ПРИ РАСКРЫТИИ";
+  return card.trigger === "on_round_end" ? "ROUND END" : card.trigger === "on_destroy" ? "ON DESTROY" : "ON REVEAL";
 }
 function artPath(card: CardDef): string { return base + "cards/card-art-0" + card.art + ".avif"; }
 function renderCard(card: CardDef, zone: string, extraClass = "", copyIndex = -1, uid = ""): string {
@@ -216,7 +195,7 @@ function renderBoard(p: GameState["player"], side: Side): string {
 function playerBadge(p: GameState["player"], side: Side): string {
   const own = side === "player";
   return "<div class=\"player-badge " + (own ? "badge-self" : "badge-enemy") + "\"><span class=\"badge-avatar\">" + (own ? "Я" : "AI") + "</span>" +
-    "<span class=\"badge-copy\"><b>" + (own ? t("player") : t("enemy")) + "</b><small>" + (own ? ((p.deck.length + p.hand.length + p.board.filter(Boolean).length + p.discard.length + p.committed.length) + "/12") : ((p.deck.length + p.hand.length + p.board.filter(Boolean).length + p.discard.length + p.committed.length) + "/12")) + " " + (language === "ru" ? "КАРТ" : "CARDS") + "</small></span>" +
+    "<span class=\"badge-copy\"><b>" + (own ? t("player") : t("enemy")) + "</b><small>" + (own ? ((p.deck.length + p.hand.length + p.board.filter(Boolean).length + p.discard.length + p.committed.length) + "/14") : ((p.deck.length + p.hand.length + p.board.filter(Boolean).length + p.discard.length + p.committed.length) + "/14")) + " " + (language === "ru" ? "КАРТ" : "CARDS") + "</small></span>" +
     "<span class=\"stability-mini\">" + p.stability + "</span></div>";
 }
 function renderLog(): string {
@@ -296,11 +275,11 @@ function renderDecks(): string {
   }).join("");
   return "<main class=\"menu-screen collection-screen\"><header class=\"page-topbar\"><button class=\"brand-lockup\" data-action=\"home\"><span class=\"brand-icon\">S!</span><span><b>" + t("title") + "</b><small>" + t("subtitle") + "</small></span></button><div class=\"page-actions\"><button class=\"button button-light\" data-action=\"settings\">⚙ " + t("settings") + "</button><button class=\"button button-light\" data-action=\"home\">" + t("back") + "</button></div></header>" +
     "<section class=\"page-intro\"><div><span class=\"eyebrow\">" + t("collection") + " / 120</span><h1>" + t("decks") + "</h1><p>" + t("addCards") + "</p></div><div class=\"collection-stats\"><b>120</b><span>" + (language === "ru" ? "УНИКАЛЬНЫХ КАРТ" : "UNIQUE CARDS") + "</span></div></section>" +
-    "<section class=\"deck-editor\"><div class=\"deck-editor-heading\"><div><span class=\"eyebrow\">" + t("deck") + " 01</span><h2>" + (language === "ru" ? "Колода вылазки" : "Expedition deck") + "</h2><p>" + t("maxCopies") + "</p></div><div class=\"deck-progress\"><b>" + deckIds.length + "<small>/12</small></b><span class=\"deck-progress-track\"><i style=\"width:" + (deckIds.length / 12 * 100) + "%\"></i></span><small>" + (language === "ru" ? "СРЕДНЯЯ ЦЕНА" : "AVG COST") + " " + (deckIds.length ? (totalDeckCost / deckIds.length).toFixed(1) : "—") + "</small></div></div>" +
-    "<div class=\"deck-slots\">" + deckSlots + "</div><div class=\"deck-tools\"><span class=\"deck-status\">" + (deckIds.length === 12 ? (language === "ru" ? "КОЛОДА ГОТОВА" : "DECK READY") : (language === "ru" ? "НУЖНО ЕЩЁ " + (12 - deckIds.length) : "ADD " + (12 - deckIds.length) + " MORE")) + "</span><button class=\"button button-light\" data-action=\"auto-deck\">" + t("autoDeck") + "</button><button class=\"button button-hot\" data-action=\"save-deck\" " + (deckIds.length !== 12 ? "disabled" : "") + ">" + t("save") + " ✓</button></div></section>" +
+    "<section class=\"deck-editor\"><div class=\"deck-editor-heading\"><div><span class=\"eyebrow\">" + t("deck") + " 01</span><h2>" + (language === "ru" ? "Колода вылазки" : "Expedition deck") + "</h2><p>" + t("maxCopies") + "</p></div><div class=\"deck-progress\"><b>" + deckIds.length + "<small>/12</small></b><span class=\"deck-progress-track\"><i style=\"width:" + (deckIds.length / 14 * 100) + "%\"></i></span><small>" + (language === "ru" ? "СРЕДНЯЯ ЦЕНА" : "AVG COST") + " " + (deckIds.length ? (totalDeckCost / deckIds.length).toFixed(1) : "—") + "</small></div></div>" +
+    "<div class=\"deck-slots\">" + deckSlots + "</div><div class=\"deck-tools\"><span class=\"deck-status\">" + (deckIds.length === 14 ? (language === "ru" ? "КОЛОДА ГОТОВА" : "DECK READY") : (language === "ru" ? "НУЖНО ЕЩЁ " + (14 - deckIds.length) : "ADD " + (12 - deckIds.length) + " MORE")) + "</span><button class=\"button button-light\" data-action=\"auto-deck\">" + t("autoDeck") + "</button><button class=\"button button-hot\" data-action=\"save-deck\" " + (deckIds.length !== 14 ? "disabled" : "") + ">" + t("save") + " ✓</button></div></section>" +
     "<section class=\"collection-section\"><div class=\"collection-heading\"><div><span class=\"eyebrow\">" + t("cards") + " / 120</span><h2>" + t("collection") + "</h2></div><div class=\"collection-filters\"><input id=\"collection-search\" type=\"search\" placeholder=\"" + t("search") + "\" value=\"" + esc(collectionQuery) + "\"><button class=\"button button-light\" data-action=\"find\">" + (language === "ru" ? "Найти" : "Find") + "</button><select id=\"collection-faction\" aria-label=\"" + t("allFactions") + "\"><option value=\"all\">" + t("allFactions") + "</option>" +
     Array.from(new Set(CARDS.map(card => card.faction))).map(faction => "<option value=\"" + esc(faction) + "\"" + (collectionFaction === faction ? " selected" : "") + ">" + esc(language === "ru" ? faction : englishFaction(faction)) + "</option>").join("") + "</select></div></div>" +
-    "<div class=\"collection-grid\">" + shown.map(card => "<div class=\"collection-cell\">" + renderCard(card, "collection", "collection-card") + "<span class=\"collection-card-note\">" + (language === "ru" ? card.rarity : card.rarity === "Эпическая" ? "Epic" : card.rarity === "Редкая" ? "Rare" : "Common") + "</span></div>").join("") + "</div><p class=\"collection-footer\">" + (language === "ru" ? "Показано " + shown.length + " из 120 карт. Нажми на карту, чтобы добавить её в колоду." : "Showing " + shown.length + " of 120 cards. Select a card to add it to your deck.") + "</p></section></main>";
+    "<div class=\"collection-grid\">" + shown.map(card => "<div class=\"collection-cell\">" + renderCard(card, "collection", "collection-card") + "<span class=\"collection-card-note\">" + (language === "ru" ? card.rarity : card.rarity === "Эпическая" ? "Epic" : card.rarity === "Редкая" ? "Rare" : "Common") + "</span></div>").join("") + "</div><p class=\"collection-footer\">" + (language === "ru" ? "Показано " + shown.length + " из 31 карты. Нажми на карту, чтобы добавить её в колоду." : "Showing " + shown.length + " of 31 cards. Select a card to add it to your deck.") + "</p></section></main>";
 }
 function renderSettings(): string {
   return "<main class=\"menu-screen settings-screen\"><header class=\"page-topbar\"><button class=\"brand-lockup\" data-action=\"home\"><span class=\"brand-icon\">S!</span><span><b>" + t("title") + "</b><small>" + t("subtitle") + "</small></span></button><button class=\"button button-light\" data-action=\"back\">" + t("back") + "</button></header><section class=\"settings-content\"><span class=\"eyebrow\">" + (language === "ru" ? "ПОД СЕБЯ" : "MAKE IT YOURS") + "</span><h1>" + t("settings") + "</h1>" +
@@ -697,7 +676,7 @@ app.addEventListener("click", event => {
     }
     if (zone === "collection") {
       const count = deckIds.filter(value => value === id).length;
-      if (deckIds.length >= 12) { showNotice(language === "ru" ? "Колода уже содержит 12 карт. Убери одну из верхнего ряда." : "Deck already has 12 cards. Remove one from the top row."); return; }
+      if (deckIds.length >= 14) { showNotice(language === "ru" ? "Колода уже содержит 14 карт. Убери одну из верхнего ряда." : "Deck already has 14 cards. Remove one from the top row."); return; }
       if (count >= 1) { showNotice(language === "ru" ? "Эта карта уже есть в колоде." : "This card is already in the deck."); return; }
       if (CARD_BY_ID.has(id)) deckIds.push(id);
       saveDeck(); render(); return;
