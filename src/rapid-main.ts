@@ -361,6 +361,7 @@ type RoundVisualSnapshot = {
   };
   first: Side;
   winner: GameState["winner"];
+  events: RoundEvent[];
 };
 
 function animateRound(snapshot: RoundVisualSnapshot): void {
@@ -424,7 +425,6 @@ function animateRound(snapshot: RoundVisualSnapshot): void {
     window.setTimeout(() => sideRow?.classList.remove("initiative-flash"), 380);
   }, 0.02);
 
-  const orderedSides: Side[] = [snapshot.first, snapshot.first === "player" ? "enemy" : "player"];
   const revealEvents = snapshot.events.filter((event): event is Extract<RoundEvent, { type: "reveal" }> => event.type === "reveal");
   for (const revealEvent of revealEvents) {
       const { side, slot, card: eventCard } = revealEvent;
@@ -620,8 +620,8 @@ function action(name: string, target: HTMLElement | null): void {
       player: { stability: game.player.stability, board: [...game.player.board], hand: [...game.player.hand], deck: game.player.deck.length },
       enemy: { stability: game.enemy.stability, board: [...game.enemy.board], hand: [...game.enemy.hand], deck: game.enemy.deck.length },
     };
-    const initiativeLine = game.log.find(line => line.includes("раскрывает карты первым"));
-    const first: Side = initiativeLine?.startsWith("Ты") ? "player" : "enemy";
+    const initiativeEvent = game.lastRoundEvents.find((event): event is Extract<RoundEvent, { type: "initiative" }> => event.type === "initiative");
+    const first: Side = initiativeEvent?.side ?? "enemy";
     const roundEvents = { round: resolvedRound, before, after, first, winner: game.winner, events: [...game.lastRoundEvents] };
     if (game.winner) sfx(game.winner === "player" ? "win" : game.winner === "draw" ? "draw" : "lose");
     render();
