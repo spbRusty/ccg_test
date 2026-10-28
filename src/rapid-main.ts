@@ -135,7 +135,7 @@ function factionClass(card: CardDef): string {
 }
 function factionName(card: CardDef): string { return language === "ru" ? card.faction : englishFaction(card.faction); }
 function timingName(card: CardDef): string {
-  if (language === "ru") return card.trigger === "on_round_end" ? "КАЖДЫЙ РАУНД" : "ПРИ РАСКРЫТИИ";
+  if (language === "ru") return card.trigger === "on_round_end" ? "В КОНЦЕ РАУНДА" : card.trigger === "on_destroy" ? "ПРИ УНИЧТОЖЕНИИ" : "ПРИ ВСКРЫТИИ";
   return card.trigger === "on_round_end" ? "ROUND END" : card.trigger === "on_destroy" ? "ON DESTROY" : "ON REVEAL";
 }
 function artPath(card: CardDef): string { return base + "cards/card-art-0" + card.art + ".avif"; }
@@ -201,7 +201,7 @@ function playerBadge(p: GameState["player"], side: Side): string {
 function renderLog(): string {
   if (!game) return "";
   return "<aside class=\"log-panel side-rail\"><div class=\"rail-heading\"><span class=\"eyebrow\">" + t("log") + "</span><span class=\"log-live-dot\"></span></div><div class=\"log-list\">" +
-    game.log.map((line, index) => "<p class=\"" + (index === 0 ? "log-new" : "") + "\">" + esc(line) + "</p>").join("") + "</div><div class=\"log-footer\">" + (language === "ru" ? "ХОДЫ РАСКРЫВАЮТСЯ ОДНОВРЕМЕННО" : "TURNS REVEAL TOGETHER") + "</div></aside>";
+    game.log.map((line, index) => "<p class=\"" + (index === 0 ? "log-new" : "") + "\">" + esc(line) + "</p>").join("") + "</div><div class=\"log-footer\">" + (language === "ru" ? "ХОДЫ РАСКРЫВАЮТСЯ ОДНОВРЕМЕННО" : "CARDS REVEAL IN SEQUENCE") + "</div></aside>";
 }
 function renderArchive(): string {
   if (!game) return "";
@@ -248,13 +248,13 @@ function renderBattle(): string {
     "<div class=\"side-row player-row\">" + renderBoard(p, "player") + "</div>" +
     renderHand() +
     "<div class=\"turn-actions\"><div class=\"queued-status\"><span class=\"queued-dot\"></span><span>" + (language === "ru" ? "ВЫБРАНО" : "QUEUED") + "</span><b>" + choices + "/4</b><small>" + (language === "ru" ? "карт" : "cards") + "</small></div>" +
-    "<span class=\"notice-line\">" + esc(notice || (language === "ru" ? "Цена списывается при выборе; отмена вернёт её." : "Cost is paid on selection; cancel to refund it.")) + "</span>" +
+    "<span class=\"notice-line\">" + esc(notice || (language === "ru" ? "Цена применяется при вскрытии; отмена ничего не списывает." : "Cost is applied on reveal; cancelling does not spend Stability.")) + "</span>" +
     "<button class=\"button button-hot commit-button\" data-action=\"commit\">" + t("reveal") + "<span>↗</span></button></div></section>" +
     renderArchive() + "</div>" + renderResult() + "</main>";
 }
 function renderHome(): string {
   return "<main class=\"menu-screen home-screen\"><div class=\"home-sunburst\"></div><div class=\"home-topline\"><span class=\"mini-brand\">S!</span><span class=\"eyebrow\">" + (language === "ru" ? "КОЛЛЕКЦИОННАЯ КАРТОЧНАЯ ИГРА" : "COLLECTIBLE CARD GAME") + "</span><button class=\"icon-button home-setting\" data-action=\"settings\">⚙</button></div>" +
-    "<section class=\"hero-block\"><div class=\"hero-kicker\"><span>✦</span> " + (language === "ru" ? "ПОСТАПОКАЛИПСИС НА ЛАДОНИ" : "POST-APOCALYPSE IN YOUR HAND") + "</div><h1>" + t("title") + "<span>!</span></h1><p>" + (language === "ru" ? "Собери отряд. Рискни Стабильностью. Перехитри соперника." : "Build a squad. Risk your Stability. Outplay your rival.") + "</p><div class=\"hero-stats\"><span><b>31</b><small>" + (language === "ru" ? "КАРТ" : "CARDS") + "</small></span><span><b>12</b><small>" + (language === "ru" ? "В КОЛОДЕ" : "IN DECK") + "</small></span><span><b>3–5</b><small>" + (language === "ru" ? "МИНУТЫ" : "MINUTES") + "</small></span></div></section>" +
+    "<section class=\"hero-block\"><div class=\"hero-kicker\"><span>✦</span> " + (language === "ru" ? "ПОСТАПОКАЛИПСИС НА ЛАДОНИ" : "POST-APOCALYPSE IN YOUR HAND") + "</div><h1>" + t("title") + "<span>!</span></h1><p>" + (language === "ru" ? "Собери отряд. Рискни Стабильностью. Перехитри соперника." : "Build a squad. Risk your Stability. Outplay your rival.") + "</p><div class=\"hero-stats\"><span><b>31</b><small>" + (language === "ru" ? "КАРТ" : "CARDS") + "</small></span><span><b>14</b><small>" + (language === "ru" ? "В КОЛОДЕ" : "IN DECK") + "</small></span><span><b>3–5</b><small>" + (language === "ru" ? "МИНУТЫ" : "MINUTES") + "</small></span></div></section>" +
     "<nav class=\"menu-actions\"><button class=\"menu-button menu-primary\" data-action=\"start\"><span class=\"menu-number\">01</span><span><b>" + t("single") + "</b><small>" + (language === "ru" ? "Сразись с ИИ" : "Challenge the AI") + "</small></span><i>↗</i></button>" +
     "<button class=\"menu-button\" data-action=\"pvp\"><span class=\"menu-number\">02</span><span><b>" + t("pvp") + "</b><small>" + (language === "ru" ? "Сетевой режим готовится" : "Online play is in development") + "</small></span><i>⌁</i></button>" +
     "<button class=\"menu-button\" data-action=\"decks\"><span class=\"menu-number\">03</span><span><b>" + t("decks") + "</b><small>" + (language === "ru" ? "Собери свою колоду" : "Build your own deck") + "</small></span><i>▦</i></button></nav>" +
@@ -267,7 +267,7 @@ function renderDecks(): string {
     return (!q || hay.includes(q) || englishName(card).toLowerCase().includes(q)) && (collectionFaction === "all" || card.faction === collectionFaction);
   });
   const totalDeckCost = deckIds.reduce((sum, id) => sum + (CARD_BY_ID.get(id)?.cost || 0), 0);
-  const deckSlots = Array.from({ length: 12 }, (_, index) => {
+  const deckSlots = Array.from({ length: 14 }, (_, index) => {
     const id = deckIds[index];
     if (!id) return "<div class=\"deck-empty-slot\"><span>+</span><small>" + (language === "ru" ? "ПУСТО" : "EMPTY") + "</small></div>";
     const card = CARD_BY_ID.get(id)!;
