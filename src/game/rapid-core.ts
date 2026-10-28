@@ -153,14 +153,13 @@ function targetSlots(slot: number, target: CardTarget, max: number): number[] {
     case "adjacent": return [slot - 1, slot + 1].filter(i => i >= 0 && i < max);
     case "edge": return [0, max - 1];
     case "all": return Array.from({ length: max }, (_, i) => i);
-    case "self": return [slot];
   }
 }
 function resolveAction(game: GameState, side: Side, card: CardInstance, slot: number, random: () => number): void {
   const source = game[side];
   const foeSide = other(side);
   const foe = game[foeSide];
-  const affectedSide: Side = card.action === "shift" && card.target === "self" as CardTarget ? side : foeSide;
+  const affectedSide: Side = card.action === "spawn_token" ? side : foeSide;
   const slots = targetSlots(slot, card.target, game.settings.slots);
   const affectedSlots: number[] = [];
   if (card.action === "remove") {
@@ -183,16 +182,16 @@ function resolveAction(game: GameState, side: Side, card: CardInstance, slot: nu
     }
   } else if (card.action === "bounce") {
     for (const targetSlot of slots) {
-      const victim = card.target === "self" ? source.board[targetSlot] : foe.board[targetSlot];
+      const victim = foe.board[targetSlot];
       if (!victim) continue;
-      const owner = card.target === "self" ? source : foe;
+      const owner = foe;
       owner.board[targetSlot] = null;
       if (owner.hand.length < game.settings.handLimit) owner.hand.push(victim);
       else owner.discard.push(victim);
       affectedSlots.push(targetSlot);
     }
   } else if (card.action === "shift") {
-    const targetBoard = card.target === "self" ? source.board : foe.board;
+    const targetBoard = foe.board;
     const candidates = card.target === "left" ? [slot - 1] : card.target === "right" ? [slot + 1] : slots;
     const from = candidates.find(i => i >= 0 && i < game.settings.slots && targetBoard[i]);
     if (from !== undefined) {
