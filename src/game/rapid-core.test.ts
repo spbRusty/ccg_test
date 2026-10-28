@@ -72,6 +72,20 @@ describe("Rapid core: короткая дуэль", () => {
     expect("attack" in card).toBe(false);
   });
 
+  it("поддерживает позиционные условия эффекта по слоту", () => {
+    const game = createGame(DEFAULT_DECK, () => 0.5);
+    const base = CARD_BY_ID.get("raid")!;
+    const card = { ...base, effect: { ...base.effect, condition: { type: "IS_EDGE" as const } }, uid: "edge-test", playedRound: 0 };
+    game.player.hand = [card];
+    game.player.stability = 30;
+    game.enemy.stability = 30;
+    expect(queueCard(game, "player", card.uid, 1).ok).toBe(true);
+    game.player.locked = true;
+    game.enemy.locked = true;
+    resolveRound(game, () => 0.5);
+    expect(game.enemy.stability).toBe(30);
+  });
+
   it("при одновременном смертельном эффекте обеих сторон фиксирует ничью", () => {
     const game = createGame(DEFAULT_DECK, () => 0.5);
     const ambush = CARD_BY_ID.get("ambush")!;
