@@ -18,6 +18,9 @@ export interface EffectCondition {
   value?: number;
 }
 
+export type EffectTarget = "opposite" | "adjacent" | "self" | "board";
+export type EffectAction = "damage" | "heal" | "shift" | "destroy";
+
 export interface Effect {
   kind: EffectKind;
   amount: number;
@@ -25,6 +28,9 @@ export interface Effect {
   min?: number;
   /** Optional declarative condition evaluated against the card's slot and game state. */
   condition?: EffectCondition;
+  /** Optional generic action/target pair for new data-driven card definitions. */
+  action?: EffectAction;
+  target?: EffectTarget;
 }
 export interface CardDef {
   id: string;
