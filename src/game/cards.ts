@@ -20,7 +20,7 @@ export interface CardDef {
 const definitions: CardDef[] = [
   { id: "scout", name: "Разведчик", cost: 0, target: "opposite", action: "shift", trigger: "on_reveal", text: "При вскрытии: сдвинь карту напротив на соседний свободный слот.", faction: "Дозор", rarity: "Обычная", art: 1 },
   { id: "hook", name: "Крюк", cost: -2, target: "left", action: "remove", trigger: "on_reveal", text: "При вскрытии: убери карту в левом соседнем слоте врага.", faction: "Рейдеры", rarity: "Редкая", art: 2 },
-  { id: "repulsor", name: "Отталкиватель", cost: -3, target: "opposite", action: "shift", trigger: "on_reveal", text: "При вскрытии: сдвинь карту напротив вправо, если слот свободен.", faction: "Технари", rarity: "Редкая", art: 3 },
+  { id: "repulsor", name: "Отталкиватель", cost: -3, target: "opposite", action: "shift", trigger: "on_reveal", text: "При вскрытии: сдвинь карту напротив в соседний свободный слот.", faction: "Технари", rarity: "Редкая", art: 3 },
   { id: "evacuation", name: "Эвакуация", cost: 1, target: "edge", action: "bounce", trigger: "on_reveal", text: "При вскрытии: верни карту врага с крайнего слота в руку владельца.", faction: "Караван", rarity: "Обычная", art: 1 },
   { id: "roadblock", name: "Завал", cost: -2, target: "opposite", action: "lock", trigger: "on_reveal", text: "При вскрытии: заблокируй слот напротив до конца раунда.", faction: "Технари", rarity: "Обычная", art: 2 },
   { id: "scrapper", name: "Разборщик", cost: -4, target: "opposite", action: "remove", trigger: "on_reveal", text: "При вскрытии: убери карту напротив.", faction: "Сборщики", rarity: "Эпическая", art: 3 },
@@ -45,9 +45,9 @@ const definitions: CardDef[] = [
   { id: "cornerstone", name: "Краеугольный", cost: -1, target: "edge", action: "spawn_token", trigger: "on_reveal", text: "При вскрытии на краю: создай Осколок в соседнем слоте.", faction: "Легенды", rarity: "Эпическая", art: 1 },
   { id: "retreat", name: "Отступление", cost: 4, target: "opposite", action: "bounce", trigger: "on_round_end", text: "В конце раунда верни карту врага напротив в руку владельца.", faction: "Караван", rarity: "Редкая", art: 2 },
   { id: "sentry", name: "Часовой", cost: -2, target: "opposite", action: "lock", trigger: "on_reveal", text: "При вскрытии: блокируй слот напротив до конца раунда.", faction: "Дозор", rarity: "Обычная", art: 3 },
-  { id: "needle", name: "Игла", cost: -1, target: "opposite", action: "shift", trigger: "on_reveal", text: "При вскрытии: сдвинь карту напротив влево, если там свободно.", faction: "Рейдеры", rarity: "Обычная", art: 1 },
+  { id: "needle", name: "Игла", cost: -1, target: "opposite", action: "shift", trigger: "on_reveal", text: "При вскрытии: сдвинь карту напротив в соседний свободный слот.", faction: "Рейдеры", rarity: "Обычная", art: 1 },
   { id: "tether", name: "Привязь", cost: 2, target: "adjacent", action: "bounce", trigger: "on_reveal", text: "При вскрытии: верни соседнюю карту врага в руку владельца.", faction: "Технари", rarity: "Редкая", art: 2 },
-  { id: "fracture", name: "Трещина", cost: -7, target: "all", action: "remove", trigger: "on_reveal", text: "При вскрытии: убери карту напротив; на пустом месте сработает базовое восстановление.", faction: "Легенды", rarity: "Эпическая", art: 3 },
+  { id: "fracture", name: "Трещина", cost: -7, target: "opposite", action: "remove", trigger: "on_reveal", text: "При вскрытии: убери карту врага напротив; пустой слот не наносит урон.", faction: "Легенды", rarity: "Эпическая", art: 3 },
   { id: "echo", name: "Эхо", cost: 0, target: "adjacent", action: "spawn_token", trigger: "on_destroy", text: "Когда эту карту убирают, оставь Осколок на соседнем свободном слоте.", faction: "Легенды", rarity: "Эпическая", art: 1 },
   { id: "token", name: "Осколок", cost: 0, target: "all", action: "shift", trigger: "on_reveal", text: "Токен без эффекта. Занимает слот и участвует в залпе стола.", faction: "Токены", rarity: "Обычная", art: 2, token: true }
 ];
