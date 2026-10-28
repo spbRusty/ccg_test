@@ -532,7 +532,7 @@ function animateRound(snapshot: RoundVisualSnapshot): void {
         stage(sideName + " · " + name, "effect");
         const sourceSelector = ".field-row." + (event.side === "player" ? "your-field" : "enemy-field") + ' [data-slot="' + event.slot + '"]';
         const sourceSlot = app.querySelector<HTMLElement>(sourceSelector);
-        const sourceCard = sourceSlot?.querySelector<HTMLElement>(".game-card");
+        const sourceCard = app.querySelector<HTMLElement>('.game-card[data-uid="' + event.card.uid + '"]') ?? sourceSlot?.querySelector<HTMLElement>(".game-card");
         if (sourceSlot) {
           sourceSlot.classList.add("card-effect-active");
           window.setTimeout(() => sourceSlot.classList.remove("card-effect-active"), 760);
