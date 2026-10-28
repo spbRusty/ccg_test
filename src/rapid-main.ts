@@ -486,11 +486,55 @@ function animateRound(snapshot: RoundVisualSnapshot): void {
     }
   }
 
+  const newlyRevealed: Array<{ side: Side; slot: number; card: CardInstance }> = [];
+  for (const side of ["player", "enemy"] as const) {
+    for (let slot = 0; slot < 4; slot++) {
+      const card = snapshot.after[side].board[slot];
+      const oldCard = snapshot.before[side].board[slot];
+      if (card && card.playedRound === snapshot.round && oldCard?.uid !== card.uid) {
+        newlyRevealed.push({ side, slot, card });
+      }
+    }
+  }
+
   timeline.add(() => {
     stage(label("ЭФФЕКТЫ КАРТ", "CARD EFFECTS"), "effect");
     app.querySelectorAll<HTMLElement>(".round-reveal-card").forEach(cardEl => {
       gsap.fromTo(cardEl, { y: 0, scale: 1 }, { y: -7, scale: 1.035, duration: 0.16, yoyo: true, repeat: 1, ease: "power2.out" });
     });
+  }, "+=0.1");
+
+  for (const item of newlyRevealed) {
+    timeline.add(() => {
+      const sideName = item.side === "player" ? label("ТВОЯ КАРТА", "YOUR CARD") : label("КАРТА СОПЕРНИКА", "OPPONENT CARD");
+      const cardNameText = cardName(item.card);
+      const effectText = cardText(item.card);
+      stage(sideName + " · " + cardNameText, "effect");
+      const slotEl = app.querySelector<HTMLElement>(".field-row." + (item.side === "player" ? "your-field" : "enemy-field") + ' [data-slot="' + item.slot + '"]');
+      const cardEl = slotEl?.querySelector<HTMLElement>(".game-card");
+      if (slotEl) {
+        slotEl.classList.add("card-effect-active");
+        window.setTimeout(() => slotEl.classList.remove("card-effect-active"), 760);
+      }
+      if (cardEl) {
+        const rect = cardEl.getBoundingClientRect();
+        const arenaRect = arena.getBoundingClientRect();
+        const callout = document.createElement("div");
+        callout.className = "round-effect-callout";
+        callout.innerHTML = "<b>" + esc(cardNameText) + "</b><span>" + esc(effectText) + "</span>";
+        callout.style.left = Math.max(8, Math.min(arenaRect.width - 248, rect.left + rect.width / 2 - arenaRect.left - 124)) + "px";
+        callout.style.top = Math.max(8, rect.top - arenaRect.top - 8) + "px";
+        layer.append(callout);
+        gsap.fromTo(callout, { opacity: 0, y: 14, scale: 0.92 }, { opacity: 1, y: 0, scale: 1, duration: 0.18, ease: "power2.out" });
+        gsap.to(callout, { opacity: 0, y: -6, delay: 0.58, duration: 0.16, onComplete: () => callout.remove() });
+        gsap.fromTo(cardEl, { filter: "brightness(1)" }, { filter: "brightness(1.55)", duration: 0.16, yoyo: true, repeat: 1 });
+      }
+      sfx("reveal");
+    });
+    timeline.to({}, { duration: 0.78 });
+  }
+
+  timeline.add(() => {
     for (const side of ["player", "enemy"] as const) {
       for (let slot = 0; slot < 4; slot++) {
         const oldCard = snapshot.before[side].board[slot];
@@ -533,31 +577,23 @@ function animateRound(snapshot: RoundVisualSnapshot): void {
 
   timeline.to({}, { duration: 0.62 });
   timeline.add(() => {
-    stage(label("ЗАЛП СТОЛА", "BOARD VOLLEY"), "volley");
-    const occupiedPlayer = snapshot.after.player.board.filter(Boolean).length;
-    const occupiedEnemy = snapshot.after.enemy.board.filter(Boolean).length;
-    const emptyPlayer = 4 - occupiedPlayer;
-    const emptyEnemy = 4 - occupiedEnemy;
-    for (let slot = 0; slot < 4; slot++) {
-      for (const side of ["player", "enemy"] as const) {
-        const card = snapshot.after[side].board[slot];
-        const slotEl = app.querySelector<HTMLElement>(".field-row." + (side === "player" ? "your-field" : "enemy-field") + ' [data-slot="' + slot + '"]');
-        if (card && slotEl) {
-          gsap.fromTo(slotEl, { filter: "brightness(1)" }, { filter: "brightness(1.8)", duration: 0.12, yoyo: true, repeat: 1, delay: slot * 0.025 });
-          numberFx(side === "player" ? "enemy" : "player", -1, "damage", slot, side);
-        }
-      }
+    stage(label("ИТОГ ЭФФЕКТОВ", "EFFECTS RESULT"), "volley");
+    const playerDelta = snapshot.after.player.stability - snapshot.before.player.stability;
+    const enemyDelta = snapshot.after.enemy.stability - snapshot.before.enemy.stability;
+    if (playerDelta !== 0) {
+      numberFx("player", playerDelta, playerDelta > 0 ? "heal" : "damage");
+      battleScene?.pulseStability("player");
     }
-    if (emptyPlayer > 0) numberFx("player", emptyPlayer, "heal");
-    if (emptyEnemy > 0) numberFx("enemy", emptyEnemy, "heal");
-    if (occupiedPlayer > 0) battleScene?.pulseStability("enemy");
-    if (occupiedEnemy > 0) battleScene?.pulseStability("player");
-    if (emptyPlayer > 0 || emptyEnemy > 0) sfx("heal");
-    if (occupiedPlayer > 0 || occupiedEnemy > 0) sfx("impact");
+    if (enemyDelta !== 0) {
+      numberFx("enemy", enemyDelta, enemyDelta > 0 ? "heal" : "damage");
+      battleScene?.pulseStability("enemy");
+    }
+    if (playerDelta < 0 || enemyDelta < 0) sfx("impact");
+    if (playerDelta > 0 || enemyDelta > 0) sfx("heal");
     const strip = app.querySelector<HTMLElement>(".stability-strip");
-    if (strip) gsap.fromTo(strip, { x: 0 }, { x: 2, duration: 0.045, repeat: 5, yoyo: true, onComplete: () => gsap.set(strip, { x: 0 }) });
+    if (strip) gsap.fromTo(strip, { scale: 1 }, { scale: 1.025, duration: 0.12, yoyo: true, repeat: 1, onComplete: () => gsap.set(strip, { scale: 1 }) });
   }, "+=0.1");
-  timeline.to({}, { duration: 0.95 });
+  timeline.to({}, { duration: 0.8 });
 
   timeline.add(() => {
     stage(label("ДОБОР ДО 4 КАРТ", "DRAW TO 4"), "draw");
