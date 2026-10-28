@@ -165,7 +165,16 @@ function resolveAction(game: GameState, side: Side, card: CardInstance, slot: nu
   if (card.action === "remove") {
     for (const targetSlot of slots) {
       const victim = foe.board[targetSlot];
-      if (!victim) continue;
+      if (!victim) {
+        const hiddenIndex = foe.committed.findIndex(plan => plan.targetSlot === targetSlot);
+        if (hiddenIndex >= 0) {
+          const [hidden] = foe.committed.splice(hiddenIndex, 1);
+          foe.discard.push(hidden.card);
+          affectedSlots.push(targetSlot);
+          game.log.unshift("Закрытая карта «" + hidden.card.name + "» уничтожена до вскрытия.");
+        }
+        continue;
+      }
       if (victim.playedRound === game.round && foe.committed.some(plan => plan.card.uid === victim.uid)) {
         // A card removed before its reveal burns without paying or triggering.
       }
@@ -247,13 +256,13 @@ export function resolveRound(game: GameState, random: () => number = Math.random
         p.board[slot] = null;
       }
       const cost = plan.card.cost;
-      if (cost > 0 && p.stability - cost <= 0) {
+      if (cost < 0 && p.stability + cost <= 0) {
         p.committed.splice(planIndex, 1);
         p.discard.push(plan.card);
         pushLog(game, "Недостаточно Стойкости: «" + plan.card.name + "» сгорает.");
         continue;
       }
-      p.stability = clamp(p.stability - cost, game.settings.maxStability);
+      p.stability = clamp(p.stability + cost, game.settings.maxStability);
       plan.paid = cost;
       p.board[slot] = plan.card;
       revealed.add(plan.card.uid);
@@ -271,7 +280,10 @@ export function resolveRound(game: GameState, random: () => number = Math.random
       if (card?.trigger === "on_round_end") resolveAction(game, side, card, slot, random);
     }
   }
-  const occupied: Record<Side, number> = { player: game.player.board.filter(Boolean).length, enemy: game.enemy.board.filter(Boolean).length };
+  const occupied: Record<Side, number> = {
+    player: game.player.board.filter((card, slot) => Boolean(card) && !game.player.lockedSlots.has(slot)).length,
+    enemy: game.enemy.board.filter((card, slot) => Boolean(card) && !game.enemy.lockedSlots.has(slot)).length,
+  };
   const empty: Record<Side, number> = { player: game.settings.slots - occupied.player, enemy: game.settings.slots - occupied.enemy };
   const delta: Record<Side, number> = {
     player: empty.player - occupied.enemy,
@@ -280,17 +292,17 @@ export function resolveRound(game: GameState, random: () => number = Math.random
   game.player.stability = clamp(game.player.stability + delta.player, game.settings.maxStability);
   game.enemy.stability = clamp(game.enemy.stability + delta.enemy, game.settings.maxStability);
   game.lastRoundEvents.push({ type: "table_volley", occupied, empty, delta });
+  game.player.lockedSlots.clear();
+  game.enemy.lockedSlots.clear();
   for (const side of sides) {
     const p = game[side];
     for (const plan of p.committed) {
-      if (!revealed.has(plan.card.uid)) {
-        p.discard.push(plan.card);
-      }
+      if (!revealed.has(plan.card.uid)) p.discard.push(plan.card);
     }
     p.committed = [];
     p.locked = false;
-    p.lockedSlots.clear();
   }
+  // Locked slots affect this volley, then unlock for the next round.
   checkWinner(game);
   if (!game.winner) {
     for (const side of sides) drawToFour(game, side, random);
