@@ -247,6 +247,12 @@ export function resolveRound(game: GameState, random: () => number = Math.random
       // If an earlier action removed this face-down card from hand/board, it never pays or triggers.
       const planIndex = p.committed.findIndex(item => item.card.uid === plan.card.uid);
       if (planIndex < 0 || !p.hand.every(card => card.uid !== plan.card.uid)) continue;
+      if (p.lockedSlots.has(slot)) {
+        p.committed.splice(planIndex, 1);
+        p.discard.push(plan.card);
+        pushLog(game, "Слот " + (slot + 1) + " заблокирован: «" + plan.card.name + "» не раскрывается.");
+        continue;
+      }
       const cost = plan.card.cost;
       if (cost < 0 && p.stability + cost <= 0) {
         p.committed.splice(planIndex, 1);
@@ -272,7 +278,7 @@ export function resolveRound(game: GameState, random: () => number = Math.random
   for (let slot = 0; slot < game.settings.slots; slot++) {
     for (const side of order) {
       const card = game[side].board[slot];
-      if (card?.trigger === "on_round_end") resolveAction(game, side, card, slot, random);
+      if (card?.trigger === "on_round_end" && !game[side].lockedSlots.has(slot)) resolveAction(game, side, card, slot, random);
     }
   }
   const occupied: Record<Side, number> = {
