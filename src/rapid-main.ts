@@ -103,7 +103,18 @@ function englishName(card: CardDef): string {
     "riot-shield": "Street Sign Shield", "crowd-favorite": "Crowd Favorite", "sixth-sense": "Sixth Sense",
     "final-word": "Final Word", phoenix: "Tin Can Phoenix",
   };
-  return known[card.id] || card.id.split("-").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
+  const currentCards: Record<string, string> = {
+    scout: "Scout", hook: "Hook", repulsor: "Repulsor", evacuation: "Evacuation",
+    roadblock: "Roadblock", scrapper: "Scrapper", "side-step": "Side Step",
+    "shard-maker": "Shard Maker", sweeper: "Sweeper", recall: "Recall", jammer: "Jammer",
+    mirror: "Mirror Maneuver", "corner-guard": "Edge Guard", "token-seed": "Shard Seed",
+    recycler: "Recycler", bulwark: "Bulwark", undertow: "Undertow", afterimage: "Afterimage",
+    "glass-cannon": "Glass Cannon", "free-shard": "Free Shard", medic: "Field Medic",
+    locksmith: "Locksmith", flanker: "Flanker", shifter: "Shifter", cornerstone: "Cornerstone",
+    retreat: "Withdrawal Order", sentry: "Sentry", needle: "Needle", tether: "Tether",
+    fracture: "Fracture", echo: "Echo", token: "Shard",
+  };
+  return currentCards[card.id] || known[card.id] || card.id.split("-").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
 }
 function englishFaction(faction: string): string {
   const names: Record<string, string> = {
@@ -116,13 +127,13 @@ function cardName(card: CardDef): string { return language === "ru" ? card.name 
 function cardText(card: CardDef): string {
   if (language === "ru") return card.text;
   const phase = card.trigger === "on_round_end" ? "At the end of the round, " : card.trigger === "on_destroy" ? "When destroyed, " : "On reveal, ";
-  const target = card.target === "opposite" ? "the opposing slot" : card.target === "left" ? "the left adjacent slot" : card.target === "right" ? "the right adjacent slot" : card.target === "adjacent" ? "adjacent slots" : card.target === "edge" ? "an edge slot" : card.target === "self" ? "your own card" : "all slots";
+  const target = card.target === "opposite" ? "the opposing slot" : card.target === "left" ? "the left-adjacent slot" : card.target === "right" ? "the right-adjacent slot" : card.target === "adjacent" ? "the adjacent slots" : card.target === "edge" ? "both edge slots" : "all slots";
   const actions: Record<CardDef["action"], string> = {
-    remove: "remove a card from " + target + ".",
-    bounce: "return a card from " + target + " to its owner's hand.",
-    shift: "move a card from " + target + " to a neighboring empty slot.",
-    lock: "lock " + target + " for the round.",
-    spawn_token: "create a zero-cost Shard token in " + target + ".",
+    remove: "remove the opposing card at " + target + ".",
+    bounce: "return the opposing card at " + target + " to its owner's hand.",
+    shift: "move the opposing card at " + target + " to a neighboring empty slot.",
+    lock: "lock " + target + (card.trigger === "on_round_end" ? " for the next round." : " for the rest of this round."),
+    spawn_token: "create a zero-cost Shard token on your side at " + target + ".",
   };
   return phase + actions[card.action];
 }
