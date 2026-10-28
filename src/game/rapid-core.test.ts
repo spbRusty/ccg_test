@@ -96,6 +96,27 @@ describe("Rapid core — Stability and positional control", () => {
     expect(game.lastRoundEvents.some(event => event.type === "reveal" && event.card.uid === "expensive")).toBe(false);
   });
 
+  it("treats a positive card cost as Stability recovery, capped at 30", () => {
+    const game = createGame(DEFAULT_DECK, () => 0.5);
+    const recovery = { ...instance("medic", "recovery"), cost: 3 };
+    game.player.hand = [recovery];
+    game.player.stability = 20;
+    game.enemy.stability = 30;
+    expect(queueCard(game, "player", recovery.uid, 0).ok).toBe(true);
+    lockBoth(game);
+
+    resolveRound(game, () => 0.1);
+
+    expect(game.player.stability).toBe(26); // +3 card cost, then +3 empty slots.
+    expect(game.lastRoundEvents.some(event => event.type === "reveal" && event.card.uid === "recovery" && event.paid === 3)).toBe(true);
+  });
+
+  it("keeps the card pool on the five supported control actions", () => {
+    const allowedActions = ["remove", "bounce", "shift", "lock", "spawn_token"] as const;
+    expect(CARDS.every(card => allowedActions.includes(card.action))).toBe(true);
+    expect(CARDS.every(card => !/нанеси? \\d+ урона|наносит урон|щит|запрет хила/i.test(card.text))).toBe(true);
+  });
+
   it("applies fatigue for each card missing from the four-card hand", () => {
     const game = createGame(DEFAULT_DECK, () => 0.5);
     game.player.hand = [];
