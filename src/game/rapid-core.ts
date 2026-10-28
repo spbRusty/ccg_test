@@ -267,12 +267,23 @@ function checkWinner(game: GameState): void {
   else if (eDown) game.winner = "player";
 }
 function beginNextRound(game: GameState): void {
-  game.round++;
+  const delayed: Record<Side, number> = { player: 0, enemy: 0 };
   for (const side of sides) {
     const p = game[side];
+    delayed[side] = p.pendingDamage;
+    p.pendingDamage = 0;
     p.locked = false;
     p.swapUsed = false;
   }
+  for (const side of sides) {
+    if (delayed[side] > 0) {
+      game[side].stability = clamp(game[side].stability - delayed[side], game.settings.maxStability);
+      pushLog(game, (side === "player" ? "Ты теряешь" : "Соперник теряет") + " " + delayed[side] + " Стабильности от отложенного эффекта.");
+    }
+  }
+  checkWinner(game);
+  if (game.winner) return;
+  game.round++;
   if (!game.winner) pushLog(game, "Раунд " + game.round + ": выбери карты для четырёх слотов.");
 }
 export function resolveRound(game: GameState, random: () => number = Math.random): void {
@@ -374,20 +385,14 @@ export function resolveRound(game: GameState, random: () => number = Math.random
     enemy: fieldCount(game.enemy),
   };
   const endDelta: Record<Side, number> = {
-    player: game.settings.slots - occupied.player - occupied.enemy,
-    enemy: game.settings.slots - occupied.enemy - occupied.player,
+    player: (game.settings.slots - occupied.player) - occupied.enemy,
+    enemy: (game.settings.slots - occupied.enemy) - occupied.player,
   };
-  // Apply both players' slot deltas from the same post-effect snapshot.
+  // Each empty own slot restores 1; each occupied enemy slot drains 1.
   game.player.stability = clamp(game.player.stability + endDelta.player, game.settings.maxStability);
   game.enemy.stability = clamp(game.enemy.stability + endDelta.enemy, game.settings.maxStability);
-  if (occupied.player) {
-    game.enemy.stability = clamp(game.enemy.stability - occupied.player, game.settings.maxStability);
-    pushLog(game, "Твои занятые слоты: соперник теряет " + occupied.player + " Стабильности.");
-  }
-  if (occupied.enemy) {
-    game.player.stability = clamp(game.player.stability - occupied.enemy, game.settings.maxStability);
-    pushLog(game, "Слоты соперника: ты теряешь " + occupied.enemy + " Стабильности.");
-  }
+  if (occupied.player) pushLog(game, "Твои занятые слоты: соперник теряет " + occupied.player + " Стабильности.");
+  if (occupied.enemy) pushLog(game, "Слоты соперника: ты теряешь " + occupied.enemy + " Стабильности.");
   for (const side of sides) {
     const p = game[side];
     const count = draw(p, game.settings.handLimit - p.hand.length, game.settings, random);
