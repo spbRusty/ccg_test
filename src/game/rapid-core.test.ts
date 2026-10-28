@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { CARDS, CARD_BY_ID, DEFAULT_DECK } from "./cards";
-import { createGame, queueCard, resolveRound, type CardInstance } from "./rapid-core";
+import { createGame, queueCard, resolveRound, type CardInstance, type RoundEvent } from "./rapid-core";
 
 function instance(id: string, uid: string): CardInstance {
   const definition = CARD_BY_ID.get(id);
@@ -129,7 +129,7 @@ describe("Rapid core — Stability and positional control", () => {
 
     resolveRound(game, () => 0.1);
 
-    const actions = game.lastRoundEvents.filter((event): event is Extract<typeof event, { type: "action" }> => event.type === "action");
+    const actions = game.lastRoundEvents.filter((event): event is Extract<RoundEvent, { type: "action" }> => event.type === "action");
     expect(actions[0]?.card.uid).toBe("scrapper");
     expect(actions[1]?.card.uid).toBe("afterimage");
     expect(game.enemy.board[1]?.id).toBe("token");
