@@ -167,7 +167,7 @@ function renderCard(card: CardDef, zone: string, extraClass = "", copyIndex = -1
   const isDraggable = "";
   const uidAttr = uid ? " data-uid=\"" + esc(uid) + "\"" : "";
   const copyAttr = copyIndex >= 0 ? " data-copy-index=\"" + copyIndex + "\"" : "";
-  const revealCover = zone === "board" && animationRound > 0 && card.playedRound === animationRound ? "<span class=\"card-back-cover\" aria-hidden=\"true\"><i>S!</i></span>" : "";
+  const revealCover = zone === "board" && animationRound > 0 && (card as CardInstance).playedRound === animationRound ? "<span class=\"card-back-cover\" aria-hidden=\"true\"><i>S!</i></span>" : "";
   const text = "<button class=\"game-card " + factionClass(card) + " " + extraClass + (revealCover ? " round-reveal-card" : "") + "\" data-card-id=\"" + esc(card.id) + "\" data-zone=\"" + zone + "\"" + uidAttr + copyAttr + isDraggable + " title=\"" + esc(title) + "\" aria-label=\"" + esc(name + ". " + title) + "\">" + revealCover +
     "<span class=\"cost-badge\">" + card.cost + "</span><span class=\"rarity-mark\">" + (card.rarity === "Эпическая" ? "✦" : card.rarity === "Редкая" ? "◆" : "•") + "</span>" +
     "<span class=\"card-art\"><img src=\"" + esc(artPath(card)) + "\" alt=\"\" loading=\"lazy\"><span class=\"art-splash\"></span><span class=\"art-word\">" + esc(factionName(card).slice(0, 3).toUpperCase()) + "</span></span>" +
@@ -409,8 +409,8 @@ function animateRound(snapshot: RoundVisualSnapshot): void {
     chip.className = "round-stage round-stage-" + tone;
     chip.textContent = label;
     layer.append(chip);
-    gsap.fromTo(chip, { opacity: 0, y: -10, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.13, ease: "back.out(2)" });
-    timeline.to(chip, { opacity: 0, y: -8, duration: 0.14 }, "+=0.22").add(() => chip.remove());
+    gsap.fromTo(chip, { opacity: 0, y: -10, scale: 0.9, xPercent: -50 }, { opacity: 1, y: 0, scale: 1, duration: 0.13, ease: "back.out(2)" });
+    gsap.delayedCall(0.55, () => { if (chip.isConnected) gsap.to(chip, { opacity: 0, y: -8, duration: 0.14, onComplete: () => chip.remove() }); });
   };
   const label = (ru: string, en: string) => language === "ru" ? ru : en;
   const numberFx = (side: Side, value: number, kind: "damage" | "heal" | "cost", slot?: number) => {
@@ -842,6 +842,12 @@ function sfx(kind: string): void {
   else if (kind === "lose") { tone(330, 0.22, v * 0.8, "sine"); window.setTimeout(() => tone(247, 0.34, v * 0.8, "sine"), 140); }
   else if (kind === "draw") { tone(440, 0.18, v * 0.8); }
   else if (kind === "start") { tone(330, 0.12, v); window.setTimeout(() => tone(440, 0.12, v), 60); }
+  else if (kind === "initiative") { tone(510, 0.10, v * 0.7, "sine"); window.setTimeout(() => tone(820, 0.19, v, "triangle"), 70); }
+  else if (kind === "cost") { tone(180, 0.10, v * 0.8, "sawtooth"); }
+  else if (kind === "impact") { tone(105, 0.12, v, "triangle"); window.setTimeout(() => tone(72, 0.15, v * 0.65, "sine"), 55); }
+  else if (kind === "heal") { tone(620, 0.12, v * 0.65, "sine"); window.setTimeout(() => tone(880, 0.19, v * 0.55, "sine"), 65); }
+  else if (kind === "destroy") { tone(145, 0.13, v * 0.75, "sawtooth"); window.setTimeout(() => tone(82, 0.18, v * 0.5, "triangle"), 75); }
+  else if (kind === "draw") { tone(560, 0.07, v * 0.55, "sine"); window.setTimeout(() => tone(740, 0.10, v * 0.45, "sine"), 45); }
   else tone(390, 0.06, v * 0.45);
 }
 function startMusic(): void {
