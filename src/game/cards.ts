@@ -7,11 +7,24 @@ export type EffectKind =
   | "if-own-more" | "if-own-less" | "enemy-played-more" | "enemy-played-less"
   | "own-played-more" | "own-played-less" | "if-enemy-stability-low" | "if-own-stability-low";
 
+export type EffectConditionType =
+  | "IS_EDGE" | "IS_CENTER" | "OPPOSITE_EMPTY" | "OPPOSITE_EXISTS"
+  | "LEFT_EMPTY" | "RIGHT_EMPTY" | "OWN_HAND_MORE" | "ENEMY_HAND_MORE"
+  | "OWN_BOARD_LESS" | "ENEMY_BOARD_LESS" | "OWN_DECK_LESS" | "ENEMY_DECK_LESS"
+  | "OWN_STABILITY_BELOW" | "ENEMY_STABILITY_BELOW";
+
+export interface EffectCondition {
+  type: EffectConditionType;
+  value?: number;
+}
+
 export interface Effect {
   kind: EffectKind;
   amount: number;
   threshold?: number;
   min?: number;
+  /** Optional declarative condition evaluated against the card's slot and game state. */
+  condition?: EffectCondition;
 }
 export interface CardDef {
   id: string;
