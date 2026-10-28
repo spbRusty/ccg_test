@@ -146,7 +146,7 @@ function renderCard(card: CardDef, zone: string, extraClass = "", copyIndex = -1
   const isDraggable = "";
   const uidAttr = uid ? " data-uid=\"" + esc(uid) + "\"" : "";
   const copyAttr = copyIndex >= 0 ? " data-copy-index=\"" + copyIndex + "\"" : "";
-  const revealCover = zone === "board" && animationRound > 0 && (card as CardInstance).playedRound === animationRound ? "<span class=\"card-back-cover\" aria-hidden=\"true\"><i>S!</i></span>" : "";
+  const revealCover = zone === "queue" || (zone === "board" && animationRound > 0 && (card as CardInstance).playedRound === animationRound) ? "<span class=\"card-back-cover\" aria-hidden=\"true\"><i>S!</i></span>" : "";
   const text = "<button class=\"game-card " + factionClass(card) + " " + extraClass + (revealCover ? " round-reveal-card" : "") + "\" data-card-id=\"" + esc(card.id) + "\" data-zone=\"" + zone + "\"" + uidAttr + copyAttr + isDraggable + " title=\"" + esc(title) + "\" aria-label=\"" + esc(name + ". " + title) + "\">" + revealCover +
     "<span class=\"cost-badge\">" + (card.cost > 0 ? "+" + card.cost : card.cost) + "</span><span class=\"rarity-mark\">" + (card.rarity === "Эпическая" ? "✦" : card.rarity === "Редкая" ? "◆" : "•") + "</span>" +
     "<span class=\"card-art\"><img src=\"" + esc(artPath(card)) + "\" alt=\"\" loading=\"lazy\"><span class=\"art-splash\"></span><span class=\"art-word\">" + esc(factionName(card).slice(0, 3).toUpperCase()) + "</span></span>" +
@@ -261,7 +261,7 @@ function renderHome(): string {
     "<footer class=\"home-footer\"><span>STABILITY / FIELD TEST 0.3</span><span>" + (language === "ru" ? "ТАКТИКА ВАЖНЕЕ СИЛЫ" : "TACTICS OVER POWER") + "</span></footer></main>";
 }
 function renderDecks(): string {
-  const shown = CARDS.filter(card => {
+  const shown = CARDS.filter(card => !card.token).filter(card => {
     const q = collectionQuery.trim().toLocaleLowerCase();
     const hay = (card.name + " " + card.id + " " + card.text + " " + card.faction).toLocaleLowerCase();
     return (!q || hay.includes(q) || englishName(card).toLowerCase().includes(q)) && (collectionFaction === "all" || card.faction === collectionFaction);
