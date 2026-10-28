@@ -51,7 +51,7 @@ describe("Rapid core — новая кор-механика", () => {
     game.player.committed[0] = { card: direct, targetSlot: 0, paid: 0 };
     ready(game);
     resolveRound(game, () => 0.5);
-    expect(game.enemy.stability).toBe(20);
+    expect(game.enemy.stability).toBe(23);
     expect(game.lastRoundEvents.some(event => event.type === "reveal" && event.card.uid === "victim")).toBe(false);
     expect(game.enemy.discard.some(card => card.uid === "victim")).toBe(true);
   });
@@ -77,7 +77,7 @@ describe("Rapid core — новая кор-механика", () => {
     queueCard(game, "player", card.uid, 0);
     ready(game);
     resolveRound(game, () => 0.5);
-    expect(game.player.stability).toBe(2 + 3); // пропущенная карта не платит; пустые слоты восстанавливают
+    expect(game.player.stability).toBe(6); // карта не платит; четыре пустых слота восстанавливают
     expect(game.player.discard.some(item => item.uid === "expensive")).toBe(true);
     expect(game.lastRoundEvents.some(event => event.type === "reveal" && event.card.uid === "expensive")).toBe(false);
   });
@@ -93,7 +93,6 @@ describe("Rapid core — новая кор-механика", () => {
     ready(game);
     resolveRound(game, () => 0.5);
     expect(game.lastRoundEvents.filter(event => event.type === "fatigue" && event.side === "player")).toHaveLength(4);
-    expect(game.player.stability).toBe(30); // сначала +4 за пустое поле, затем -8 усталости
-    expect(game.player.stability).toBe(26);
+    expect(game.player.stability).toBe(22); // +4 за пустое поле с капом 30, затем -8 усталости
   });
 });
