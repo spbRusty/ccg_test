@@ -984,3 +984,33 @@ body {
   border-color: #d7b6ff !important;
   box-shadow: 0 0 0 3px #d7b6ff66, 0 0 24px #b78cff55 !important;
 }
+
+
+/* Visible paths make the automatic field volley readable without opening the log. */
+.volley-ray {
+  position: absolute;
+  z-index: 35;
+  height: 3px;
+  border-radius: 999px;
+  transform-origin: 0 50%;
+  pointer-events: none;
+}
+.volley-ray-damage {
+  background: linear-gradient(90deg, #ffad55, #ff425e);
+  box-shadow: 0 0 7px #ff4b5f, 0 0 15px #ff4b5f99;
+}
+.volley-ray-heal {
+  height: 4px;
+  background: linear-gradient(90deg, #8dffb3, #35e88c);
+  box-shadow: 0 0 8px #4cff9a, 0 0 16px #4cff9a99;
+}
+.volley-spark {
+  position: absolute;
+  z-index: 36;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #baffd1;
+  box-shadow: 0 0 8px #43ff9c;
+  pointer-events: none;
+}
