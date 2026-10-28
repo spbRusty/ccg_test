@@ -4,6 +4,7 @@ import { gsap } from "gsap";
 export interface BattleSceneHandle {
   destroy: () => void;
   pulseStability: (side: "player" | "enemy") => void;
+  pulseSlot: (side: "player" | "enemy", slot: number) => void;
 }
 
 export function mountBattleScene(root: HTMLElement): BattleSceneHandle {
@@ -123,6 +124,21 @@ export function mountBattleScene(root: HTMLElement): BattleSceneHandle {
     gsap.fromTo(centerRail.scale, { x: 0.55, y: 1, z: 1 }, { x: 1, duration: 0.42, ease: "elastic.out(1, 0.4)" });
   };
 
+  const pulseSlot = (side: "player" | "enemy", slot: number) => {
+    if (!Number.isInteger(slot) || slot < 0 || slot > 3) return;
+    const pad = slots[(side === "enemy" ? 0 : 4) + slot];
+    if (!pad) return;
+    gsap.killTweensOf(pad.scale);
+    gsap.fromTo(pad.scale, { x: 0.82, y: 1.2, z: 0.82 }, {
+      x: 1, y: 1, z: 1, duration: 0.48, ease: "elastic.out(1, 0.38)", overwrite: "auto",
+    });
+    const material = pad.material as THREE.MeshStandardMaterial;
+    gsap.killTweensOf(material);
+    gsap.fromTo(material, { emissiveIntensity: 2.8 }, {
+      emissiveIntensity: 0.85, duration: 0.62, ease: "power2.out", overwrite: "auto",
+    });
+  };
+
   const animateCards = () => {
     const cards = root.querySelectorAll<HTMLElement>(".field-slot .game-card, .hand-cards .game-card");
     gsap.fromTo(cards, { opacity: 0.72, y: 12, rotateX: 4 }, { opacity: 1, y: 0, rotateX: 0, duration: 0.34, stagger: 0.035, ease: "power3.out", overwrite: "auto" });
@@ -135,6 +151,7 @@ export function mountBattleScene(root: HTMLElement): BattleSceneHandle {
 
   return {
     pulseStability,
+    pulseSlot,
     destroy: () => {
       disposed = true;
       cancelAnimationFrame(raf);
