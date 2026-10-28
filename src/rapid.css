@@ -934,7 +934,7 @@ body {
 .round-stage-draw { color: #82f0bb; }
 .round-number-fx { position: absolute; z-index: 32; color: white; font-size: clamp(21px, 3vw, 38px); line-height: 1; font-weight: 1000; letter-spacing: -.06em; text-shadow: 0 2px 0 #101827, 0 0 15px currentColor; pointer-events: none; }
 .round-number-cost, .round-number-damage { color: #ff645e; }
-.round-number-heal { color: #5dffc0; }
+.round-number-heal, .round-number-positive { color: #5dffc0; }
 .card-back-cover { position: absolute; z-index: 25; inset: 0; display: grid; place-items: center; border-radius: inherit; border: 2px solid #ffd66f; background: repeating-linear-gradient(45deg,#172b43 0 7px,#223d5a 7px 14px); box-shadow: inset 0 0 0 4px #ffd66f55, 0 0 18px #ffcc5c99; transform-origin: left center; backface-visibility: hidden; }
 .card-back-cover::before { content: ""; position: absolute; inset: 8%; border: 1px solid #ffd66f99; border-radius: 8px; }
 .card-back-cover i { display: grid; place-items: center; width: 36%; aspect-ratio: 1; border: 2px solid #ffe09a; border-radius: 50%; color: #ffe09a; font-style: normal; font-size: clamp(14px, 2vw, 26px); font-weight: 1000; box-shadow: 0 0 18px #ffd66f88; }
