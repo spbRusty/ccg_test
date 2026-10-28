@@ -156,6 +156,7 @@ function targetSlots(slot: number, target: CardTarget, max: number): number[] {
     case "edge": return [0, max - 1];
     case "all": return Array.from({ length: max }, (_, i) => i);
   }
+  return [];
 }
 function resolveAction(game: GameState, side: Side, card: CardInstance, slot: number, random: () => number): void {
   const source = game[side];
