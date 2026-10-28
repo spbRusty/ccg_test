@@ -145,9 +145,9 @@ export function mountBattleScene(root: HTMLElement): BattleSceneHandle {
 
   const revealCard = (card: HTMLElement, cover: HTMLElement | null) => {
     gsap.killTweensOf(card);
-    gsap.set(card, { transformPerspective: 720, transformOrigin: "50% 50%", rotationY: 180, backfaceVisibility: "hidden" });
+    gsap.set(card, { transformPerspective: 720, transformOrigin: "50% 50%", rotationY: 180 });
     let coverRemoved = false;
-    if (cover) gsap.set(cover, { opacity: 1, transformOrigin: "50% 50%", backfaceVisibility: "hidden" });
+    if (cover) gsap.set(cover, { opacity: 1, transformOrigin: "50% 50%" });
     gsap.to(card, {
       rotationY: 0, duration: 0.72, ease: "back.out(1.25)", overwrite: "auto",
       onUpdate: () => {
@@ -159,7 +159,7 @@ export function mountBattleScene(root: HTMLElement): BattleSceneHandle {
       },
       onComplete: () => {
         cover?.remove();
-        gsap.set(card, { clearProps: "transformPerspective,backfaceVisibility" });
+        gsap.set(card, { clearProps: "transformPerspective" });
       },
     });
   };
