@@ -47,7 +47,7 @@ const definitions: CardDef[] = [
   { id: "sentry", name: "Часовой", cost: -2, target: "opposite", action: "lock", trigger: "on_reveal", text: "При вскрытии: блокируй слот напротив до конца раунда.", faction: "Дозор", rarity: "Обычная", art: 3 },
   { id: "needle", name: "Игла", cost: -1, target: "opposite", action: "shift", trigger: "on_reveal", text: "При вскрытии: сдвинь карту напротив в соседний свободный слот.", faction: "Рейдеры", rarity: "Обычная", art: 1 },
   { id: "tether", name: "Привязь", cost: 2, target: "adjacent", action: "bounce", trigger: "on_reveal", text: "При вскрытии: верни соседнюю карту врага в руку владельца.", faction: "Технари", rarity: "Редкая", art: 2 },
-  { id: "fracture", name: "Трещина", cost: -7, target: "opposite", action: "remove", trigger: "on_reveal", text: "При вскрытии: убери карту врага напротив; пустой слот не наносит урон.", faction: "Легенды", rarity: "Эпическая", art: 3 },
+  { id: "fracture", name: "Трещина", cost: -7, target: "opposite", action: "remove", trigger: "on_reveal", text: "При вскрытии: убери карту врага напротив.", faction: "Легенды", rarity: "Эпическая", art: 3 },
   { id: "echo", name: "Эхо", cost: 0, target: "adjacent", action: "spawn_token", trigger: "on_destroy", text: "Когда эту карту убирают, оставь Осколок на соседнем свободном слоте.", faction: "Легенды", rarity: "Эпическая", art: 1 },
   { id: "token", name: "Осколок", cost: 0, target: "all", action: "shift", trigger: "on_reveal", text: "Токен без эффекта. Занимает слот и участвует в залпе стола.", faction: "Токены", rarity: "Обычная", art: 2, token: true }
 ];
