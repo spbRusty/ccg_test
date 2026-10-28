@@ -2,8 +2,11 @@ import { CARDS, CARD_BY_ID, DEFAULT_DECK, type CardDef, type Side } from "./game
 import { createGame, queueCard, unqueueCard, lockPlayerAndResolve, type CardInstance, type GameState } from "./game/rapid-core";
 import "./rapid.css";
 import { mountBattleScene, type BattleSceneHandle } from "./battle-scene";
+import { gsap } from "gsap";
 
 let battleScene: BattleSceneHandle | null = null;
+let animationRound = 0;
+let roundAnimationRunning = false;
 
 const app = document.querySelector<HTMLDivElement>("#app")!;
 const base = ((import.meta as any).env.BASE_URL || "/") as string;
@@ -164,7 +167,8 @@ function renderCard(card: CardDef, zone: string, extraClass = "", copyIndex = -1
   const isDraggable = "";
   const uidAttr = uid ? " data-uid=\"" + esc(uid) + "\"" : "";
   const copyAttr = copyIndex >= 0 ? " data-copy-index=\"" + copyIndex + "\"" : "";
-  const text = "<button class=\"game-card " + factionClass(card) + " " + extraClass + "\" data-card-id=\"" + esc(card.id) + "\" data-zone=\"" + zone + "\"" + uidAttr + copyAttr + isDraggable + " title=\"" + esc(title) + "\" aria-label=\"" + esc(name + ". " + title) + "\">" +
+  const revealCover = zone === "board" && animationRound > 0 && card.playedRound === animationRound ? "<span class=\"card-back-cover\" aria-hidden=\"true\"><i>S!</i></span>" : "";
+  const text = "<button class=\"game-card " + factionClass(card) + " " + extraClass + (revealCover ? " round-reveal-card" : "") + "\" data-card-id=\"" + esc(card.id) + "\" data-zone=\"" + zone + "\"" + uidAttr + copyAttr + isDraggable + " title=\"" + esc(title) + "\" aria-label=\"" + esc(name + ". " + title) + "\">" + revealCover +
     "<span class=\"cost-badge\">" + card.cost + "</span><span class=\"rarity-mark\">" + (card.rarity === "Эпическая" ? "✦" : card.rarity === "Редкая" ? "◆" : "•") + "</span>" +
     "<span class=\"card-art\"><img src=\"" + esc(artPath(card)) + "\" alt=\"\" loading=\"lazy\"><span class=\"art-splash\"></span><span class=\"art-word\">" + esc(factionName(card).slice(0, 3).toUpperCase()) + "</span></span>" +
     "<span class=\"card-content\"><span class=\"card-name\">" + esc(name) + "</span><span class=\"card-description\">" + esc(title) + "</span><span class=\"card-bottom\"><span class=\"timing-chip\">" + timingName(card) + "</span><span class=\"faction-label\">" + esc(factionName(card)) + "</span></span></span>" +
@@ -194,7 +198,7 @@ function fieldSlot(p: GameState["player"], side: Side, index: number): string {
   }
   const card = p.board[index];
   if (card) {
-    return "<div class=\"field-slot occupied-slot" + (card.playedRound === (game?.round ?? -1) ? " just-played" : "") + "\"" +
+    return "<div class=\"field-slot occupied-slot" + (card.playedRound === animationRound && animationRound > 0 ? " just-played" : "") + "\"" +
       (side === "player" ? " data-slot=\"" + index + "\" data-side=\"player\"" : "") + ">" +
       "<span class=\"slot-number\">" + (index + 1) + "</span>" +
       renderCard(card, "board", "field-card", -1, card.uid) +
@@ -259,7 +263,7 @@ function renderBattle(): string {
     "<div class=\"turn-pill\"><span>" + t("round") + "</span><b>" + game.round + "<i>/7</i></b></div><div class=\"top-hint\">" + (language === "ru" ? "КОРОТКАЯ ДУЭЛЬ · ОДНОВРЕМЕННЫЕ ХОДЫ" : "QUICK DUEL · SIMULTANEOUS TURNS") + "</div>" +
     "<button class=\"icon-button\" data-action=\"settings\" aria-label=\"" + t("settings") + "\">⚙</button></header>" +
     "<div class=\"battle-columns\">" + renderLog() +
-    "<section class=\"arena\"><div class=\"battle-scene-layer\" aria-hidden=\"true\"></div><div class=\"arena-topline\"><span class=\"arena-sticker\">" + (language === "ru" ? "ЗОНА СТОЛКНОВЕНИЯ" : "CLASH ZONE") + "</span><span class=\"arena-note\">" + t("rules") + "</span></div>" +
+    "<section class=\"arena\"><div class=\"battle-scene-layer\" aria-hidden=\"true\"></div><div class=\"round-fx-layer\" aria-hidden=\"true\"></div><div class=\"arena-topline\"><span class=\"arena-sticker\">" + (language === "ru" ? "ЗОНА СТОЛКНОВЕНИЯ" : "CLASH ZONE") + "</span><span class=\"arena-note\">" + t("rules") + "</span></div>" +
     "<div class=\"side-row opponent-row\">" + renderBoard(e, "enemy") + "</div>" +
     "<div class=\"stability-strip\"><span class=\"stability-number stability-enemy\"><small>" + (language === "ru" ? "ВРАГ" : "ENEMY") + "</small><b>" + e.stability + "</b></span><div class=\"stability-center\"><span class=\"bolt\">↯</span><b>" + t("stability") + "</b><small>" + (language === "ru" ? "ЦЕНА И ЖИЗНЬ" : "COST & LIFE") + "</small></div><span class=\"stability-number stability-player\"><small>" + (language === "ru" ? "ТЫ" : "YOU") + "</small><b>" + p.stability + "</b></span></div>" +
     "<div class=\"side-row player-row\">" + renderBoard(p, "player") + "</div>" +
@@ -366,6 +370,181 @@ function finishQueuedAction(uid: string, slot: number): boolean {
   render();
   return result.ok;
 }
+type RoundVisualSnapshot = {
+  round: number;
+  before: {
+    player: { stability: number; board: Array<CardInstance | null>; hand: CardInstance[]; deck: number; plans: Array<{ card: CardInstance; targetSlot: number; paid: number }> };
+    enemy: { stability: number; board: Array<CardInstance | null>; hand: CardInstance[]; deck: number; plans: Array<{ card: CardInstance; targetSlot: number; paid: number }> };
+  };
+  after: {
+    player: { stability: number; board: Array<CardInstance | null>; hand: CardInstance[]; deck: number };
+    enemy: { stability: number; board: Array<CardInstance | null>; hand: CardInstance[]; deck: number };
+  };
+  first: Side;
+  winner: GameState["winner"];
+};
+
+function animateRound(snapshot: RoundVisualSnapshot): void {
+  const arena = app.querySelector<HTMLElement>(".arena");
+  const layer = app.querySelector<HTMLElement>(".round-fx-layer");
+  if (!arena || !layer) {
+    roundAnimationRunning = false;
+    app.classList.remove("round-resolving");
+    animationRound = 0;
+    return;
+  }
+  layer.innerHTML = "";
+  const timeline = gsap.timeline({
+    defaults: { overwrite: "auto" },
+    onComplete: () => {
+      layer.innerHTML = "";
+      roundAnimationRunning = false;
+      app.classList.remove("round-resolving");
+      animationRound = 0;
+      app.querySelectorAll(".just-played").forEach(el => el.classList.remove("just-played"));
+    },
+  });
+  const stage = (label: string, tone: string) => {
+    const chip = document.createElement("div");
+    chip.className = "round-stage round-stage-" + tone;
+    chip.textContent = label;
+    layer.append(chip);
+    gsap.fromTo(chip, { opacity: 0, y: -10, scale: 0.9 }, { opacity: 1, y: 0, scale: 1, duration: 0.13, ease: "back.out(2)" });
+    timeline.to(chip, { opacity: 0, y: -8, duration: 0.14 }, "+=0.22").add(() => chip.remove());
+  };
+  const label = (ru: string, en: string) => language === "ru" ? ru : en;
+  const numberFx = (side: Side, value: number, kind: "damage" | "heal" | "cost", slot?: number) => {
+    const strip = app.querySelector<HTMLElement>(".stability-strip");
+    const target = strip?.querySelector<HTMLElement>(side === "enemy" ? ".stability-enemy" : ".stability-player");
+    if (!target) return;
+    const rect = target.getBoundingClientRect();
+    const arenaRect = arena.getBoundingClientRect();
+    const el = document.createElement("div");
+    el.className = "round-number-fx round-number-" + kind;
+    el.textContent = (value > 0 ? "+" : "") + value;
+    const source = slot === undefined ? null : app.querySelector<HTMLElement>(".field-row." + (side === "player" ? "your-field" : "enemy-field") + ' [data-slot="' + slot + '"]');
+    const sourceRect = source?.getBoundingClientRect();
+    el.style.left = ((sourceRect ? sourceRect.left + sourceRect.width / 2 : rect.left + rect.width / 2) - arenaRect.left) + "px";
+    el.style.top = ((sourceRect ? sourceRect.top + sourceRect.height / 2 : rect.top + rect.height / 2) - arenaRect.top) + "px";
+    layer.append(el);
+    gsap.fromTo(el, { opacity: 0, scale: 0.55, x: 0, y: 0 }, {
+      opacity: 1, scale: 1.1, x: rect.left + rect.width / 2 - (sourceRect ? sourceRect.left + sourceRect.width / 2 : rect.left + rect.width / 2),
+      y: rect.top + rect.height / 2 - (sourceRect ? sourceRect.top + sourceRect.height / 2 : rect.top + rect.height / 2),
+      duration: 0.42, ease: "power2.out", onComplete: () => gsap.to(el, { opacity: 0, scale: 0.8, duration: 0.18, onComplete: () => el.remove() }),
+    });
+  };
+
+  const firstName = snapshot.first === "player" ? label("ТЫ ВСКРЫВАЕШЬСЯ ПЕРВЫМ", "YOU REVEAL FIRST") : label("СОПЕРНИК ВСКРЫВАЕТСЯ ПЕРВЫМ", "OPPONENT REVEALS FIRST");
+  stage(firstName, "initiative");
+  timeline.add(() => {
+    const sideRow = app.querySelector<HTMLElement>(snapshot.first === "player" ? ".player-row" : ".opponent-row");
+    sideRow?.classList.add("initiative-flash");
+    battleScene?.pulseStability(snapshot.first);
+    sfx("initiative");
+    window.setTimeout(() => sideRow?.classList.remove("initiative-flash"), 380);
+  }, 0.02);
+
+  const orderedSides: Side[] = [snapshot.first, snapshot.first === "player" ? "enemy" : "player"];
+  for (let slot = 0; slot < 4; slot++) {
+    for (const side of orderedSides) {
+      const card = snapshot.after[side].board[slot];
+      const was = snapshot.before[side].board[slot];
+      if (!card || card.playedRound !== snapshot.round || was?.uid === card.uid) continue;
+      const selector = ".field-row." + (side === "player" ? "your-field" : "enemy-field") + ' [data-slot="' + slot + '"]';
+      const slotEl = app.querySelector<HTMLElement>(selector);
+      const cardEl = slotEl?.querySelector<HTMLElement>(".round-reveal-card");
+      timeline.add(() => {
+        stage(label("СЛОТ " + (slot + 1), "SLOT " + (slot + 1)), "reveal");
+        battleScene?.pulseSlot(side, slot);
+        if (slotEl) gsap.fromTo(slotEl, { filter: "brightness(1)" }, { filter: "brightness(1.65)", duration: 0.12, yoyo: true, repeat: 1 });
+        if (cardEl) {
+          gsap.fromTo(cardEl, { rotateY: 82, scale: 0.94, transformPerspective: 900 }, { rotateY: 0, scale: 1, duration: 0.27, ease: "back.out(1.7)" });
+          const cover = cardEl.querySelector<HTMLElement>(".card-back-cover");
+          if (cover) gsap.to(cover, { rotateY: 92, opacity: 0, duration: 0.2, delay: 0.08, ease: "power2.in", onComplete: () => cover.remove() });
+        }
+        const planned = side === "player" ? snapshot.before.player.plans.find(plan => plan.card.uid === card.uid) : undefined;
+        const cost = planned?.paid ?? card.cost;
+        if (cost !== 0) {
+          numberFx(side, cost > 0 ? -cost : Math.abs(cost), "cost", slot);
+          sfx("cost");
+        } else sfx("reveal");
+      });
+      timeline.to({}, { duration: 0.16 });
+    }
+  }
+
+  timeline.add(() => {
+    stage(label("ЭФФЕКТЫ КАРТ", "CARD EFFECTS"), "effect");
+    for (const side of ["player", "enemy"] as const) {
+      for (let slot = 0; slot < 4; slot++) {
+        const oldCard = snapshot.before[side].board[slot];
+        const newCard = snapshot.after[side].board[slot];
+        const slotEl = app.querySelector<HTMLElement>(".field-row." + (side === "player" ? "your-field" : "enemy-field") + ' [data-slot="' + slot + '"]');
+        if (oldCard && !snapshot.after[side].board.some(card => card?.uid === oldCard.uid)) {
+          const target = slotEl;
+          if (target) {
+            const burst = document.createElement("span");
+            burst.className = "card-dissolve-fx";
+            target.append(burst);
+            gsap.fromTo(burst, { opacity: 0.1, scale: 0.35, rotate: -18 }, { opacity: 0.95, scale: 1.4, rotate: 25, duration: 0.24, onComplete: () => gsap.to(burst, { opacity: 0, scale: 1.8, duration: 0.2, onComplete: () => burst.remove() }) });
+          }
+          if (target) gsap.fromTo(target, { x: -3 }, { x: 3, duration: 0.06, repeat: 3, yoyo: true, onComplete: () => gsap.set(target, { x: 0 }) });
+          sfx("destroy");
+        }
+        if (newCard && oldCard && newCard.uid !== oldCard.uid) {
+          if (slotEl) gsap.fromTo(slotEl, { scale: 0.96 }, { scale: 1, duration: 0.32, ease: "elastic.out(1, 0.35)" });
+        }
+      }
+    }
+  }, "+=0.12");
+
+  timeline.to({}, { duration: 0.28 });
+  timeline.add(() => {
+    stage(label("ЗАЛП СТОЛА", "BOARD VOLLEY"), "volley");
+    const occupiedPlayer = snapshot.after.player.board.filter(Boolean).length;
+    const occupiedEnemy = snapshot.after.enemy.board.filter(Boolean).length;
+    const emptyPlayer = 4 - occupiedPlayer;
+    const emptyEnemy = 4 - occupiedEnemy;
+    for (let slot = 0; slot < 4; slot++) {
+      for (const side of ["player", "enemy"] as const) {
+        const card = snapshot.after[side].board[slot];
+        const slotEl = app.querySelector<HTMLElement>(".field-row." + (side === "player" ? "your-field" : "enemy-field") + ' [data-slot="' + slot + '"]');
+        if (card && slotEl) {
+          gsap.fromTo(slotEl, { filter: "brightness(1)" }, { filter: "brightness(1.8)", duration: 0.12, yoyo: true, repeat: 1, delay: slot * 0.025 });
+          numberFx(side === "player" ? "enemy" : "player", -1, "damage", slot);
+        }
+      }
+    }
+    if (emptyPlayer > 0) numberFx("player", emptyPlayer, "heal");
+    if (emptyEnemy > 0) numberFx("enemy", emptyEnemy, "heal");
+    if (occupiedPlayer > 0) battleScene?.pulseStability("enemy");
+    if (occupiedEnemy > 0) battleScene?.pulseStability("player");
+    if (emptyPlayer > 0 || emptyEnemy > 0) sfx("heal");
+    if (occupiedPlayer > 0 || occupiedEnemy > 0) sfx("impact");
+    const strip = app.querySelector<HTMLElement>(".stability-strip");
+    if (strip) gsap.fromTo(strip, { x: 0 }, { x: 2, duration: 0.045, repeat: 5, yoyo: true, onComplete: () => gsap.set(strip, { x: 0 }) });
+  }, "+=0.1");
+  timeline.to({}, { duration: 0.78 });
+
+  timeline.add(() => {
+    stage(label("ДОБОР ДО 4 КАРТ", "DRAW TO 4"), "draw");
+    for (const side of ["player", "enemy"] as const) {
+      const oldUids = new Set(snapshot.before[side].hand.map(card => card.uid));
+      const fresh = snapshot.after[side].hand.filter(card => !oldUids.has(card.uid));
+      if (side === "player") {
+        const hand = app.querySelector<HTMLElement>(".hand-cards");
+        fresh.forEach((card, index) => {
+          const el = hand?.querySelector<HTMLElement>('[data-uid="' + card.uid + '"]');
+          if (el) gsap.fromTo(el, { opacity: 0, y: -24, rotate: -5 }, { opacity: 1, y: 0, rotate: 0, duration: 0.34, delay: index * 0.055, ease: "back.out(1.8)" });
+        });
+      }
+    }
+    if (snapshot.after.player.deck < snapshot.before.player.deck) sfx("draw");
+  }, "+=0.04");
+  timeline.to({}, { duration: 0.34 });
+  if (snapshot.winner) timeline.add(() => sfx(snapshot.winner === "player" ? "win" : snapshot.winner === "draw" ? "draw" : "lose"));
+}
+
 function action(name: string, target: HTMLElement | null): void {
   if (name === "home") { page = "home"; chosenCardUid = null; stopMusic(); render(); return; }
   if (name === "start" || name === "again") { startMatch(); return; }
@@ -380,25 +559,27 @@ function action(name: string, target: HTMLElement | null): void {
   }
   if (name === "archive-tab") { archiveTab = target?.dataset.tab === "enemy" ? "enemy" : "deck"; render(); return; }
   if (name === "commit") {
-    if (!game || game.winner) return;
-    const stabilityBefore = { player: game.player.stability, enemy: game.enemy.stability };
+    if (!game || game.winner || roundAnimationRunning) return;
     const resolvedRound = game.round;
+    const before = {
+      player: { stability: game.player.stability, board: [...game.player.board], hand: [...game.player.hand], deck: game.player.deck.length, plans: [...game.player.committed] },
+      enemy: { stability: game.enemy.stability, board: [...game.enemy.board], hand: [...game.enemy.hand], deck: game.enemy.deck.length, plans: [] as typeof game.player.committed },
+    };
+    animationRound = resolvedRound;
     chosenCardUid = null;
     lockPlayerAndResolve(game);
-    const revealedSlots = {
-      player: game.player.board.map((card, slot) => card?.playedRound === resolvedRound ? slot : -1).filter(slot => slot >= 0),
-      enemy: game.enemy.board.map((card, slot) => card?.playedRound === resolvedRound ? slot : -1).filter(slot => slot >= 0),
+    const after = {
+      player: { stability: game.player.stability, board: [...game.player.board], hand: [...game.player.hand], deck: game.player.deck.length },
+      enemy: { stability: game.enemy.stability, board: [...game.enemy.board], hand: [...game.enemy.hand], deck: game.enemy.deck.length },
     };
-    const stabilityAfter = { player: game.player.stability, enemy: game.enemy.stability };
+    const initiativeLine = game.log.find(line => line.includes("раскрывает карты первым"));
+    const first: Side = initiativeLine?.startsWith("Ты") ? "player" : "enemy";
+    const roundEvents = { round: resolvedRound, before, after, first, winner: game.winner };
     if (game.winner) sfx(game.winner === "player" ? "win" : game.winner === "draw" ? "draw" : "lose");
-    else sfx("reveal");
     render();
-    requestAnimationFrame(() => {
-      for (const side of ["player", "enemy"] as const) {
-        if (stabilityAfter[side] !== stabilityBefore[side]) battleScene?.pulseStability(side);
-        for (const slot of revealedSlots[side]) battleScene?.pulseSlot(side, slot);
-      }
-    });
+    roundAnimationRunning = true;
+    app.classList.add("round-resolving");
+    requestAnimationFrame(() => animateRound(roundEvents));
     return;
   }
   if (name === "unqueue") {
