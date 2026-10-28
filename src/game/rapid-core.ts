@@ -153,6 +153,7 @@ function targetSlots(slot: number, target: CardTarget, max: number): number[] {
     case "adjacent": return [slot - 1, slot + 1].filter(i => i >= 0 && i < max);
     case "edge": return [0, max - 1];
     case "all": return Array.from({ length: max }, (_, i) => i);
+    case "self": return [slot];
   }
 }
 function resolveAction(game: GameState, side: Side, card: CardInstance, slot: number, random: () => number): void {
@@ -247,11 +248,6 @@ export function resolveRound(game: GameState, random: () => number = Math.random
       // If an earlier action removed this face-down card from hand/board, it never pays or triggers.
       const planIndex = p.committed.findIndex(item => item.card.uid === plan.card.uid);
       if (planIndex < 0 || !p.hand.every(card => card.uid !== plan.card.uid)) continue;
-      const old = p.board[slot];
-      if (old) {
-        p.discard.push(old);
-        p.board[slot] = null;
-      }
       const cost = plan.card.cost;
       if (cost < 0 && p.stability + cost <= 0) {
         p.committed.splice(planIndex, 1);
@@ -259,6 +255,9 @@ export function resolveRound(game: GameState, random: () => number = Math.random
         pushLog(game, "Недостаточно Стойкости: «" + plan.card.name + "» сгорает.");
         continue;
       }
+      const old = p.board[slot];
+      if (old) p.discard.push(old);
+      p.board[slot] = null;
       p.stability = clamp(p.stability + cost, game.settings.maxStability);
       plan.paid = cost;
       p.board[slot] = plan.card;
