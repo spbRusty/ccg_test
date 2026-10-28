@@ -261,7 +261,7 @@ export function resolveRound(game: GameState, random: () => number = Math.random
       if (!plan || revealed.has(plan.card.uid)) continue;
       // If an earlier action removed this face-down card from hand/board, it never pays or triggers.
       const planIndex = p.committed.findIndex(item => item.card.uid === plan.card.uid);
-      if (planIndex < 0 || !p.hand.every(card => card.uid !== plan.card.uid)) continue;
+      if (planIndex < 0) continue;
       if (p.lockedSlots.has(slot)) {
         p.committed.splice(planIndex, 1);
         p.discard.push(plan.card);
