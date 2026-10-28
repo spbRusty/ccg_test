@@ -35,7 +35,7 @@ export type RoundEvent =
   | { type: "initiative"; side: Side }
   | { type: "reveal"; side: Side; slot: number; card: CardInstance; paid: number }
   | { type: "action"; side: Side; slot: number; card: CardInstance; action: CardAction; targetSlots: number[]; affectedSide: Side; affectedSlots: number[] }
-  | { type: "table_volley"; occupied: Record<Side, number>; empty: Record<Side, number>; delta: Record<Side, number> }
+  | { type: "table_volley"; occupied: Record<Side, number>; empty: Record<Side, number>; occupiedSlots: Record<Side, number[]>; emptySlots: Record<Side, number[]>; delta: Record<Side, number> }
   | { type: "fatigue"; side: Side; amount: number }
   | { type: "draw"; side: Side; amount: number }
   | { type: "winner"; winner: Winner };
@@ -282,14 +282,16 @@ export function resolveRound(game: GameState, random: () => number = Math.random
       if (card?.trigger === "on_round_end" && !game[side].lockedSlots.has(slot)) resolveAction(game, side, card, slot, random);
     }
   }
-  const occupied: Record<Side, number> = {
-    player: game.player.board.filter((card, slot) => Boolean(card) && !game.player.lockedSlots.has(slot)).length,
-    enemy: game.enemy.board.filter((card, slot) => Boolean(card) && !game.enemy.lockedSlots.has(slot)).length,
+  const occupiedSlots: Record<Side, number[]> = {
+    player: game.player.board.flatMap((card, slot) => card && !game.player.lockedSlots.has(slot) ? [slot] : []),
+    enemy: game.enemy.board.flatMap((card, slot) => card && !game.enemy.lockedSlots.has(slot) ? [slot] : []),
   };
-  const empty: Record<Side, number> = {
-    player: game.player.board.filter((card, slot) => !card && !game.player.lockedSlots.has(slot)).length,
-    enemy: game.enemy.board.filter((card, slot) => !card && !game.enemy.lockedSlots.has(slot)).length,
+  const emptySlots: Record<Side, number[]> = {
+    player: Array.from({ length: game.settings.slots }, (_, slot) => slot).filter(slot => !game.player.board[slot] && !game.player.lockedSlots.has(slot)),
+    enemy: Array.from({ length: game.settings.slots }, (_, slot) => slot).filter(slot => !game.enemy.board[slot] && !game.enemy.lockedSlots.has(slot)),
   };
+  const occupied: Record<Side, number> = { player: occupiedSlots.player.length, enemy: occupiedSlots.enemy.length };
+  const empty: Record<Side, number> = { player: emptySlots.player.length, enemy: emptySlots.enemy.length };
   // Apply each field rule as its own operation: healing is capped at 30 before
   // the opponent's occupied slots reduce Stability. Combining them into one
   // net delta incorrectly preserves healing that should be lost at the cap.
@@ -302,7 +304,7 @@ export function resolveRound(game: GameState, random: () => number = Math.random
     player: game.player.stability - beforeVolley.player,
     enemy: game.enemy.stability - beforeVolley.enemy,
   };
-  game.lastRoundEvents.push({ type: "table_volley", occupied, empty, delta });
+  game.lastRoundEvents.push({ type: "table_volley", occupied, empty, occupiedSlots, emptySlots, delta });
   game.player.lockedSlots.clear();
   game.enemy.lockedSlots.clear();
   for (const side of sides) {
