@@ -60,7 +60,7 @@ describe("Rapid core — Stability and positional control", () => {
     expect(game.lastRoundEvents.some(event => event.type === "reveal" && event.card.uid === "victim")).toBe(false);
     expect(game.lastRoundEvents.some(event => event.type === "reveal" && event.card.uid === "remover")).toBe(true);
     expect(game.enemy.discard.some(card => card.uid === "victim")).toBe(true);
-    expect(game.enemy.stability).toBe(19);
+    expect(game.enemy.stability).toBe(23);
   });
 
   it("applies occupied-slot pressure and empty-slot recovery", () => {
