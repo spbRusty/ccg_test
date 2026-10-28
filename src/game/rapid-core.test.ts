@@ -117,6 +117,20 @@ describe("Rapid core — Stability and positional control", () => {
     expect(CARDS.every(card => !/нанеси? \\d+ урона|наносит урон|щит|запрет хила/i.test(card.text))).toBe(true);
   });
 
+  it("keeps on-round-end slot locks active through the following round", () => {
+    const game = createGame(DEFAULT_DECK, () => 0.5);
+    game.player.board[1] = instance("bulwark", "bulwark");
+    game.enemy.board[0] = instance("token", "enemy-left");
+    game.enemy.board[2] = instance("token", "enemy-right");
+    lockBoth(game);
+
+    resolveRound(game, () => 0.1);
+
+    expect(game.enemy.lockedSlots.has(0)).toBe(true);
+    expect(game.enemy.lockedSlots.has(2)).toBe(true);
+    expect(game.enemy.lockedSlots.has(1)).toBe(false);
+  });
+
   it("applies fatigue for each card missing from the four-card hand", () => {
     const game = createGame(DEFAULT_DECK, () => 0.5);
     game.player.hand = [];
