@@ -458,9 +458,15 @@ function animateRound(snapshot: RoundVisualSnapshot): void {
         battleScene?.pulseSlot(side, slot);
         if (slotEl) gsap.fromTo(slotEl, { filter: "brightness(1)" }, { filter: "brightness(1.65)", duration: 0.12, yoyo: true, repeat: 1 });
         if (cardEl) {
-          gsap.fromTo(cardEl, { rotateY: 82, scale: 0.94, transformPerspective: 900 }, { rotateY: 0, scale: 1, duration: 0.27, ease: "back.out(1.7)" });
           const cover = cardEl.querySelector<HTMLElement>(".card-back-cover");
-          if (cover) gsap.to(cover, { rotateY: 92, opacity: 0, duration: 0.2, delay: 0.08, ease: "power2.in", onComplete: () => cover.remove() });
+          gsap.fromTo(cardEl, { scale: 0.97, y: -3 }, { scale: 1, y: 0, duration: 0.52, ease: "power2.out" });
+          if (cover) {
+            gsap.set(cover, { rotateY: 0, opacity: 1, transformPerspective: 1000, transformOrigin: "50% 50%" });
+            gsap.to(cover, {
+              rotateY: 90, opacity: 0, duration: 0.52, delay: 0.04,
+              ease: "power2.inOut", onComplete: () => cover.remove(),
+            });
+          }
         }
         const planned = side === "player" ? snapshot.before.player.plans.find(plan => plan.card.uid === card.uid) : undefined;
         const cost = planned?.paid ?? card.cost;
@@ -469,7 +475,7 @@ function animateRound(snapshot: RoundVisualSnapshot): void {
           sfx("cost");
         } else sfx("reveal");
       });
-      timeline.to({}, { duration: 0.20 });
+      timeline.to({}, { duration: 0.64 });
     }
   }
 
