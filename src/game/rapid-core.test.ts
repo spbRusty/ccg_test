@@ -70,7 +70,7 @@ describe("Rapid core — новая кор-механика", () => {
 
   it("не позволяет оплатить карту, если стоимость обнуляет Стойкость", () => {
     const game = createGame(DEFAULT_DECK, () => 0.5);
-    const card = { ...instance("glass-cannon", "expensive"), cost: 2 };
+    const card = { ...instance("glass-cannon", "expensive"), cost: -2 };
     game.player.hand = [card];
     game.player.stability = 2;
     game.enemy.stability = 30;
