@@ -164,24 +164,21 @@ function resolveAction(game: GameState, side: Side, card: CardInstance, slot: nu
   const affectedSlots: number[] = [];
   if (card.action === "remove") {
     for (const targetSlot of slots) {
-      const victim = foe.board[targetSlot];
-      if (!victim) {
-        const hiddenIndex = foe.committed.findIndex(plan => plan.targetSlot === targetSlot);
-        if (hiddenIndex >= 0) {
-          const [hidden] = foe.committed.splice(hiddenIndex, 1);
-          foe.discard.push(hidden.card);
-          affectedSlots.push(targetSlot);
-          game.log.unshift("Закрытая карта «" + hidden.card.name + "» уничтожена до вскрытия.");
-        }
+      const hiddenIndex = foe.committed.findIndex(plan => plan.targetSlot === targetSlot);
+      if (hiddenIndex >= 0) {
+        const [hidden] = foe.committed.splice(hiddenIndex, 1);
+        foe.discard.push(hidden.card);
+        affectedSlots.push(targetSlot);
+        game.log.unshift("Закрытая карта «" + hidden.card.name + "» уничтожена до вскрытия.");
         continue;
       }
-      if (victim.playedRound === game.round && foe.committed.some(plan => plan.card.uid === victim.uid)) {
-        // A card removed before its reveal burns without paying or triggering.
-      }
+      const victim = foe.board[targetSlot];
+      if (!victim) continue;
       foe.board[targetSlot] = null;
       foe.discard.push(victim);
       affectedSlots.push(targetSlot);
       game.log.unshift((side === "player" ? "Ты убрал" : "Соперник убрал") + " «" + victim.name + "».");
+      if (victim.trigger === "on_destroy") resolveAction(game, foeSide, victim, targetSlot, random);
     }
   } else if (card.action === "bounce") {
     for (const targetSlot of slots) {
