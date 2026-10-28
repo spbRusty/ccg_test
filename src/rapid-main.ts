@@ -455,7 +455,7 @@ function animateRound(snapshot: RoundVisualSnapshot): void {
       const slotEl = app.querySelector<HTMLElement>(selector);
       const cardEl = slotEl?.querySelector<HTMLElement>(".round-reveal-card");
       timeline.add(() => {
-        stage(label("СЛОТ " + (slot + 1), "SLOT " + (slot + 1)), "reveal");
+        stage(label("СЛОТ " + (slot + 1) + " · " + (side === "player" ? "ТВОЯ КАРТА" : "КАРТА СОПЕРНИКА"), "SLOT " + (slot + 1) + " · " + (side === "player" ? "YOUR CARD" : "OPPONENT CARD")), "reveal");
         battleScene?.pulseSlot(side, slot);
         if (slotEl) gsap.fromTo(slotEl, { filter: "brightness(1)" }, { filter: "brightness(1.65)", duration: 0.12, yoyo: true, repeat: 1 });
         if (cardEl) {
