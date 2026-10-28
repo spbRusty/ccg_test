@@ -264,7 +264,7 @@ function renderBattle(): string {
     "<div class=\"stability-strip\"><span class=\"stability-number stability-enemy\"><small>" + (language === "ru" ? "ВРАГ" : "ENEMY") + "</small><b>" + e.stability + "</b></span><div class=\"stability-center\"><span class=\"bolt\">↯</span><b>" + t("stability") + "</b><small>" + (language === "ru" ? "ЦЕНА И ЖИЗНЬ" : "COST & LIFE") + "</small></div><span class=\"stability-number stability-player\"><small>" + (language === "ru" ? "ТЫ" : "YOU") + "</small><b>" + p.stability + "</b></span></div>" +
     "<div class=\"side-row player-row\">" + renderBoard(p, "player") + "</div>" +
     renderHand() +
-    "<div class=\"turn-actions\"><div class=\"queued-status\"><span class=\"queued-dot\"></span><span>" + (language === "ru" ? "ВЫБРАНО" : "QUEUED") + "</span><b>" + choices + "/2</b><small>" + (language === "ru" ? "карт" : "cards") + "</small></div>" +
+    "<div class=\"turn-actions\"><div class=\"queued-status\"><span class=\"queued-dot\"></span><span>" + (language === "ru" ? "ВЫБРАНО" : "QUEUED") + "</span><b>" + choices + "/4</b><small>" + (language === "ru" ? "карт" : "cards") + "</small></div>" +
     "<span class=\"notice-line\">" + esc(notice || (language === "ru" ? "Цена списывается при выборе; отмена вернёт её." : "Cost is paid on selection; cancel to refund it.")) + "</span>" +
     "<button class=\"button button-hot commit-button\" data-action=\"commit\">" + t("reveal") + "<span>↗</span></button></div></section>" +
     renderArchive() + "</div>" + renderResult() + "</main>";
