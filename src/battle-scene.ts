@@ -106,6 +106,11 @@ export function mountBattleScene(initialRoot: HTMLElement): BattleSceneHandle {
   const particles = new THREE.Points(particleGeometry, new THREE.PointsMaterial({ color: "#ffd58a", size: 0.035, transparent: true, opacity: 0.65, depthWrite: false }));
   scene.add(particles);
 
+  // State is declared before the first resize, which renders the initial still frame.
+  let raf = 0;
+  let disposed = false;
+  let renderUntil = 0;
+  let lastFrameTime = 0;
   const renderOnce = () => {
     if (!disposed) renderer.render(scene, camera);
   };
@@ -124,10 +129,6 @@ export function mountBattleScene(initialRoot: HTMLElement): BattleSceneHandle {
   resize();
 
   // Render a still frame while idle. Wake the renderer only for short visual effects.
-  let raf = 0;
-  let disposed = false;
-  let renderUntil = 0;
-  let lastFrameTime = 0;
   const animate = (time: number) => {
     raf = 0;
     if (disposed) return;
