@@ -296,16 +296,25 @@ function fitTable(): void {
 }
 
 function render(): void {
-  battleScene?.destroy();
-  battleScene = null;
+  if (page !== "battle" && battleScene) {
+    battleScene.destroy();
+    battleScene = null;
+  }
   document.body.classList.toggle("battle-mode", page === "battle");
   app.innerHTML = page === "battle" ? renderBattle() : page === "decks" ? renderDecks() : page === "settings" ? renderSettings() : renderHome();
   imageFallbacks();
   if (page === "battle") {
     const sceneRoot = app.querySelector<HTMLElement>(".battle-scene-layer");
     if (sceneRoot) {
-      // Without WebGL the 3D layer is optional: fall back to the plain CSS/GSAP animations.
-      try { battleScene = mountBattleScene(sceneRoot); } catch { battleScene = null; sceneRoot.classList.remove("battle-scene-root"); }
+      // Reattach the existing renderer to the refreshed DOM instead of rebuilding WebGL.
+      try {
+        if (battleScene) battleScene.attach(sceneRoot);
+        else battleScene = mountBattleScene(sceneRoot);
+      } catch {
+        battleScene?.destroy();
+        battleScene = null;
+        sceneRoot.classList.remove("battle-scene-root");
+      }
     }
     requestAnimationFrame(fitTable);
   }
