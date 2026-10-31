@@ -1,4 +1,4 @@
-import { CARDS, CARD_BY_ID, DEFAULT_DECK, type CardDef, type CardAction, type CardTarget, type Side } from "./cards";
+import { CARDS, CARD_BY_ID, DEFAULT_DECK, type CardDef, type CardAction, type CardTarget, type Side } from "./cards.ts";
 
 export type Winner = Side | "draw" | null;
 export interface CardInstance extends CardDef {

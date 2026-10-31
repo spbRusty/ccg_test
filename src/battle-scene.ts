@@ -1,12 +1,19 @@
 import * as THREE from "three";
 import { gsap } from "gsap";
 
+export interface RevealOptions {
+  /** Start this far above the slot (px, negative = up) and fly in face-down before flipping. */
+  fromY?: number;
+  /** Called when the card lands after the flip, for slot shake / sound. */
+  onLand?: () => void;
+}
+
 export interface BattleSceneHandle {
   destroy: () => void;
   pulseStability: (side: "player" | "enemy") => void;
   pulseSlot: (side: "player" | "enemy", slot: number) => void;
   signalInitiative: (side: "player" | "enemy") => void;
-  revealCard: (card: HTMLElement, cover: HTMLElement | null) => void;
+  revealCard: (card: HTMLElement, cover: HTMLElement | null, options?: RevealOptions) => void;
   animateVolley: (side: "player" | "enemy", slot: number, targetSide: "player" | "enemy", kind: "damage" | "heal") => void;
 }
 
@@ -144,25 +151,31 @@ export function mountBattleScene(root: HTMLElement): BattleSceneHandle {
     });
   };
 
-  const revealCard = (card: HTMLElement, cover: HTMLElement | null) => {
+  const revealCard = (card: HTMLElement, cover: HTMLElement | null, options: RevealOptions = {}) => {
     gsap.killTweensOf(card);
-    gsap.set(card, { transformPerspective: 720, transformOrigin: "50% 50%", rotationY: 180 });
-    let coverRemoved = false;
+    gsap.set(card, { transformPerspective: 720, transformOrigin: "50% 50%", rotationY: 0, opacity: 1 });
     if (cover) gsap.set(cover, { opacity: 1, transformOrigin: "50% 50%" });
-    gsap.to(card, {
-      rotationY: 0, duration: 0.72, ease: "back.out(1.25)", overwrite: "auto",
-      onUpdate: () => {
-        const rotation = Number(gsap.getProperty(card, "rotationY"));
-        if (!coverRemoved && rotation <= 92) {
-          coverRemoved = true;
-          cover?.remove();
-        }
-      },
+    const tl = gsap.timeline({
       onComplete: () => {
         cover?.remove();
-        gsap.set(card, { clearProps: "transformPerspective" });
+        gsap.set(card, { clearProps: "transformPerspective,x,y,scale,rotation,rotationY,zIndex" });
       },
     });
+    gsap.set(card, { zIndex: 40 });
+    if (options.fromY !== undefined) {
+      // Opponent cards arrive from above the arena, face-down, with a slight random spin.
+      gsap.set(card, { y: options.fromY, scale: 0.7, rotation: gsap.utils.random(-14, 14) });
+      tl.to(card, { y: 0, scale: 1.2, rotation: 0, duration: 0.34, ease: "power3.out" });
+    } else {
+      // Own cards lift off the slot before turning over.
+      tl.to(card, { y: -12, scale: 1.2, duration: 0.14, ease: "power2.out" });
+    }
+    // Flip: turn edge-on showing the card back, swap in the face, then turn the rest of the way.
+    tl.to(card, { rotationY: 90, duration: 0.2, ease: "power2.in", onComplete: () => cover?.remove() });
+    tl.fromTo(card, { rotationY: -90 }, { rotationY: 0, duration: 0.24, ease: "power2.out" });
+    // Landing: squash back into the slot, then let the caller add the impact.
+    tl.to(card, { y: 0, scale: 0.94, duration: 0.09, ease: "power2.in", onStart: () => options.onLand?.() });
+    tl.to(card, { scale: 1, duration: 0.26, ease: "elastic.out(1, 0.45)" });
   };
 
   const animateVolley = (side: "player" | "enemy", slot: number, targetSide: "player" | "enemy", kind: "damage" | "heal") => {

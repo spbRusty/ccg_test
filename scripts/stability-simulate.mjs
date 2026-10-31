@@ -8,7 +8,6 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const reportDir = resolve(root, "reports");
 const matches = Math.max(1, Math.min(100000, Number.parseInt(process.argv[2] || "1000", 10) || 1000));
 const firstSeed = Number.parseInt(process.argv[3] || "1", 10) || 1;
-const maxRounds = 7;
 
 function makeRandom(seed) {
   let state = seed >>> 0;
@@ -39,21 +38,19 @@ for (let i = 0; i < matches; i++) {
   const random = makeRandom(seed);
   const aiRandom = { player: makeRandom(seed ^ 0x9e3779b9), enemy: makeRandom(seed ^ 0x85ebca6b) };
   const game = createGame(DEFAULT_DECK, random);
-  while (!game.winner && game.round <= maxRounds) {
-    const otherResolver = game.round % 2 === 1 ? "enemy" : "player";
-    const order = game.round % 2 === 1 ? ["player", otherResolver] : [otherResolver, "player"];
-    for (const side of order) chooseForSide(game, side, aiRandom[side]);
+  while (!game.winner) {
+    for (const side of ["player", "enemy"]) chooseForSide(game, side, aiRandom[side]);
     game.player.locked = true;
     game.enemy.locked = true;
     resolveRound(game, random);
   }
-  results.push({ seed, winner: game.winner, rounds: Math.min(game.round, maxRounds), playerStability: game.player.stability, enemyStability: game.enemy.stability });
+  results.push({ seed, winner: game.winner, rounds: game.round, playerStability: game.player.stability, enemyStability: game.enemy.stability });
 }
 const wins = results.filter(r => r.winner === "player").length;
 const losses = results.filter(r => r.winner === "enemy").length;
 const draws = results.filter(r => r.winner === "draw").length;
 const report = {
-  generatedAt: new Date().toISOString(), matches, firstSeed, rules: { deckSize: 12, startHand: 4, handLimit: 4, slots: 4, maxPlays: 2, roundLimit: 7, startStability: 30 },
+  generatedAt: new Date().toISOString(), matches, firstSeed, rules: createGame(DEFAULT_DECK).settings,
   wins, losses, draws, unresolved: matches - wins - losses - draws,
   averageRounds: Number((results.reduce((sum, r) => sum + r.rounds, 0) / matches).toFixed(2)),
   results,

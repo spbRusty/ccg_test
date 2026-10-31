@@ -27,7 +27,7 @@ let musicTimer: number | null = null;
 let musicStep = 0;
 let notice = "";
 let suppressNextClick = false;
-let activeCardDrag: { pointerId: number; uid: string; source: HTMLElement; sourceRect: DOMRect; startX: number; startY: number; x: number; y: number; ghost: HTMLElement | null; slot: HTMLElement | null; moved: boolean } | null = null;
+let activeCardDrag: { pointerId: number; uid: string; source: HTMLElement; sourceRect: DOMRect; startX: number; startY: number; x: number; y: number; ghost: HTMLElement | null; slot: HTMLElement | null; moved: boolean; qx: ((value: number) => unknown) | null; qy: ((value: number) => unknown) | null; qr: ((value: number) => unknown) | null; settle: number } | null = null;
 const I18N: Record<string, [string, string]> = {
   title: ["СТАБИЛЬНОСТЬ", "STABILITY"], subtitle: ["КАРТОЧНАЯ ДУЭЛЬ", "CARD DUEL"],
   single: ["Играть", "Play"], pvp: ["PvP · скоро", "PvP · soon"], decks: ["Коллекция и колоды", "Collection & decks"],
@@ -71,38 +71,6 @@ function esc(value: unknown): string {
   return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 function englishName(card: CardDef): string {
-  const known: Record<string, string> = {
-    raid: "Dawn Raid", ambush: "Quiet Ambush", sniper: "Veggie Sniper", blackout: "Blackout", dog: "Frost Hound",
-    convoy: "Armored Convoy", charge: "Delayed Charge", saboteur: "Saboteur", cleaner: "Scrap Cleaner", hunger: "Watch Hunger",
-    payoff: "Last Bullet", pressure: "Red Line", scavenger: "Scrap Collector", map: "Old Road Map", reserves: "Spare Backpack",
-    stowaway: "Stowaway", rattletrap: "Rattletrap", "dust-tax": "Dust Debt", "lone-wolf": "Lone Wolf", "street-deal": "Street Deal",
-    signalman: "Signalman", "scrap-king": "Scrap King", "rust-darts": "Rust Darts", smuggler: "Smuggler", medic: "Field Medic",
-    ration: "Dry Rations", hope: "Last Hope", camp: "Camp Keeper", battery: "Old Battery", quiet: "Quiet Hour",
-    kitchen: "Field Kitchen", watch: "Long Watch", mediator: "Mediator", "second-wind": "Second Wind",
-    "field-doctor": "Outlands Doctor", "emergency-blood": "Blood Reserve", barrier: "Living Barrier",
-    "living-barrier": "Wall of Parts", signal: "Alarm Signal", overcharge: "Overcharge", coolant: "Coolant Loop",
-    static: "Radio Static", jammer: "Jammer", "fault-line": "Tactical Fault", "counter-spark": "Counter Pulse",
-    "mirror-trap": "Mirror Trap", "red-switch": "Red Switch", "tesla-coil": "Tesla Coil", tower: "Watchtower",
-    sleeper: "Sleeper Agent", breaker: "Breaker", billboard: "Rusty Billboard", "raider-banner": "Raider Banner",
-    silence: "Dead Silence", bell: "Alarm Bell", siren: "Rooftop Siren", sentry: "Last Sentry",
-    "pressure-valve": "Pressure Valve", "hungry-swarm": "Hungry Swarm", "old-gun": "Old Cannon",
-    "field-kitchen": "Grand Field Kitchen", "warm-camp": "Warm Camp", "quiet-hours": "Quiet Hours", purifier: "Hope Filter",
-    oasis: "Concrete Oasis", "medic-cart": "Medical Cart", "spark-gen": "Spark Generator", "mutual-aid": "Mutual Aid",
-    "emergency-ration": "Emergency Rations", "battery-farm": "Battery Farm", lifeline: "Lifeline",
-    "hope-garden": "Garden of Hope", "numbers-game": "Strength in Numbers", "high-ground": "High Ground",
-    "full-house": "Full House", "empty-seats": "Empty Seats", majority: "Majority Rules", "no-backup": "No Backup",
-    jury: "The Jury", "crowd-control": "Crowd Control", flank: "Flanking Move", "lone-signal": "Lone Signal",
-    "field-marshal": "Field Marshal", "open-lanes": "Open Lanes", closer: "Closer", executioner: "Executioner",
-    "last-stand": "Last Stand", "dead-drop": "Dead Drop", underdog: "Underdog", "king-hill": "King of the Hill",
-    "early-bird": "Early Bird", counterpunch: "Counterpunch", "rush-hour": "Rush Hour", "single-strike": "Single Strike",
-    "broken-line": "Broken Line", "calm-focus": "Cool Head", curse: "Dry Law", blackmail: "Blackmailer", recall: "Recall",
-    "trash-compactor": "Scrap Compactor", interceptor: "Interceptor", butcher: "Mechanic Butcher", "mute-button": "Mute Button",
-    barter: "Fair Trade", anchor: "Anchor", overgrowth: "Warm Greenhouse", "night-market": "Night Market",
-    "stolen-battery": "Stolen Battery", "last-bullet": "Last Shot", sunrise: "Sunrise", redline: "Redline",
-    "engine-heart": "Engine Heart", community: "Common Fire", "delayed-bomb": "Time Bomb", megaphone: "Megaphone",
-    "riot-shield": "Street Sign Shield", "crowd-favorite": "Crowd Favorite", "sixth-sense": "Sixth Sense",
-    "final-word": "Final Word", phoenix: "Tin Can Phoenix",
-  };
   const currentCards: Record<string, string> = {
     scout: "Scout", hook: "Hook", repulsor: "Repulsor", evacuation: "Evacuation",
     roadblock: "Roadblock", scrapper: "Scrapper", "side-step": "Side Step",
@@ -114,7 +82,7 @@ function englishName(card: CardDef): string {
     retreat: "Withdrawal Order", sentry: "Sentry", needle: "Needle", tether: "Tether",
     fracture: "Fracture", echo: "Echo", token: "Shard",
   };
-  return currentCards[card.id] || known[card.id] || card.id.split("-").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
+  return currentCards[card.id] || card.id.split("-").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
 }
 function englishFaction(faction: string): string {
   const names: Record<string, string> = {
@@ -335,7 +303,10 @@ function render(): void {
   imageFallbacks();
   if (page === "battle") {
     const sceneRoot = app.querySelector<HTMLElement>(".battle-scene-layer");
-    if (sceneRoot) battleScene = mountBattleScene(sceneRoot);
+    if (sceneRoot) {
+      // Without WebGL the 3D layer is optional: fall back to the plain CSS/GSAP animations.
+      try { battleScene = mountBattleScene(sceneRoot); } catch { battleScene = null; sceneRoot.classList.remove("battle-scene-root"); }
+    }
     requestAnimationFrame(fitTable);
   }
   if (page === "battle" && game?.winner) document.body.classList.add("match-finished");
@@ -352,7 +323,19 @@ function startMatch(): void {
   startMusic();
   render();
 }
-function finishQueuedAction(uid: string, slot: number): boolean {
+/** Squash-and-shake when a card settles into its slot. */
+function landQueuedCard(uid: string, slotIndex: number, fromAbove = false): void {
+  const slotEl = app.querySelector<HTMLElement>('.field-slot[data-side="player"][data-slot="' + slotIndex + '"]');
+  const cardEl = slotEl?.querySelector<HTMLElement>('.game-card[data-uid="' + uid + '"]');
+  if (!slotEl || !cardEl) return;
+  gsap.killTweensOf(cardEl);
+  // Slam down past the slot size, squash a little, then spring back.
+  gsap.timeline()
+    .fromTo(cardEl, fromAbove ? { scale: 1.35, y: -60, opacity: 0.5 } : { scale: 1.18, y: -6 }, { scale: 0.94, y: 0, opacity: 1, duration: fromAbove ? 0.16 : 0.09, ease: "power2.in" })
+    .to(cardEl, { scale: 1, duration: 0.3, ease: "elastic.out(1, 0.45)" });
+  gsap.fromTo(slotEl, { x: -2 }, { x: 2, duration: 0.04, repeat: 5, yoyo: true, ease: "none", onComplete: () => gsap.set(slotEl, { x: 0 }) });
+}
+function finishQueuedAction(uid: string, slot: number, animateLanding = true): boolean {
   if (!game) return false;
   const result = queueCard(game, "player", uid, slot);
   showNotice(result.message);
@@ -361,6 +344,7 @@ function finishQueuedAction(uid: string, slot: number): boolean {
     sfx("play");
   }
   render();
+  if (result.ok && animateLanding) landQueuedCard(uid, slot, true);
   return result.ok;
 }
 type RoundVisualSnapshot = {
@@ -412,6 +396,7 @@ function animateRound(snapshot: RoundVisualSnapshot): void {
       app.classList.remove("round-resolving");
       animationRound = 0;
       app.querySelectorAll(".just-played").forEach(el => el.classList.remove("just-played"));
+      gsap.set(app.querySelectorAll(".field-row.enemy-field .game-card"), { clearProps: "opacity" });
     },
   });
   const stage = (label: string, tone: string) => {
@@ -490,6 +475,14 @@ function animateRound(snapshot: RoundVisualSnapshot): void {
     window.setTimeout(() => sideRow?.classList.remove("initiative-flash"), 380);
   }, 0.02);
 
+  // Opponent cards are hidden until their reveal, then fly in from above.
+  for (const event of snapshot.events) {
+    if (event.type !== "reveal" || event.side !== "enemy") continue;
+    if (snapshot.after.enemy.board.findIndex(current => current?.uid === event.card.uid) !== event.slot) continue;
+    const hidden = app.querySelector<HTMLElement>('.field-row.enemy-field [data-slot="' + event.slot + '"] .round-reveal-card');
+    if (hidden) gsap.set(hidden, { opacity: 0 });
+  }
+
   for (const event of snapshot.events) {
     if (event.type === "reveal") {
       const { side, slot, card, paid } = event;
@@ -528,9 +521,18 @@ function animateRound(snapshot: RoundVisualSnapshot): void {
         }
         if (cardEl) {
           const cover = cardEl.querySelector<HTMLElement>(".card-back-cover");
-          battleScene?.revealCard(cardEl, cover);
+          const onLand = () => {
+            if (slotEl) gsap.fromTo(slotEl, { x: -3 }, { x: 3, duration: 0.04, repeat: 5, yoyo: true, ease: "none", onComplete: () => gsap.set(slotEl, { x: 0 }) });
+          };
+          let fromY: number | undefined;
+          if (side === "enemy" && existingCardEl) {
+            const cardRect = cardEl.getBoundingClientRect();
+            fromY = -(cardRect.top - arena.getBoundingClientRect().top) - cardRect.height - 10;
+          }
+          battleScene?.revealCard(cardEl, cover, { fromY, onLand });
           if (!battleScene) {
-            gsap.fromTo(cardEl, { scaleX: 0.04 }, { scaleX: 1, duration: 0.5, ease: "power2.out" });
+            gsap.set(cardEl, { opacity: 1 });
+            gsap.fromTo(cardEl, { scaleX: 0.04 }, { scaleX: 1, duration: 0.5, ease: "power2.out", onStart: onLand });
             cover?.remove();
           }
           if (transientCard) gsap.delayedCall(0.9, () => cardEl?.remove());
@@ -543,7 +545,7 @@ function animateRound(snapshot: RoundVisualSnapshot): void {
           sfx("reveal");
         }
       });
-      timeline.to({}, { duration: 0.76 });
+      timeline.to({}, { duration: 0.84 });
     } else if (event.type === "action") {
       timeline.add(() => {
         const sideName = event.side === "player" ? label("ТВОЯ КАРТА", "YOUR CARD") : label("КАРТА СОПЕРНИКА", "OPPONENT CARD");
@@ -823,22 +825,14 @@ app.addEventListener("click", event => {
     finishQueuedAction(chosenCardUid, Number(slotEl.dataset.slot)); return;
   }
 });
-function removeDragGhost(ghost: HTMLElement | null, delay = 230): void {
-  if (!ghost) return;
-  const remove = () => {
-    ghost.removeEventListener("transitionend", remove);
-    ghost.remove();
-  };
-  ghost.addEventListener("transitionend", remove, { once: true });
-  window.setTimeout(remove, delay);
-}
 function animateDragGhostBack(drag: NonNullable<typeof activeCardDrag>): void {
   const ghost = drag.ghost;
   if (!ghost) return;
-  ghost.style.transition = "transform 190ms cubic-bezier(.2,.8,.2,1), opacity 190ms ease";
-  ghost.style.transform = "translate3d(0,0,0) rotate(0deg) scale(.96)";
-  ghost.style.opacity = "0";
-  removeDragGhost(ghost, 230);
+  window.clearTimeout(drag.settle);
+  gsap.killTweensOf(ghost);
+  gsap.timeline({ onComplete: () => ghost.remove() })
+    .to(ghost, { x: 0, y: 0, rotation: 0, scale: 1, duration: 0.3, ease: "back.out(1.7)" })
+    .to(ghost, { opacity: 0, duration: 0.1 }, "-=0.06");
 }
 function updateDragSlot(drag: NonNullable<typeof activeCardDrag>): void {
   document.querySelectorAll<HTMLElement>(".field-slot.drop-target").forEach(slot => slot.classList.remove("drop-target"));
@@ -860,7 +854,7 @@ app.addEventListener("pointerdown", event => {
   activeCardDrag = {
     pointerId: event.pointerId, uid, source: target, sourceRect: rect,
     startX: event.clientX, startY: event.clientY, x: event.clientX, y: event.clientY,
-    ghost: null, slot: null, moved: false
+    ghost: null, slot: null, moved: false, qx: null, qy: null, qr: null, settle: 0
   };
 });
 window.addEventListener("pointermove", event => {
@@ -883,22 +877,33 @@ window.addEventListener("pointermove", event => {
     ghost.style.top = drag.sourceRect.top + "px";
     ghost.style.margin = "0";
     ghost.style.transition = "none";
-    ghost.style.transform = "translate3d(0,0,0) rotate(0deg) scale(1)";
+    ghost.style.transform = "";
     document.body.appendChild(ghost);
+    gsap.set(ghost, { x: 0, y: 0, rotation: 0, scale: 1, transformOrigin: "50% 50%" });
+    gsap.to(ghost, { scale: 1.08, duration: 0.16, ease: "back.out(2)" });
+    drag.qx = gsap.quickTo(ghost, "x", { duration: 0.14, ease: "power3.out" });
+    drag.qy = gsap.quickTo(ghost, "y", { duration: 0.14, ease: "power3.out" });
+    drag.qr = gsap.quickTo(ghost, "rotation", { duration: 0.28, ease: "power3.out" });
     drag.ghost = ghost;
     chosenCardUid = drag.uid;
     sfx("grab");
   }
   if (!drag.moved || !drag.ghost) return;
   event.preventDefault();
-  const tilt = Math.max(-7, Math.min(7, dx * 0.045));
-  drag.ghost.style.transform = "translate3d(" + dx + "px," + dy + "px,0) rotate(" + tilt + "deg) scale(1.035)";
+  drag.qx?.(dx);
+  drag.qy?.(dy);
+  // The card leans with horizontal speed: a fast swipe tilts it, a slow drag keeps it upright.
+  drag.qr?.(Math.max(-16, Math.min(16, event.movementX * 1.1)));
+  window.clearTimeout(drag.settle);
+  drag.settle = window.setTimeout(() => drag.qr?.(0), 70);
   updateDragSlot(drag);
 });
 document.addEventListener("pointerup", event => {
   const drag = activeCardDrag;
   // A drag preview must never survive mouse release, even if the drag state was lost.
-  document.querySelectorAll<HTMLElement>(".drag-ghost-card").forEach(ghost => ghost.remove());
+  // The active ghost is removed by its own flight animation below.
+  const liveGhost = drag && event.pointerId === drag.pointerId ? drag.ghost : null;
+  document.querySelectorAll<HTMLElement>(".drag-ghost-card").forEach(ghost => { if (ghost !== liveGhost) ghost.remove(); });
   document.querySelectorAll<HTMLElement>(".dragging-card").forEach(card => card.classList.remove("dragging-card"));
   if (!drag || event.pointerId !== drag.pointerId) {
     activeCardDrag = null;
@@ -918,15 +923,21 @@ document.addEventListener("pointerup", event => {
   document.querySelectorAll<HTMLElement>(".field-slot.drop-target").forEach(slot => slot.classList.remove("drop-target"));
   const slot = drag.slot;
   const targetRect = slot?.getBoundingClientRect();
-  const accepted = !!slot && !slot.classList.contains("pending-slot") && finishQueuedAction(drag.uid, Number(slot.dataset.slot));
+  const slotIndex = slot ? Number(slot.dataset.slot) : -1;
+  const accepted = !!slot && !slot.classList.contains("pending-slot") && finishQueuedAction(drag.uid, slotIndex, false);
   if (accepted && targetRect && drag.ghost) {
+    const ghost = drag.ghost;
+    window.clearTimeout(drag.settle);
+    gsap.killTweensOf(ghost);
     const sx = targetRect.width / Math.max(1, drag.sourceRect.width);
-    const tx = targetRect.left - drag.sourceRect.left;
-    const ty = targetRect.top - drag.sourceRect.top;
-    drag.ghost.style.transition = "transform 190ms cubic-bezier(.18,.82,.25,1.12), opacity 190ms ease";
-    drag.ghost.style.transform = "translate3d(" + tx + "px," + ty + "px,0) rotate(0deg) scale(" + sx + ")";
-    removeDragGhost(drag.ghost, 230);
+    const tx = targetRect.left + targetRect.width / 2 - (drag.sourceRect.left + drag.sourceRect.width / 2);
+    const ty = targetRect.top + targetRect.height / 2 - (drag.sourceRect.top + drag.sourceRect.height / 2);
     sfx("drop");
+    // Arc: x eases out while y eases in, so the card curves into the slot, then squashes on landing.
+    gsap.timeline({ onComplete: () => { ghost.remove(); landQueuedCard(drag.uid, slotIndex); } })
+      .to(ghost, { x: tx, duration: 0.24, ease: "power1.out" }, 0)
+      .to(ghost, { y: ty, duration: 0.24, ease: "power2.in" }, 0)
+      .to(ghost, { rotation: 0, scale: sx, duration: 0.24, ease: "power2.out" }, 0);
   } else {
     chosenCardUid = null;
     if (!slot) showNotice(language === "ru" ? "Карта возвращена в руку: выбери место на своём поле." : "Card returned to hand. Drop it on your field.");
