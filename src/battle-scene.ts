@@ -9,6 +9,7 @@ export interface RevealOptions {
 }
 
 export interface BattleSceneHandle {
+  attach: (root: HTMLElement) => void;
   destroy: () => void;
   pulseStability: (side: "player" | "enemy") => void;
   pulseSlot: (side: "player" | "enemy", slot: number) => void;
@@ -17,7 +18,8 @@ export interface BattleSceneHandle {
   animateVolley: (side: "player" | "enemy", slot: number, targetSide: "player" | "enemy", kind: "damage" | "heal") => void;
 }
 
-export function mountBattleScene(root: HTMLElement): BattleSceneHandle {
+export function mountBattleScene(initialRoot: HTMLElement): BattleSceneHandle {
+  let root = initialRoot;
   root.classList.add("battle-scene-root");
   const scene = new THREE.Scene();
   scene.background = null;
@@ -26,8 +28,14 @@ export function mountBattleScene(root: HTMLElement): BattleSceneHandle {
   camera.position.set(0, 10.5, 14.5);
   camera.lookAt(0, 0, 0);
 
-  const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "low-power" });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.6));
+  const isMobile = window.matchMedia("(max-width: 680px)").matches;
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const renderer = new THREE.WebGLRenderer({
+    alpha: true,
+    antialias: !isMobile,
+    powerPreference: "low-power",
+  });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isMobile ? 1 : 1.25));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.12;
@@ -39,10 +47,10 @@ export function mountBattleScene(root: HTMLElement): BattleSceneHandle {
   const key = new THREE.DirectionalLight("#fff0c7", 3.2);
   key.position.set(-3, 9, 5);
   scene.add(key);
-  const rim = new THREE.PointLight("#3c9eff", 24, 15);
+  const rim = new THREE.PointLight("#3c9eff", 10, 15);
   rim.position.set(-5, 2.3, -2);
   scene.add(rim);
-  const hot = new THREE.PointLight("#ff5b70", 18, 14);
+  const hot = new THREE.PointLight("#ff5b70", 8, 14);
   hot.position.set(5, 2.2, 1);
   scene.add(hot);
 
@@ -83,7 +91,8 @@ export function mountBattleScene(root: HTMLElement): BattleSceneHandle {
   centerRail.position.set(0, 0.02, 0);
   scene.add(centerRail);
 
-  const particleCount = 130;
+  // Ambient particles are decorative only. Disable them on phones and when motion is reduced.
+  const particleCount = isMobile || reducedMotion ? 0 : 32;
   const positions = new Float32Array(particleCount * 3);
   const particleSpeeds = new Float32Array(particleCount);
   for (let i = 0; i < particleCount; i++) {
@@ -97,41 +106,55 @@ export function mountBattleScene(root: HTMLElement): BattleSceneHandle {
   const particles = new THREE.Points(particleGeometry, new THREE.PointsMaterial({ color: "#ffd58a", size: 0.035, transparent: true, opacity: 0.65, depthWrite: false }));
   scene.add(particles);
 
+  const renderOnce = () => {
+    if (!disposed) renderer.render(scene, camera);
+  };
   const resize = () => {
     const rect = root.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
     camera.aspect = rect.width / rect.height;
-    camera.position.x = rect.width < 520 ? 0 : 0;
     camera.position.z = rect.width < 520 ? 17 : 14.5;
     camera.position.y = rect.width < 520 ? 12 : 10.5;
     camera.updateProjectionMatrix();
     renderer.setSize(rect.width, rect.height, false);
+    renderOnce();
   };
   const observer = new ResizeObserver(resize);
   observer.observe(root);
   resize();
 
-  const clock = new THREE.Clock();
+  // Render a still frame while idle. Wake the renderer only for short visual effects.
   let raf = 0;
   let disposed = false;
-  const animate = () => {
+  let renderUntil = 0;
+  let lastFrameTime = 0;
+  const animate = (time: number) => {
+    raf = 0;
     if (disposed) return;
-    const delta = Math.min(clock.getDelta(), 0.05);
-    const pos = particleGeometry.attributes.position as THREE.BufferAttribute;
-    for (let i = 0; i < particleCount; i++) {
-      pos.array[i * 3 + 1] += particleSpeeds[i] * delta;
-      if (pos.array[i * 3 + 1] > 2.7) pos.array[i * 3 + 1] = 0.1;
+    const delta = lastFrameTime ? Math.min((time - lastFrameTime) / 1000, 0.05) : 0;
+    lastFrameTime = time;
+    if (particleCount > 0 && delta > 0) {
+      const pos = particleGeometry.attributes.position as THREE.BufferAttribute;
+      for (let i = 0; i < particleCount; i++) {
+        pos.array[i * 3 + 1] += particleSpeeds[i] * delta;
+        if (pos.array[i * 3 + 1] > 2.7) pos.array[i * 3 + 1] = 0.1;
+      }
+      pos.needsUpdate = true;
+      particles.rotation.y += delta * 0.018;
     }
-    pos.needsUpdate = true;
-    particles.rotation.y += delta * 0.018;
-    rim.intensity = 22 + Math.sin(clock.elapsedTime * 1.8) * 3;
-    hot.intensity = 17 + Math.sin(clock.elapsedTime * 1.3 + 1.4) * 2;
+    rim.intensity = 10 + Math.sin(time * 0.0018) * 1.2;
+    hot.intensity = 8 + Math.sin(time * 0.0013 + 1.4) * 0.8;
     renderer.render(scene, camera);
-    raf = requestAnimationFrame(animate);
+    if (time < renderUntil) raf = requestAnimationFrame(animate);
+    else lastFrameTime = 0;
   };
-  animate();
+  const wake = (duration = 900) => {
+    renderUntil = Math.max(renderUntil, performance.now() + duration);
+    if (!raf && !disposed) raf = requestAnimationFrame(animate);
+  };
 
   const pulseStability = (side: "player" | "enemy") => {
+    wake(850);
     const light = side === "player" ? rim : hot;
     gsap.killTweensOf(light);
     gsap.fromTo(light, { intensity: 4 }, { intensity: 48, duration: 0.18, yoyo: true, repeat: 2, ease: "power2.out" });
@@ -139,6 +162,7 @@ export function mountBattleScene(root: HTMLElement): BattleSceneHandle {
   };
 
   const signalInitiative = (side: "player" | "enemy") => {
+    wake(850);
     initiativeLight.position.z = side === "player" ? 2.25 : -2.25;
     gsap.killTweensOf(initiativeLight);
     gsap.fromTo(initiativeLight, { intensity: 0 }, {
@@ -152,6 +176,7 @@ export function mountBattleScene(root: HTMLElement): BattleSceneHandle {
   };
 
   const revealCard = (card: HTMLElement, cover: HTMLElement | null, options: RevealOptions = {}) => {
+    wake(1500);
     gsap.killTweensOf(card);
     gsap.set(card, { transformPerspective: 720, transformOrigin: "50% 50%", rotationY: 0, opacity: 1 });
     if (cover) gsap.set(cover, { opacity: 1, transformOrigin: "50% 50%" });
@@ -179,6 +204,7 @@ export function mountBattleScene(root: HTMLElement): BattleSceneHandle {
   };
 
   const animateVolley = (side: "player" | "enemy", slot: number, targetSide: "player" | "enemy", kind: "damage" | "heal") => {
+    wake(850);
     if (!Number.isInteger(slot) || slot < 0 || slot > 3) return;
     const start = new THREE.Vector3((slot - 1.5) * 2.55, 0.42, side === "player" ? 2.25 : -2.25);
     const end = new THREE.Vector3((slot - 1.5) * 1.55, 1.15, targetSide === "player" ? 4.55 : -4.55);
@@ -231,6 +257,7 @@ export function mountBattleScene(root: HTMLElement): BattleSceneHandle {
   };
 
   const pulseSlot = (side: "player" | "enemy", slot: number) => {
+    wake(850);
     if (!Number.isInteger(slot) || slot < 0 || slot > 3) return;
     const pad = slots[(side === "enemy" ? 0 : 4) + slot];
     if (!pad) return;
@@ -245,17 +272,17 @@ export function mountBattleScene(root: HTMLElement): BattleSceneHandle {
     });
   };
 
-  const animateCards = () => {
-    const cards = root.querySelectorAll<HTMLElement>(".field-slot .game-card, .hand-cards .game-card");
-    gsap.fromTo(cards, { opacity: 0.72, y: 12, rotateX: 4 }, { opacity: 1, y: 0, rotateX: 0, duration: 0.34, stagger: 0.035, ease: "power3.out", overwrite: "auto" });
-    root.querySelectorAll<HTMLElement>(".game-card").forEach(card => {
-      card.addEventListener("pointerenter", () => gsap.to(card, { y: -7, scale: 1.045, duration: 0.18, ease: "power2.out", overwrite: "auto" }));
-      card.addEventListener("pointerleave", () => gsap.to(card, { y: 0, scale: 1, duration: 0.22, ease: "power2.out", overwrite: "auto" }));
-    });
-  };
-  animateCards();
-
   return {
+    attach: (nextRoot: HTMLElement) => {
+      if (disposed || nextRoot === root) return;
+      observer.unobserve(root);
+      root.classList.remove("battle-scene-root");
+      root = nextRoot;
+      root.classList.add("battle-scene-root");
+      root.prepend(renderer.domElement);
+      observer.observe(root);
+      resize();
+    },
     pulseStability,
     pulseSlot,
     signalInitiative,
