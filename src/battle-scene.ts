@@ -143,8 +143,6 @@ export function mountBattleScene(initialRoot: HTMLElement): BattleSceneHandle {
       pos.needsUpdate = true;
       particles.rotation.y += delta * 0.018;
     }
-    rim.intensity = 10 + Math.sin(time * 0.0018) * 1.2;
-    hot.intensity = 8 + Math.sin(time * 0.0013 + 1.4) * 0.8;
     renderer.render(scene, camera);
     if (time < renderUntil) raf = requestAnimationFrame(animate);
     else lastFrameTime = 0;
