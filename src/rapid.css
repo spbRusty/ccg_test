@@ -816,7 +816,7 @@ body {
   height: 100% !important;
   pointer-events: none;
 }
-.field-slot .game-card, .hand-cards .game-card { will-change: transform, opacity; transform-origin: 50% 70%; }
+.field-slot .game-card, .hand-cards .game-card { will-change: auto; transform-origin: 50% 70%; }
 @media (prefers-reduced-motion: reduce) {
   .field-slot .game-card, .hand-cards .game-card { will-change: auto; }
 }
@@ -1063,4 +1063,11 @@ body {
 }
 @media (prefers-reduced-motion: reduce) {
   .pending-slot { animation: none !important; }
+}
+
+@media (max-width: 680px) {
+  .hand-cards .game-card:hover {
+    filter: none;
+    box-shadow: 0 2px 0 #080d14, 0 5px 0 #101722, 0 10px 14px -12px #000b;
+  }
 }
