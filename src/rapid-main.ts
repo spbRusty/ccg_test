@@ -889,7 +889,7 @@ window.addEventListener("pointermove", event => {
     ghost.style.transform = "";
     document.body.appendChild(ghost);
     gsap.set(ghost, { x: 0, y: 0, rotation: 0, scale: 1, transformOrigin: "50% 50%" });
-    gsap.to(ghost, { scale: 1.08, duration: 0.16, ease: "back.out(2)" });
+    gsap.to(ghost, { scale: 1.12, y: -10, duration: 0.2, ease: "back.out(2)" });
     drag.qx = gsap.quickTo(ghost, "x", { duration: 0.14, ease: "power3.out" });
     drag.qy = gsap.quickTo(ghost, "y", { duration: 0.14, ease: "power3.out" });
     drag.qr = gsap.quickTo(ghost, "rotation", { duration: 0.28, ease: "power3.out" });
@@ -900,7 +900,7 @@ window.addEventListener("pointermove", event => {
   if (!drag.moved || !drag.ghost) return;
   event.preventDefault();
   drag.qx?.(dx);
-  drag.qy?.(dy);
+  drag.qy?.(dy - 10);
   // The card leans with horizontal speed: a fast swipe tilts it, a slow drag keeps it upright.
   drag.qr?.(Math.max(-16, Math.min(16, event.movementX * 1.1)));
   window.clearTimeout(drag.settle);
