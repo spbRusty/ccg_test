@@ -840,13 +840,13 @@ body {
 .hand-cards .game-card:nth-child(3) { --fan-rotate: 1.5deg; --fan-y: 2px; }
 .hand-cards .game-card:nth-child(4) { --fan-rotate: 4deg; --fan-y: 7px; }
 .hand-cards .game-card:hover {
-  transform: translateY(calc(var(--fan-y) - 12px)) rotate(0deg) scale(1.055);
+  transform: translateY(calc(var(--fan-y) - 17px)) rotate(0deg) scale(1.09);
   box-shadow: 0 3px 0 #080d14, 0 7px 0 #101722, 0 19px 25px -12px #000d, 0 0 0 2px #7daee8;
   filter: saturate(1.06) brightness(1.025);
   z-index: 20;
 }
 .hand-cards .game-card.selected-card {
-  transform: translateY(calc(var(--fan-y) - 14px)) rotate(0deg) scale(1.04);
+  transform: translateY(calc(var(--fan-y) - 18px)) rotate(0deg) scale(1.085);
   box-shadow: 0 3px 0 #080d14, 0 7px 0 #101722, 0 18px 25px -12px #000d, 0 0 0 3px var(--blue);
   z-index: 21;
 }
@@ -875,8 +875,8 @@ body {
   opacity: 1;
   visibility: visible !important;
   transform-origin: 50% 70%;
-  filter: saturate(1.06) contrast(1.025);
-  box-shadow: 0 3px 0 #070b11, 0 8px 0 #111a27, 0 22px 32px -10px #000d, 0 0 0 1px #ffffff80 !important;
+  filter: saturate(1.09) contrast(1.035) brightness(1.035);
+  box-shadow: 0 4px 0 #070b11, 0 10px 0 #111a27, 0 28px 42px -9px #000e, 0 0 0 1px #ffffff90 !important;
   will-change: transform;
 }
 .field-slot.drop-target {
@@ -915,8 +915,8 @@ body {
   .hand-cards .game-card:nth-child(2) { --fan-rotate: -.8deg; --fan-y: 1px; }
   .hand-cards .game-card:nth-child(3) { --fan-rotate: .8deg; --fan-y: 1px; }
   .hand-cards .game-card:nth-child(4) { --fan-rotate: 2.2deg; --fan-y: 3px; }
-  .hand-cards .game-card:hover { transform: translateY(calc(var(--fan-y) - 5px)) rotate(0) scale(1.015); }
-  .drag-ghost-card { box-shadow: 0 2px 0 #070b11, 0 5px 0 #111a27, 0 14px 20px -8px #000d !important; }
+  .hand-cards .game-card:hover { transform: translateY(calc(var(--fan-y) - 10px)) rotate(0) scale(1.07); }
+  .drag-ghost-card { box-shadow: 0 3px 0 #070b11, 0 8px 0 #111a27, 0 22px 32px -8px #000e !important; }
 }
 @media (prefers-reduced-motion: reduce) {
   .hand-cards .game-card, .field-slot, .drag-ghost-card { transition: none !important; }
