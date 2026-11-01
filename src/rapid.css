@@ -1071,3 +1071,36 @@ body {
     box-shadow: 0 2px 0 #080d14, 0 5px 0 #101722, 0 10px 14px -12px #000b;
   }
 }
+
+/* Drag preview is a single rigid card: child layers must never animate independently. */
+.hand-cards .game-card.dragging-card,
+.hand-cards .game-card.dragging-card:hover,
+.hand-cards .game-card.dragging-card:active {
+  transform: none !important;
+  filter: none !important;
+}
+.drag-ghost-card,
+.drag-ghost-card:hover,
+.drag-ghost-card:active {
+  box-sizing: border-box !important;
+  aspect-ratio: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: none !important;
+  max-height: none !important;
+  overflow: hidden !important;
+  transform-origin: 50% 50% !important;
+}
+.drag-ghost-card .card-art,
+.drag-ghost-card .card-content,
+.drag-ghost-card .card-art img,
+.drag-ghost-card .art-splash,
+.drag-ghost-card .art-word,
+.drag-ghost-card .card-name,
+.drag-ghost-card .card-description,
+.drag-ghost-card .card-bottom {
+  transform: none !important;
+  transition: none !important;
+}
+.drag-ghost-card .card-art { flex: 1.08 1 0 !important; min-height: 0 !important; }
+.drag-ghost-card .card-content { flex: 0 1 auto !important; min-height: 0 !important; }
