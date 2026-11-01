@@ -882,6 +882,12 @@ window.addEventListener("pointermove", event => {
     ghost.removeAttribute("draggable");
     ghost.style.width = drag.sourceRect.width + "px";
     ghost.style.height = drag.sourceRect.height + "px";
+    ghost.style.minWidth = "0";
+    ghost.style.minHeight = "0";
+    ghost.style.maxWidth = "none";
+    ghost.style.maxHeight = "none";
+    ghost.style.boxSizing = "border-box";
+    ghost.style.aspectRatio = "auto";
     ghost.style.left = drag.sourceRect.left + "px";
     ghost.style.top = drag.sourceRect.top + "px";
     ghost.style.margin = "0";
