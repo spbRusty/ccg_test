@@ -859,7 +859,6 @@ app.addEventListener("pointerdown", event => {
   const uid = target.dataset.uid;
   if (!uid || !game.player.hand.some(card => card.uid === uid)) return;
   const rect = target.getBoundingClientRect();
-  try { target.setPointerCapture(event.pointerId); } catch {}
   activeCardDrag = {
     pointerId: event.pointerId, uid, source: target, sourceRect: rect,
     startX: event.clientX, startY: event.clientY, x: event.clientX, y: event.clientY,
@@ -876,6 +875,9 @@ window.addEventListener("pointermove", event => {
   if (!drag.moved && Math.hypot(dx, dy) > 7) {
     drag.moved = true;
     drag.source.classList.add("dragging-card");
+    // Freeze the exact rendered geometry at drag start; flex re-layout of a detached clone
+    // was causing only one section of the card to follow the pointer.
+    drag.sourceRect = drag.source.getBoundingClientRect();
     const ghost = drag.source.cloneNode(true) as HTMLElement;
     ghost.classList.remove("dragging-card", "selected-card");
     ghost.classList.add("drag-ghost-card");
@@ -888,11 +890,29 @@ window.addEventListener("pointermove", event => {
     ghost.style.maxHeight = "none";
     ghost.style.boxSizing = "border-box";
     ghost.style.aspectRatio = "auto";
+    ghost.style.display = "block";
+    ghost.style.overflow = "hidden";
     ghost.style.left = drag.sourceRect.left + "px";
     ghost.style.top = drag.sourceRect.top + "px";
     ghost.style.margin = "0";
     ghost.style.transition = "none";
     ghost.style.transform = "";
+    // Position every direct card layer from its live source bounds instead of allowing
+    // the detached flex container to recalculate the artwork/text split.
+    Array.from(drag.source.children).forEach((sourceChild, index) => {
+      const cloneChild = ghost.children[index] as HTMLElement | undefined;
+      if (!cloneChild) return;
+      const childRect = sourceChild.getBoundingClientRect();
+      Object.assign(cloneChild.style, {
+        position: "absolute",
+        left: (childRect.left - drag.sourceRect.left) + "px",
+        top: (childRect.top - drag.sourceRect.top) + "px",
+        right: "auto", bottom: "auto",
+        width: childRect.width + "px", height: childRect.height + "px",
+        margin: "0", flex: "none", boxSizing: "border-box",
+        transform: "none", transition: "none",
+      });
+    });
     document.body.appendChild(ghost);
     gsap.set(ghost, { x: 0, y: 0, rotation: 0, scale: 1, transformOrigin: "50% 50%" });
     gsap.to(ghost, { scale: 1.12, y: -10, duration: 0.2, ease: "back.out(2)" });
