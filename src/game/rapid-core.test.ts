@@ -22,12 +22,25 @@ describe("Rapid core — Stability and positional control", () => {
     expect(new Set(DEFAULT_DECK).size).toBe(14);
     expect(game.settings).toMatchObject({
       startStability: 30, maxStability: 30, deckSize: 14,
-      startHand: 4, handLimit: 4, slots: 4, maxPlays: 2,
+      startHand: 4, handLimit: 4, slots: 4,
     });
     expect(game.player.stability).toBe(30);
     expect(game.player.hand).toHaveLength(4);
     expect(game.player.deck).toHaveLength(10);
     expect(CARDS.every(card => card.cost >= -7 && card.cost <= 4)).toBe(true);
+  });
+
+
+  it("allows four cards to be queued in one round, one per field slot", () => {
+    const game = createGame(DEFAULT_DECK, () => 0.5);
+    game.player.hand = DEFAULT_DECK.slice(0, 4).map((id, index) => instance(id, "multi-" + index));
+    for (let slot = 0; slot < 4; slot++) {
+      const card = game.player.hand[0];
+      expect(queueCard(game, "player", card.uid, slot).ok).toBe(true);
+    }
+    expect(game.player.committed).toHaveLength(4);
+    expect(game.player.hand).toHaveLength(0);
+    expect(queueCard(game, "player", "missing", 0).ok).toBe(false);
   });
 
   it("gives initiative to the player with less Stability and breaks ties using the supplied RNG", () => {
