@@ -1104,3 +1104,21 @@ body {
 }
 .drag-ghost-card .card-art { flex: 1.08 1 0 !important; min-height: 0 !important; }
 .drag-ghost-card .card-content { flex: 0 1 auto !important; min-height: 0 !important; }
+
+
+/* Drag clone: preserve the card's measured layers instead of re-running flex layout. */
+.drag-ghost-card,
+.drag-ghost-card:hover,
+.drag-ghost-card:active {
+  display: block !important;
+  position: fixed !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+.drag-ghost-card > * {
+  position: absolute !important;
+  margin: 0 !important;
+  flex: none !important;
+  transform: none !important;
+  transition: none !important;
+}
