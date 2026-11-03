@@ -30,7 +30,6 @@ export interface GameSettings {
   startHand: number;
   handLimit: number;
   slots: number;
-  maxPlays: number;
   roundLimit: number;
 }
 export type RoundEvent =
@@ -53,7 +52,7 @@ export interface GameState {
 }
 const DEFAULT_SETTINGS: GameSettings = {
   startStability: 30, maxStability: 30, deckSize: 14, startHand: 4,
-  handLimit: 4, slots: 4, maxPlays: 2, roundLimit: 20,
+  handLimit: 4, slots: 4, roundLimit: 20,
 };
 let nextUid = 1;
 const sides: Side[] = ["player", "enemy"];
@@ -116,14 +115,13 @@ export function createGame(deckIds: string[] = DEFAULT_DECK, random: () => numbe
   const enemyDefs = shuffle(CARDS.filter(card => !card.token), random).slice(0, settings.deckSize);
   return {
     round: 1, player: makePlayer(playerDefs, settings, random), enemy: makePlayer(enemyDefs, settings, random),
-    settings, winner: null, log: ["Раунд 1. Выбери до двух карт и места на поле."], playedByEnemy: [], lastRoundEvents: [],
+    settings, winner: null, log: ["Раунд 1. Выбери карты и места на поле."], playedByEnemy: [], lastRoundEvents: [],
   };
 }
 export function queueCard(game: GameState, side: Side, cardUid: string, targetSlot: number): { ok: boolean; message: string } {
   const p = game[side];
   if (game.winner || p.locked) return { ok: false, message: "Выбор уже закрыт." };
   if (!Number.isInteger(targetSlot) || targetSlot < 0 || targetSlot >= game.settings.slots) return { ok: false, message: "Такого места на поле нет." };
-  if (p.committed.length >= game.settings.maxPlays) return { ok: false, message: "Можно выбрать не больше двух карт." };
   if (p.committed.some(plan => plan.targetSlot === targetSlot)) return { ok: false, message: "Этот слот уже выбран." };
   if (p.lockedSlots.has(targetSlot)) return { ok: false, message: "Этот слот заблокирован." };
   const index = p.hand.findIndex(card => card.uid === cardUid);
@@ -351,7 +349,7 @@ export function resolveRound(game: GameState, random: () => number = Math.random
   }
   game.round++;
   game.playedByEnemy = [...game.playedByEnemy, ...game.enemy.board.filter((card): card is CardInstance => card !== null)].slice(-30);
-  pushLog(game, "Раунд " + game.round + ": выбери до двух карт.");
+  pushLog(game, "Раунд " + game.round + ": выбери карты.");
 }
 function checkWinner(game: GameState): void {
   const pDown = game.player.stability <= 0;
@@ -369,7 +367,6 @@ export function aiCommit(game: GameState, random: () => number = Math.random): v
   if (p.locked || game.winner) return;
   const candidates = [...p.hand].sort((a, b) => rateCard(b) - rateCard(a));
   for (const card of candidates) {
-    if (p.committed.length >= game.settings.maxPlays) break;
     const used = new Set(p.committed.map(plan => plan.targetSlot));
     const free = p.board.findIndex((old, slot) => !used.has(slot) && !p.lockedSlots.has(slot));
     let slot = free >= 0 ? free : p.board.findIndex((old, index) => !used.has(index) && !p.lockedSlots.has(index));
